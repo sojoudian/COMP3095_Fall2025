@@ -87,8 +87,8 @@ git push -u origin main
    - Install Delombok plugin
    - Install MapStruct Support plugin
 
-![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/03_Plugins.png)
-
+![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/03_1_Plugins.png)
+![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/3_2_enableAnnotation.png)
 
 ---
 
@@ -114,6 +114,9 @@ git push -u origin main
    - Spring Boot DevTools (Developer Tools)
    - Spring Boot Actuator (Ops)
 6. Click **Create**
+
+![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/04_CreateModule.png)
+
 
 ---
 
