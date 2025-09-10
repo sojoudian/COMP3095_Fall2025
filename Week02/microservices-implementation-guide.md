@@ -150,7 +150,11 @@ docker run -d \
   -e MONGO_INITDB_ROOT_PASSWORD=password \
   --restart unless-stopped \
   mongo:latest
+```
+![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/10_Docker_Run_MongoDB.png)
 
+
+```bash
 # Optional: Run Mongo Express (GUI)
 docker run -d \
   --name mongo-express \
