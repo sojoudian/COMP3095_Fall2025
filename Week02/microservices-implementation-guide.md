@@ -136,7 +136,11 @@ spring.data.mongodb.uri=mongodb://localhost:27017/product-service
 ```bash
 # Create Docker network (optional, for mongo-express)
 docker network create mynetwork
+```
+![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/09_CreateDockerNetwork.png)
 
+
+```bash
 # Run MongoDB container
 docker run -d \
   --name comp3095-mongodb \
