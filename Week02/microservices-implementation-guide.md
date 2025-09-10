@@ -74,6 +74,8 @@ git push -u origin main
      - Package name: `ca.gbc.microservicesparent`
 3. **IMPORTANT**: Uncheck "Add sample code"
 4. Click **Create**
+![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/02_Create_Parent_Project_in_IntelliJ.png)
+
 
 ### Step 3: Configure IntelliJ for Lombok
 
