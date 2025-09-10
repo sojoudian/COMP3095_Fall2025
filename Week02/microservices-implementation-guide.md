@@ -55,6 +55,8 @@ git remote add origin [your-repository-url]
 git push -u origin main
 ```
 
+![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/01_Create_and_Setup_Git_Repository.png)
+
 ### Step 2: Create Parent Project in IntelliJ
 
 1. **File → New → Project**
