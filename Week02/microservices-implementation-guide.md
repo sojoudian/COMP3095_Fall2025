@@ -211,8 +211,21 @@ public class Product {
 
 ### Step 8: Create Repository Interface
 
-1. Create package: `ca.gbc.productservice.repository`
-2. Create `ProductRepository.java` interface:
+1. **Create repository package:**
+   - Right-click on `ca.gbc.productservice` (same location where you created `model`)
+   - Select **New → Package** (or **New → Directory** if Package isn't showing)
+   - Type: `repository`
+   - Press Enter
+
+2. **Create ProductRepository interface:**
+   - Right-click on the new `repository` package/directory
+   - Select **New → Java Class**
+   - In the dialog:
+     - **Name**: `ProductRepository`
+     - **Kind**: Change from "Class" to **Interface**
+   - Click OK/Create
+
+3. **Replace the generated code with:**
 
 ```java
 package ca.gbc.productservice.repository;
