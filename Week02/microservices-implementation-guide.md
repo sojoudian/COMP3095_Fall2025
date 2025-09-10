@@ -87,6 +87,9 @@ git push -u origin main
    - Install Delombok plugin
    - Install MapStruct Support plugin
 
+![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/03_Plugins.png)
+
+
 ---
 
 ## Module Configuration
