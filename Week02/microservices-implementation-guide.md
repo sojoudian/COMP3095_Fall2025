@@ -483,13 +483,33 @@ public class ProductController {
 
 ### Step 12: Clean Up Parent Project
 
-1. **Delete** the `src` folder from `microservices-parent` root
-2. **Update** `settings.gradle.kts` in microservices-parent:
+1. **Delete the unnecessary src folder:**
+   - In the Project view, navigate to `microservices-parent` (root level)
+   - Look for a `src` folder at the same level as `product-service`
+   - Right-click on this `src` folder
+   - Select **Delete**
+   - Confirm deletion in the dialog
+   - **Note**: This `src` folder is unnecessary because the parent project is just a container for modules
+
+2. **Update settings.gradle.kts:**
+   - In `microservices-parent` root (NOT in product-service)
+   - Open `settings.gradle.kts` file
+   - Replace its entire contents with:
 
 ```kotlin
 rootProject.name = "microservices-parent"
 include("product-service")
 ```
+
+3. **Verify the structure:**
+   - After cleanup, your `microservices-parent` should contain:
+     - `.idea/` (IntelliJ configuration)
+     - `gradle/` (Gradle wrapper)
+     - `product-service/` (your module)
+     - `build.gradle.kts`
+     - `settings.gradle.kts`
+     - `gradlew` and `gradlew.bat`
+   - It should NOT have a `src` folder at the root level
 
 ---
 
