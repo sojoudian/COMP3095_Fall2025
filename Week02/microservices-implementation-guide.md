@@ -156,7 +156,7 @@ If you continue to have issues with the Spring Boot module wizard:
 2. Add MongoDB configuration:
 ```properties
 spring.application.name=product-service
-spring.data.mongodb.uri=mongodb://localhost:27017/product-service
+spring.data.mongodb.uri=mongodb://rootadmin:password@localhost:27017/product-service?authSource=admin
 ```
 
 ### Step 6: Setup MongoDB Container
