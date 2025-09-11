@@ -263,8 +263,20 @@ public interface ProductRepository extends MongoRepository<Product, String> {
 
 ### Step 9: Create DTOs
 
-1. Create package: `ca.gbc.productservice.dto`
-2. Create `ProductRequest.java`:
+1. **Create dto package:**
+   - Right-click on `ca.gbc.productservice` (same location where you created `model` and `repository`)
+   - Select **New → Package** (or **New → Directory** if Package isn't showing)
+   - Type: `dto`
+   - Press Enter
+
+2. **Create ProductRequest class:**
+   - Right-click on the new `dto` package/directory
+   - Select **New → Java Class**
+   - In the dialog:
+     - **Name**: `ProductRequest`
+     - **Kind**: Keep as **Class** (not Interface)
+   - Click OK/Create
+   - Replace the generated code with:
 
 ```java
 package ca.gbc.productservice.dto;
@@ -286,7 +298,14 @@ public class ProductRequest {
 }
 ```
 
-3. Create `ProductResponse.java`:
+3. **Create ProductResponse class:**
+   - Right-click on the `dto` package/directory again
+   - Select **New → Java Class**
+   - In the dialog:
+     - **Name**: `ProductResponse`
+     - **Kind**: Keep as **Class**
+   - Click OK/Create
+   - Replace the generated code with:
 
 ```java
 package ca.gbc.productservice.dto;
