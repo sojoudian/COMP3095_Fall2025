@@ -186,7 +186,13 @@ docker run -d \
   -e ME_CONFIG_MONGODB_ADMINUSERNAME=rootadmin \
   -e ME_CONFIG_MONGODB_ADMINPASSWORD=password \
   -e ME_CONFIG_MONGODB_SERVER=comp3095-mongodb \
+  -e ME_CONFIG_BASICAUTH_USERNAME=admin \
+  -e ME_CONFIG_BASICAUTH_PASSWORD=pass \
   mongo-express
+
+# Access Mongo Express at: http://localhost:8081
+# Login with username: admin, password: pass
+# Note: These are the web interface credentials, not MongoDB credentials
 ```
 
 ---
