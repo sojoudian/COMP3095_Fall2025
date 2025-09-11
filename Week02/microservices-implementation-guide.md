@@ -8,6 +8,12 @@
 4. [Module Configuration](#module-configuration)
 5. [Database Configuration](#database-configuration)
 6. [Implementation Steps](#implementation-steps)
+   - [Step 7: Create Product Model](#step-7-create-product-model)
+   - [Step 8: Create Repository Interface](#step-8-create-repository-interface)
+   - [Step 9: Create DTOs](#step-9-create-dtos)
+   - [Step 10: Implement Service Layer](#step-10-implement-service-layer)
+   - [Step 11: Create REST Controller](#step-11-create-rest-controller)
+   - [Step 12: Clean Up Parent Project](#step-12-clean-up-parent-project)
 7. [Testing](#testing)
 8. [Troubleshooting](#troubleshooting)
 
