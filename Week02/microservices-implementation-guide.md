@@ -117,6 +117,28 @@ git push -u origin main
 
 ![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/04_CreateModule.png)
 
+### Step 4.1: Fix Source Folder Recognition (IMPORTANT)
+
+**IntelliJ Bug Warning**: IntelliJ sometimes incorrectly configures the Java source folders when creating Spring Boot modules. To prevent "Package" option from missing in context menus, **immediately** after creating the module:
+
+1. **Wait for Gradle sync to complete** (see progress bar at bottom of IntelliJ)
+2. Navigate to `product-service` → `src` → `main` in the Project view
+3. **Right-click on `java` folder** → **Mark Directory as** → **Sources Root**
+   - The folder icon should turn blue
+   - If "Mark Directory as" doesn't appear, the folder is already correctly marked
+4. **Right-click on `resources` folder** → **Mark Directory as** → **Resources Root**
+5. **Right-click on `test/java` folder** → **Mark Directory as** → **Test Sources Root**
+
+**Alternative if Module Creation Fails:**
+If you continue to have issues with the Spring Boot module wizard:
+1. Create a regular **Java** module instead (New → Module → Java)
+2. Configure it as a Gradle project
+3. Manually add Spring Boot dependencies to the `build.gradle.kts` file later
+
+**Verification:**
+- When you right-click on `ca.gbc.productservice`, you should see "New → Package" option
+- If you only see "New → Directory", the source folders aren't marked correctly
+- In this case, repeat Step 4.1 or restart IntelliJ after marking directories
 
 ---
 
