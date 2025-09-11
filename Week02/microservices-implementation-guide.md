@@ -335,8 +335,20 @@ public class ProductResponse {
 
 ### Step 10: Implement Service Layer
 
-1. Create package: `ca.gbc.productservice.service`
-2. Create `ProductService.java`:
+1. **Create service package:**
+   - Right-click on `ca.gbc.productservice` (same location where you created `model`, `repository`, and `dto`)
+   - Select **New → Package** (or **New → Directory** if Package isn't showing)
+   - Type: `service`
+   - Press Enter
+
+2. **Create ProductService class:**
+   - Right-click on the new `service` package/directory
+   - Select **New → Java Class**
+   - In the dialog:
+     - **Name**: `ProductService`
+     - **Kind**: Keep as **Class** (not Interface)
+   - Click OK/Create
+   - Replace the generated code with:
 
 ```java
 package ca.gbc.productservice.service;
