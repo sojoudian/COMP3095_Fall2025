@@ -417,8 +417,20 @@ public class ProductService {
 
 ### Step 11: Create REST Controller
 
-1. Create package: `ca.gbc.productservice.controller`
-2. Create `ProductController.java`:
+1. **Create controller package:**
+   - Right-click on `ca.gbc.productservice` (same location where you created `model`, `repository`, `dto`, and `service`)
+   - Select **New → Package** (or **New → Directory** if Package isn't showing)
+   - Type: `controller`
+   - Press Enter
+
+2. **Create ProductController class:**
+   - Right-click on the new `controller` package/directory
+   - Select **New → Java Class**
+   - In the dialog:
+     - **Name**: `ProductController`
+     - **Kind**: Keep as **Class** (not Interface)
+   - Click OK/Create
+   - Replace the generated code with:
 
 ```java
 package ca.gbc.productservice.controller;
