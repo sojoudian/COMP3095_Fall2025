@@ -170,13 +170,11 @@ docker network create mynetwork
 
 
 ```bash
-# Run MongoDB container
+# Run MongoDB container without auth
 docker run -d \
   --name comp3095-mongodb \
   --network=mynetwork \
   -p 27017:27017 \
-  -e MONGO_INITDB_ROOT_USERNAME=rootadmin \
-  -e MONGO_INITDB_ROOT_PASSWORD=password \
   --restart unless-stopped \
   mongo:latest
 ```
@@ -184,14 +182,12 @@ docker run -d \
 
 
 ```bash
-# Optional: Run Mongo Express (GUI)
+# Optional: Run Mongo Express without MongoDB auth
 docker run -d \
   --name mongo-express \
   --network=mynetwork \
   --restart unless-stopped \
   -p 8081:8081 \
-  -e ME_CONFIG_MONGODB_ADMINUSERNAME=rootadmin \
-  -e ME_CONFIG_MONGODB_ADMINPASSWORD=password \
   -e ME_CONFIG_MONGODB_SERVER=comp3095-mongodb \
   -e ME_CONFIG_BASICAUTH_USERNAME=admin \
   -e ME_CONFIG_BASICAUTH_PASSWORD=pass \
