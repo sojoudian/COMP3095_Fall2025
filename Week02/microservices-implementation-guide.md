@@ -397,7 +397,14 @@ public class ProductService {
                 .price(product.getPrice())
                 .build();
     }
-    
+
+    // GET by ID - Not required in lab instructions, optionally added by Maziar
+    public ProductResponse getProductById(String id) {
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Product not found"));
+        return mapToProductResponse(product);
+    }
+
     // Additional methods for PUT and DELETE (optional)
     public void updateProduct(String id, ProductRequest productRequest) {
         Product product = productRepository.findById(id)
@@ -466,7 +473,14 @@ public class ProductController {
     public List<ProductResponse> getAllProducts() {
         return productService.getAllProducts();
     }
-    
+
+    // GET by ID endpoint - Not required in lab instructions, optionally added by Maziar
+    @GetMapping("/{id}")
+    @ResponseStatus(HttpStatus.OK)
+    public ProductResponse getProductById(@PathVariable String id) {
+        return productService.getProductById(id);
+    }
+
     // Optional: PUT endpoint
     @PutMapping("/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
