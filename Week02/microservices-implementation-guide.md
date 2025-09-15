@@ -375,11 +375,11 @@ public class ProductService {
     
     public void createProduct(ProductRequest productRequest) {
         Product product = Product.builder()
-                .name(productRequest.getName())
-                .description(productRequest.getDescription())
-                .price(productRequest.getPrice())
+                .name(productRequest.name())
+                .description(productRequest.description())
+                .price(productRequest.price())
                 .build();
-        
+
         productRepository.save(product);
         log.info("Product {} is saved", product.getId());
     }
@@ -390,12 +390,12 @@ public class ProductService {
     }
     
     private ProductResponse mapToProductResponse(Product product) {
-        return ProductResponse.builder()
-                .id(product.getId())
-                .name(product.getName())
-                .description(product.getDescription())
-                .price(product.getPrice())
-                .build();
+        return new ProductResponse(
+                product.getId(),
+                product.getName(),
+                product.getDescription(),
+                product.getPrice()
+        );
     }
 
     // GET by ID - Not required in lab instructions, optionally added by Maziar
@@ -409,10 +409,10 @@ public class ProductService {
     public void updateProduct(String id, ProductRequest productRequest) {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
-        
-        product.setName(productRequest.getName());
-        product.setDescription(productRequest.getDescription());
-        product.setPrice(productRequest.getPrice());
+
+        product.setName(productRequest.name());
+        product.setDescription(productRequest.description());
+        product.setPrice(productRequest.price());
         
         productRepository.save(product);
         log.info("Product {} is updated", id);
