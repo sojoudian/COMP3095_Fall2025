@@ -281,64 +281,55 @@ public interface ProductRepository extends MongoRepository<Product, String> {
    - Type: `dto`
    - Press Enter
 
-2. **Create ProductRequest class:**
+2. **Create ProductRequest record:**
    - Right-click on the new `dto` package/directory
    - Select **New → Java Class**
    - In the dialog:
      - **Name**: `ProductRequest`
-     - **Kind**: Keep as **Class** (not Interface)
+     - **Kind**: Change from "Class" to **Record**
    - Click OK/Create
    - Replace the generated code with:
 
 ```java
 package ca.gbc.productservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class ProductRequest {
-    private String name;
-    private String description;
-    private BigDecimal price;
-}
+public record ProductRequest(
+    String name,
+    String description,
+    BigDecimal price
+) {}
 ```
 
-3. **Create ProductResponse class:**
+3. **Create ProductResponse record:**
    - Right-click on the `dto` package/directory again
    - Select **New → Java Class**
    - In the dialog:
      - **Name**: `ProductResponse`
-     - **Kind**: Keep as **Class**
+     - **Kind**: Change from "Class" to **Record**
    - Click OK/Create
    - Replace the generated code with:
 
 ```java
 package ca.gbc.productservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 
-@Data
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-public class ProductResponse {
-    private String id;
-    private String name;
-    private String description;
-    private BigDecimal price;
-}
+public record ProductResponse(
+    String id,
+    String name,
+    String description,
+    BigDecimal price
+) {}
 ```
+
+**Why Records for DTOs:**
+- Immutable by default (thread-safe)
+- Concise syntax (no boilerplate)
+- Built-in equals(), hashCode(), toString()
+- No Lombok dependency needed
+- Perfect fit for data transfer objects
 
 **DTO Pattern Benefits:**
 - Decouples internal model from API contract
