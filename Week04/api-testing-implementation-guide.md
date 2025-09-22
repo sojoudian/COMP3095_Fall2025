@@ -77,7 +77,7 @@ docker start comp3095-mongodb
 # If container doesn't exist, create it
 docker run -d \
   --name comp3095-mongodb \
-  -p 27017:27017 \
+  -p 28017:27017 \
   --restart unless-stopped \
   mongo:latest
 ```
@@ -97,7 +97,7 @@ docker run -d \
 #### 1.2 Verify MongoDB is Running
 ```bash
 docker ps | grep mongodb
-# Should show: comp3095-mongodb ... Up ... 27017->27017/tcp
+# Should show: comp3095-mongodb ... Up ... 28017->27017/tcp
 ```
 
 #### 1.3 (Optional) Start MongoExpress for GUI Access
@@ -108,6 +108,7 @@ docker run -d \
   --restart unless-stopped \
   -p 8081:8081 \
   -e ME_CONFIG_MONGODB_SERVER=host.docker.internal \
+  -e ME_CONFIG_MONGODB_PORT=28017 \
   -e ME_CONFIG_BASICAUTH_USERNAME=admin \
   -e ME_CONFIG_BASICAUTH_PASSWORD=pass \
   mongo-express
@@ -140,7 +141,8 @@ Access at: `http://localhost:8081` (username: admin, password: pass)
 Look for these lines in console:
 ```
 Started ProductServiceApplication in X.XXX seconds
-Tomcat started on port 8080 (http)
+Tomcat started on port 8084 (http)
+MongoDB connection established on port 28017
 ```
 
 ---
@@ -177,7 +179,7 @@ Tomcat started on port 8080 (http)
 2. Configure request:
    - **Name**: `Create Product`
    - **Method**: Select `POST` from dropdown
-   - **URL**: `http://localhost:8080/api/product`
+   - **URL**: `http://localhost:8084/api/product`
 
 #### 4.2 Configure Request Body
 1. Click **Body** tab below URL
@@ -218,7 +220,7 @@ Product 644e500c73c54e784fbb6b19 is saved
 2. Configure:
    - **Name**: `Get All Products`
    - **Method**: `GET`
-   - **URL**: `http://localhost:8080/api/product`
+   - **URL**: `http://localhost:8084/api/product`
 
 #### 5.2 Send Request
 1. Click **Send**
@@ -276,11 +278,11 @@ Click **Save** button
 2. Configure:
    - **Name**: `Update Product`
    - **Method**: `PUT`
-   - **URL**: `http://localhost:8080/api/product/{id}`
+   - **URL**: `http://localhost:8084/api/product/{id}`
 
 #### 6.3 Add Path Variable
 1. Replace `{id}` with actual ID:
-   - URL becomes: `http://localhost:8080/api/product/644e500c73c54e784fbb6b19`
+   - URL becomes: `http://localhost:8084/api/product/644e500c73c54e784fbb6b19`
 
 #### 6.4 Configure Body
 1. Click **Body** tab
@@ -300,7 +302,7 @@ Click **Save** button
 3. Run GET All to verify update
 
 #### 6.6 Use Variables (Advanced)
-1. In URL, use: `http://localhost:8080/api/product/{{productId}}`
+1. In URL, use: `http://localhost:8084/api/product/{{productId}}`
 2. Click **Variables** tab
 3. Add variable:
    - **Key**: `productId`
@@ -316,7 +318,7 @@ Click **Save** button
 2. Configure:
    - **Name**: `Delete Product`
    - **Method**: `DELETE`
-   - **URL**: `http://localhost:8080/api/product/{{productId}}`
+   - **URL**: `http://localhost:8084/api/product/{{productId}}`
 
 #### 7.2 Set Product ID
 1. Use an existing product ID
@@ -772,10 +774,10 @@ docker --version
 ```
 
 #### Issue 3: Port Already in Use
-**Error**: `Port 8080 already in use`
+**Error**: `Port 8084 already in use`
 ```bash
 # Find process using port
-lsof -i :8080
+lsof -i :8084
 # Kill the process
 kill -9 <PID>
 ```
