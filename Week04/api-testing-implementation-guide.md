@@ -409,7 +409,7 @@ In the `dependencies` block, add at the TOP (before other dependencies):
 ```kotlin
 dependencies {
     // TestContainers BOM - Add this FIRST
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
 
     // Existing dependencies...
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -436,7 +436,7 @@ Your complete build.gradle.kts should look like:
 ```kotlin
 dependencies {
     // IMPORTANT: TestContainers BOM must be FIRST in the dependencies block
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
 
     // Spring Boot Starters
     implementation("org.springframework.boot:spring-boot-starter-actuator")
