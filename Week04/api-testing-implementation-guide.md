@@ -1,6 +1,8 @@
 # API Testing & Integration Testing Implementation Guide - COMP 3095
 ## Complete Step-by-Step Guide for Testing Product Service
 
+> **Note**: This guide includes screenshots showing actual Postman requests and responses to help you follow along with the implementation.
+
 ### Table of Contents
 1. [Lab Overview](#lab-overview)
 2. [Prerequisites](#prerequisites)
@@ -211,6 +213,8 @@ Product 644e500c73c54e784fbb6b19 is saved
 2. Select your collection
 3. Click **Save to Product Service API Tests**
 
+![POST Request - Create Product](img/03_POST_Create_Product_MacBook_M3.png)
+
 ---
 
 ### Step 5: Test GET Endpoint
@@ -221,6 +225,8 @@ Product 644e500c73c54e784fbb6b19 is saved
    - **Name**: `Get All Products`
    - **Method**: `GET`
    - **URL**: `http://localhost:8084/api/product`
+
+![GET Request Setup](img/01_GET_Get_Products_Empty.png)
 
 #### 5.2 Send Request
 1. Click **Send**
@@ -262,6 +268,8 @@ Product 644e500c73c54e784fbb6b19 is saved
 2. Click **Send**
 3. Verify all 3 products appear in response
 
+![GET Request - Products Retrieved](img/04_GET_Get_Products_With_Data.png)
+
 #### 5.5 Save Request
 Click **Save** button
 
@@ -301,6 +309,8 @@ Click **Save** button
 2. Expected: **204 No Content**
 3. Run GET All to verify update
 
+![PUT Request - Update Product](img/05_PUT_Update_Product.png)
+
 #### 6.6 Use Variables (Advanced)
 1. In URL, use: `http://localhost:8084/api/product/{{productId}}`
 2. Click **Variables** tab
@@ -330,6 +340,8 @@ Click **Save** button
 3. Console shows: `Product {id} is deleted`
 4. Run GET All to confirm deletion
 
+![DELETE Request - Delete Product](img/06_DELETE_Delete_Product.png)
+
 #### 7.4 Test Collections
 1. Click collection name
 2. Click **Run** button
@@ -339,6 +351,10 @@ Click **Save** button
 ---
 
 ## Part 2: Automated Testing with TestContainers
+
+TestContainers is a Java library that provides lightweight, disposable instances of common databases or any other service that can run in a Docker container. For MongoDB testing, we'll use the MongoDB TestContainers module.
+
+![TestContainers MongoDB Documentation](img/02_TestContainers_MongoDB_Documentation.png)
 
 ### Step 8: Add TestContainers Dependencies
 
