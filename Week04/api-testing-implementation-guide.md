@@ -19,7 +19,9 @@
    - [Step 9: Configure Test Class](#step-9-configure-test-class)
    - [Step 10: Implement POST Test](#step-10-implement-post-test)
    - [Step 11: Implement GET Test](#step-11-implement-get-test)
-   - [Step 12: Run Integration Tests](#step-12-run-integration-tests)
+   - [Step 12: Implement PUT Test](#step-12-implement-put-test)
+   - [Step 13: Implement DELETE Test](#step-13-implement-delete-test)
+   - [Step 14: Run Integration Tests](#step-14-run-integration-tests)
 5. [Verification & Troubleshooting](#verification--troubleshooting)
 6. [Repository Submission](#repository-submission)
 
@@ -35,7 +37,7 @@ This lab extends your Product Service implementation by adding comprehensive tes
 ### Learning Objectives
 - ✅ Master API testing with Postman
 - ✅ Implement integration tests using TestContainers
-- ✅ Configure MockMvc for Spring Boot testing
+- ✅ Configure RestAssured for Spring Boot testing
 - ✅ Validate CRUD operations programmatically
 - ✅ Work with Docker containers in testing environments
 
