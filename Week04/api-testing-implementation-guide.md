@@ -127,7 +127,35 @@ Access at: `http://localhost:8081` (username: admin, password: pass)
 3. Click **Open**
 4. Wait for Gradle sync to complete
 
-#### 2.2 Run the Application
+#### 2.2 Update Application Configuration
+Before running the application, update the configuration to use custom ports:
+
+1. Navigate to `product-service/src/main/resources/application.properties`
+2. Replace the entire contents with:
+```properties
+spring.application.name=product-service
+
+# Server Configuration
+server.port=8084
+
+# MongoDB Configuration
+spring.data.mongodb.host=localhost
+spring.data.mongodb.port=28017
+spring.data.mongodb.database=product-service
+
+# Authentication (commented out for local development)
+#spring.data.mongodb.username=admin
+#spring.data.mongodb.password=password
+#spring.data.mongodb.authentication-database=admin
+```
+
+**Important Configuration Notes:**
+- Application runs on port **8084** (not default 8080)
+- MongoDB connects on port **28017** (not default 27017)
+- This matches our Docker container mapping: `-p 28017:27017`
+- No authentication enabled for local development
+
+#### 2.3 Run the Application
 **Method 1: Using Run Configuration**
 1. Click dropdown next to green arrow (▶️) in toolbar
 2. Select `ProductServiceApplication`
@@ -139,7 +167,7 @@ Access at: `http://localhost:8081` (username: admin, password: pass)
 3. Click green arrow next to `public class ProductServiceApplication`
 4. Select **Run 'ProductServiceApplication'**
 
-#### 2.3 Verify Application Started
+#### 2.4 Verify Application Started
 Look for these lines in console:
 ```
 Started ProductServiceApplication in X.XXX seconds
