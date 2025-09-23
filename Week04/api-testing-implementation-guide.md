@@ -818,8 +818,8 @@ Add this test method to validate the GET endpoint:
     }
 ```
 
-#### 11.2 Complete Test File After Step 11
-After adding the GET test, here's the complete `ProductServiceApplicationTests.java` file with both POST and GET tests:
+#### 11.2 Complete Test File With All CRUD Tests
+For reference, here's the complete `ProductServiceApplicationTests.java` file after implementing all CRUD operation tests (will be fully complete after Steps 12-13):
 
 ```java
 package ca.gbc.comp3095.productservice;
@@ -941,6 +941,72 @@ class ProductServiceApplicationTests {
         assertEquals("Test Product Description", products.get(0).description());
         assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
     }
+
+    @Test
+    void updateProduct() {
+        // First, create a product
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Get the created product ID
+        String productId = productRepository.findAll().get(0).getId();
+
+        // Update the product
+        ProductRequest updateRequest = new ProductRequest(
+                "Updated Product",
+                "Updated Description",
+                BigDecimal.valueOf(299.99)
+        );
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(updateRequest)
+                .when()
+                .put("/api/product/" + productId)
+                .then()
+                .statusCode(204);
+
+        // Verify the update
+        var updatedProduct = productRepository.findById(productId).orElseThrow();
+        assertEquals("Updated Product", updatedProduct.getName());
+        assertEquals("Updated Description", updatedProduct.getDescription());
+        assertEquals(BigDecimal.valueOf(299.99), updatedProduct.getPrice());
+    }
+
+    @Test
+    void deleteProduct() {
+        // First, create a product
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Get the created product ID
+        String productId = productRepository.findAll().get(0).getId();
+
+        // Delete the product
+        RestAssured.given()
+                .when()
+                .delete("/api/product/" + productId)
+                .then()
+                .statusCode(204);
+
+        // Verify deletion
+        assertEquals(0, productRepository.findAll().size());
+        assertTrue(productRepository.findById(productId).isEmpty());
+    }
 }
 ```
 
@@ -949,30 +1015,132 @@ class ProductServiceApplicationTests {
 - @ServiceConnection for automatic MongoDB configuration (Spring Boot 3.1+)
 - @LocalServerPort for random port injection
 - RestAssured configuration in setUp()
-- The contextLoads() test to verify setup
-- The helper method getProductRequest()
-- The createProduct() test for POST endpoint
-- The getAllProducts() test for GET endpoint
-- Total of approximately 108 lines
+- **5 test methods total:**
+  - contextLoads() - Verify setup
+  - createProduct() - POST endpoint test
+  - getAllProducts() - GET endpoint test
+  - updateProduct() - PUT endpoint test
+  - deleteProduct() - DELETE endpoint test
+- Helper method getProductRequest()
+- Total of approximately 180 lines
 
 All tests use the RestAssured approach consistently, matching the configuration from Steps 9-10.
 
 ---
 
-### Step 12: Run Integration Tests
+### Step 12: Implement PUT Test
 
-#### 12.1 Run All Tests
+#### 12.1 Add Update Product Test
+Add this test method to validate the PUT endpoint. This test should be added **after** the `getAllProducts()` test method, inside the `ProductServiceApplicationTests` class:
+
+```java
+    @Test
+    void updateProduct() {
+        // First, create a product
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Get the created product ID
+        String productId = productRepository.findAll().get(0).getId();
+
+        // Update the product
+        ProductRequest updateRequest = new ProductRequest(
+                "Updated Product",
+                "Updated Description",
+                BigDecimal.valueOf(299.99)
+        );
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(updateRequest)
+                .when()
+                .put("/api/product/" + productId)
+                .then()
+                .statusCode(204);
+
+        // Verify the update
+        var updatedProduct = productRepository.findById(productId).orElseThrow();
+        assertEquals("Updated Product", updatedProduct.getName());
+        assertEquals("Updated Description", updatedProduct.getDescription());
+        assertEquals(BigDecimal.valueOf(299.99), updatedProduct.getPrice());
+    }
+```
+
+**Key Points:**
+- Creates a product first to have something to update
+- Retrieves the product ID from the repository
+- Sends PUT request with updated data
+- Expects 204 No Content response
+- Verifies the product was actually updated in the database
+
+---
+
+### Step 13: Implement DELETE Test
+
+#### 13.1 Add Delete Product Test
+Add this test method to validate the DELETE endpoint. This test should be added **after** the `updateProduct()` test method, inside the `ProductServiceApplicationTests` class:
+
+```java
+    @Test
+    void deleteProduct() {
+        // First, create a product
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Get the created product ID
+        String productId = productRepository.findAll().get(0).getId();
+
+        // Delete the product
+        RestAssured.given()
+                .when()
+                .delete("/api/product/" + productId)
+                .then()
+                .statusCode(204);
+
+        // Verify deletion
+        assertEquals(0, productRepository.findAll().size());
+        assertTrue(productRepository.findById(productId).isEmpty());
+    }
+```
+
+**Key Points:**
+- Creates a product first to have something to delete
+- Retrieves the product ID from the repository
+- Sends DELETE request to the specific product endpoint
+- Expects 204 No Content response
+- Verifies the product was removed from the database
+- Double-checks using both `findAll().size()` and `findById()` methods
+
+---
+
+### Step 14: Run Integration Tests
+
+#### 14.1 Run All Tests
 1. Right-click on `ProductServiceApplicationTests` class name
 2. Select **Run 'ProductServiceApplicationTests'**
 3. Watch the test output
 
-#### 12.2 Understanding Test Output
+#### 14.2 Understanding Test Output
 You'll see:
 ```
 Starting ProductServiceApplicationTests using Java 21
 🐳 [testcontainers/ryuk] - Creating container...
-🐳 [mongo:7.0.5] - Starting container...
-🐳 [mongo:7.0.5] - Container started in PT2.345S
+🐳 [mongo:latest] - Starting container...
+🐳 [mongo:latest] - Container started in PT2.345S
 
 ✅ contextLoads
 ✅ createProduct
@@ -984,13 +1152,13 @@ Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESSFUL
 ```
 
-#### 12.3 Run Tests from Terminal
+#### 14.3 Run Tests from Terminal
 ```bash
 cd /Users/maziar/temp/COMP3095_Fall2025_11AM/microservices-parent
 ./gradlew :product-service:test
 ```
 
-#### 12.4 View Test Results in IntelliJ
+#### 14.4 View Test Results in IntelliJ
 1. After tests run, click **Test Results** tab at bottom
 2. See tree view of all tests
 3. Green checkmarks = passed
