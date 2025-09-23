@@ -670,7 +670,110 @@ Add this test method **immediately after** the helper method you just added:
     }
 ```
 
-#### 10.3 Run the POST Test
+#### 10.5 Complete Test File After Step 10
+After completing all parts of Step 10, your complete `ProductServiceApplicationTests.java` file should look like this:
+
+```java
+package ca.gbc.comp3095.productservice;
+
+import ca.gbc.comp3095.productservice.dto.ProductRequest;
+import ca.gbc.comp3095.productservice.dto.ProductResponse;
+import ca.gbc.comp3095.productservice.repository.ProductRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.restassured.RestAssured;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+class ProductServiceApplicationTests {
+
+    @Container
+    @ServiceConnection
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer(
+            DockerImageName.parse("mongo:latest")
+    );
+
+    @LocalServerPort
+    private Integer port;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @BeforeEach
+    void setUp() {
+        // Configure RestAssured for API testing
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+
+        // Clear database before each test
+        productRepository.deleteAll();
+    }
+
+    @Test
+    void contextLoads() {
+        // Verify container is running
+        assertTrue(mongoDBContainer.isRunning());
+        assertNotNull(port);
+    }
+
+    private ProductRequest getProductRequest() {
+        return new ProductRequest(
+                "Test Product",
+                "Test Product Description",
+                BigDecimal.valueOf(199.99)
+        );
+    }
+
+    @Test
+    void createProduct() {
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Verify product was saved to database
+        assertEquals(1, productRepository.findAll().size());
+
+        // Verify the saved product details
+        var savedProduct = productRepository.findAll().get(0);
+        assertEquals("Test Product", savedProduct.getName());
+        assertEquals("Test Product Description", savedProduct.getDescription());
+        assertEquals(BigDecimal.valueOf(199.99), savedProduct.getPrice());
+    }
+}
+```
+
+**Note:** At this point, your test file has:
+- All necessary imports
+- TestContainers configuration with MongoDB
+- The `contextLoads()` test to verify setup
+- The helper method `getProductRequest()`
+- The `createProduct()` test for POST endpoint
+- Total of approximately 88 lines
+
+#### 10.6 Run the POST Test
 1. Click green arrow next to `createProduct()` method
 2. Select **Run 'createProduct()'**
 3. Wait for container to start (first time takes longer)
