@@ -1127,6 +1127,213 @@ Add this test method to validate the DELETE endpoint. This test should be added 
 - Verifies the product was removed from the database
 - Double-checks using both `findAll().size()` and `findById()` methods
 
+#### 13.2 Complete Test File After Adding PUT and DELETE Tests
+After completing Steps 12 and 13, your complete `ProductServiceApplicationTests.java` should now have 5 test methods. Here's the complete file with all CRUD operations tested:
+
+```java
+package ca.gbc.comp3095.productservice;
+
+import ca.gbc.comp3095.productservice.dto.ProductRequest;
+import ca.gbc.comp3095.productservice.dto.ProductResponse;
+import ca.gbc.comp3095.productservice.repository.ProductRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.restassured.RestAssured;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import java.math.BigDecimal;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+class ProductServiceApplicationTests {
+
+    @Container
+    @ServiceConnection
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer(
+            DockerImageName.parse("mongo:latest")
+    );
+
+    @LocalServerPort
+    private Integer port;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @BeforeEach
+    void setUp() {
+        // Configure RestAssured for API testing
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+
+        // Clear database before each test
+        productRepository.deleteAll();
+    }
+
+    @Test
+    void contextLoads() {
+        // Verify container is running
+        assertTrue(mongoDBContainer.isRunning());
+        assertNotNull(port);
+    }
+
+    private ProductRequest getProductRequest() {
+        return new ProductRequest(
+                "Test Product",
+                "Test Product Description",
+                BigDecimal.valueOf(199.99)
+        );
+    }
+
+    @Test
+    void createProduct() {
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Verify product was saved to database
+        assertEquals(1, productRepository.findAll().size());
+
+        // Verify the saved product details
+        var savedProduct = productRepository.findAll().get(0);
+        assertEquals("Test Product", savedProduct.getName());
+        assertEquals("Test Product Description", savedProduct.getDescription());
+        assertEquals(BigDecimal.valueOf(199.99), savedProduct.getPrice());
+    }
+
+    @Test
+    void getAllProducts() {
+        // First, create a product
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Then, get all products
+        List<ProductResponse> products = RestAssured.given()
+                .when()
+                .get("/api/product")
+                .then()
+                .statusCode(200)
+                .extract()
+                .body()
+                .jsonPath()
+                .getList(".", ProductResponse.class);
+
+        // Verify we have 1 product
+        assertEquals(1, products.size());
+        assertEquals("Test Product", products.get(0).name());
+        assertEquals("Test Product Description", products.get(0).description());
+        assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
+    }
+
+    @Test
+    void updateProduct() {
+        // First, create a product
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Get the created product ID
+        String productId = productRepository.findAll().get(0).getId();
+
+        // Update the product
+        ProductRequest updateRequest = new ProductRequest(
+                "Updated Product",
+                "Updated Description",
+                BigDecimal.valueOf(299.99)
+        );
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(updateRequest)
+                .when()
+                .put("/api/product/" + productId)
+                .then()
+                .statusCode(204);
+
+        // Verify the update
+        var updatedProduct = productRepository.findById(productId).orElseThrow();
+        assertEquals("Updated Product", updatedProduct.getName());
+        assertEquals("Updated Description", updatedProduct.getDescription());
+        assertEquals(BigDecimal.valueOf(299.99), updatedProduct.getPrice());
+    }
+
+    @Test
+    void deleteProduct() {
+        // First, create a product
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Get the created product ID
+        String productId = productRepository.findAll().get(0).getId();
+
+        // Delete the product
+        RestAssured.given()
+                .when()
+                .delete("/api/product/" + productId)
+                .then()
+                .statusCode(204);
+
+        // Verify deletion
+        assertEquals(0, productRepository.findAll().size());
+        assertTrue(productRepository.findById(productId).isEmpty());
+    }
+}
+```
+
+**Summary of what you now have:**
+- **Line 1-22:** Package declaration and imports
+- **Line 24-26:** Class annotations for Spring Boot testing with TestContainers
+- **Line 28-32:** MongoDB container configuration with @ServiceConnection
+- **Line 34-41:** Autowired dependencies
+- **Line 43-51:** Setup method for RestAssured and database cleanup
+- **Line 53-58:** `contextLoads()` - Verifies container is running
+- **Line 60-66:** `getProductRequest()` - Helper method
+- **Line 68-88:** `createProduct()` - Tests POST endpoint
+- **Line 90-119:** `getAllProducts()` - Tests GET endpoint
+- **Line 121-153:** `updateProduct()` - Tests PUT endpoint (NEW from Step 12)
+- **Line 155-180:** `deleteProduct()` - Tests DELETE endpoint (NEW from Step 13)
+
+Total: **180 lines** with **5 test methods** covering all CRUD operations.
+
 ---
 
 ### Step 14: Run Integration Tests
