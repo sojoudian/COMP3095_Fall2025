@@ -614,8 +614,21 @@ If the test fails:
 
 ### Step 10: Implement POST Test
 
-#### 10.1 Add Helper Method
-Add this helper method to your test class to create test product requests:
+#### 10.1 Open the Test File
+Navigate to the test file we just modified in Step 9:
+- **Location**: `product-service/src/test/java/ca/gbc/comp3095/productservice/`
+- **File**: `ProductServiceApplicationTests.java`
+- The file should already be open from Step 9
+
+#### 10.2 Add Import Statements
+If not already present, ensure these imports are at the top of the file (after the package declaration):
+```java
+import java.math.BigDecimal;
+import static org.junit.jupiter.api.Assertions.*;
+```
+
+#### 10.3 Add Helper Method
+Add this helper method **inside the test class**, after the `contextLoads()` method (around line 47):
 ```java
     private ProductRequest getProductRequest() {
         return new ProductRequest(
@@ -626,8 +639,13 @@ Add this helper method to your test class to create test product requests:
     }
 ```
 
-#### 10.2 Implement Create Product Test
-Add this test method to validate the POST endpoint:
+**Placement in file:**
+- This method goes inside the `ProductServiceApplicationTests` class
+- Place it after the existing `contextLoads()` test method
+- Before the closing brace `}` of the class
+
+#### 10.4 Implement Create Product Test
+Add this test method **immediately after** the helper method you just added:
 ```java
     @Test
     void createProduct() {
