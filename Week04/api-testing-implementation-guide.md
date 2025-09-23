@@ -818,8 +818,9 @@ Add this test method to validate the GET endpoint:
     }
 ```
 
-#### 11.2 Add Complete Test Suite
-Here's the complete test class with all tests:
+#### 11.2 Complete Test File After Step 11
+After adding the GET test, here's the complete `ProductServiceApplicationTests.java` file with both POST and GET tests:
+
 ```java
 package ca.gbc.comp3095.productservice;
 
@@ -827,37 +828,35 @@ import ca.gbc.comp3095.productservice.dto.ProductRequest;
 import ca.gbc.comp3095.productservice.dto.ProductResponse;
 import ca.gbc.comp3095.productservice.repository.ProductRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.core.type.TypeReference;
-import org.junit.jupiter.api.Assertions;
+import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
 import java.util.List;
 
-@SpringBootTest
+import static org.junit.jupiter.api.Assertions.*;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
-@AutoConfigureMockMvc
 class ProductServiceApplicationTests {
 
     @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:latest");
+    @ServiceConnection
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer(
+            DockerImageName.parse("mongo:latest")
+    );
 
-    @Autowired
-    private MockMvc mockMvc;
+    @LocalServerPort
+    private Integer port;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -865,19 +864,21 @@ class ProductServiceApplicationTests {
     @Autowired
     private ProductRepository productRepository;
 
-    @DynamicPropertySource
-    static void setProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
-    }
-
     @BeforeEach
     void setUp() {
+        // Configure RestAssured for API testing
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+
+        // Clear database before each test
         productRepository.deleteAll();
     }
 
     @Test
     void contextLoads() {
-        Assertions.assertTrue(mongoDBContainer.isRunning());
+        // Verify container is running
+        assertTrue(mongoDBContainer.isRunning());
+        assertNotNull(port);
     }
 
     private ProductRequest getProductRequest() {
@@ -889,101 +890,72 @@ class ProductServiceApplicationTests {
     }
 
     @Test
-    void createProduct() throws Exception {
+    void createProduct() {
         ProductRequest productRequest = getProductRequest();
-        String productRequestString = objectMapper.writeValueAsString(productRequest);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(productRequestString))
-                .andExpect(MockMvcResultMatchers.status().isCreated());
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
 
         // Verify product was saved to database
-        Assertions.assertEquals(1, productRepository.findAll().size());
+        assertEquals(1, productRepository.findAll().size());
+
+        // Verify the saved product details
+        var savedProduct = productRepository.findAll().get(0);
+        assertEquals("Test Product", savedProduct.getName());
+        assertEquals("Test Product Description", savedProduct.getDescription());
+        assertEquals(BigDecimal.valueOf(199.99), savedProduct.getPrice());
     }
 
     @Test
-    void getAllProducts() throws Exception {
+    void getAllProducts() {
         // First, create a product
         ProductRequest productRequest = getProductRequest();
-        String productRequestString = objectMapper.writeValueAsString(productRequest);
 
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(productRequestString))
-                .andExpect(MockMvcResultMatchers.status().isCreated());
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
 
         // Then, get all products
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/api/product")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        // Parse response
-        String content = result.getResponse().getContentAsString();
-        List<ProductResponse> products = objectMapper.readValue(
-                content,
-                new TypeReference<List<ProductResponse>>() {}
-        );
+        List<ProductResponse> products = RestAssured.given()
+                .when()
+                .get("/api/product")
+                .then()
+                .statusCode(200)
+                .extract()
+                .body()
+                .jsonPath()
+                .getList(".", ProductResponse.class);
 
         // Verify we have 1 product
-        Assertions.assertEquals(1, products.size());
-        Assertions.assertEquals("Test Product", products.get(0).name());
-        Assertions.assertEquals("Test Product Description", products.get(0).description());
-        Assertions.assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
-    }
-
-    @Test
-    void updateProduct() throws Exception {
-        // Create a product first
-        ProductRequest createRequest = getProductRequest();
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)))
-                .andExpect(MockMvcResultMatchers.status().isCreated());
-
-        // Get the created product ID
-        String productId = productRepository.findAll().get(0).getId();
-
-        // Update the product
-        ProductRequest updateRequest = new ProductRequest(
-                "Updated Product",
-                "Updated Description",
-                BigDecimal.valueOf(299.99)
-        );
-
-        mockMvc.perform(MockMvcRequestBuilders.put("/api/product/" + productId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(updateRequest)))
-                .andExpect(MockMvcResultMatchers.status().isNoContent());
-
-        // Verify update
-        var updatedProduct = productRepository.findById(productId).orElseThrow();
-        Assertions.assertEquals("Updated Product", updatedProduct.getName());
-        Assertions.assertEquals(BigDecimal.valueOf(299.99), updatedProduct.getPrice());
-    }
-
-    @Test
-    void deleteProduct() throws Exception {
-        // Create a product first
-        ProductRequest createRequest = getProductRequest();
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createRequest)))
-                .andExpect(MockMvcResultMatchers.status().isCreated());
-
-        // Get the created product ID
-        String productId = productRepository.findAll().get(0).getId();
-
-        // Delete the product
-        mockMvc.perform(MockMvcRequestBuilders.delete("/api/product/" + productId))
-                .andExpect(MockMvcResultMatchers.status().isNoContent());
-
-        // Verify deletion
-        Assertions.assertEquals(0, productRepository.findAll().size());
+        assertEquals(1, products.size());
+        assertEquals("Test Product", products.get(0).name());
+        assertEquals("Test Product Description", products.get(0).description());
+        assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
     }
 }
 ```
+
+**Note:** This complete test file includes:
+- All necessary imports for RestAssured testing
+- @ServiceConnection for automatic MongoDB configuration (Spring Boot 3.1+)
+- @LocalServerPort for random port injection
+- RestAssured configuration in setUp()
+- The contextLoads() test to verify setup
+- The helper method getProductRequest()
+- The createProduct() test for POST endpoint
+- The getAllProducts() test for GET endpoint
+- Total of approximately 108 lines
+
+All tests use the RestAssured approach consistently, matching the configuration from Steps 9-10.
 
 ---
 
