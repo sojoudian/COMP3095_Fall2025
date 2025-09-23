@@ -128,10 +128,17 @@ Access at: `http://localhost:8081` (username: admin, password: pass)
 4. Wait for Gradle sync to complete
 
 #### 2.2 Update Application Configuration
-Before running the application, update the configuration to use custom ports:
+Before running the application, we need to update the configuration to use custom ports to avoid conflicts with other services.
 
 1. Navigate to `product-service/src/main/resources/application.properties`
-2. Replace the entire contents with:
+2. **Current configuration** (from Week 2):
+```properties
+spring.application.name=product-service
+#spring.data.mongodb.uri=mongodb://rootadmin:password@localhost:27017/product-service?authSource=admin
+spring.data.mongodb.uri=mongodb://localhost:27017/product-service
+```
+
+3. **Replace the entire contents** with this new configuration:
 ```properties
 spring.application.name=product-service
 
@@ -149,11 +156,17 @@ spring.data.mongodb.database=product-service
 #spring.data.mongodb.authentication-database=admin
 ```
 
-**Important Configuration Notes:**
-- Application runs on port **8084** (not default 8080)
-- MongoDB connects on port **28017** (not default 27017)
-- This matches our Docker container mapping: `-p 28017:27017`
-- No authentication enabled for local development
+**Why These Changes?**
+- **Port 8084 for Application**: Avoids conflicts if port 8080 is already in use by another service
+- **Port 28017 for MongoDB**: Allows running multiple MongoDB instances (production on 27017, testing on 28017)
+- **Separated Configuration**: Breaking down the URI into individual properties provides:
+  - Better readability and maintenance
+  - Easier debugging of connection issues
+  - Flexibility to change individual settings
+  - Clear separation of concerns (host, port, database name)
+- **Docker Container Mapping**: Matches our container setup `-p 28017:27017` where:
+  - External port 28017 (what our app connects to)
+  - Maps to internal port 27017 (MongoDB's default port inside container)
 
 #### 2.3 Run the Application
 **Method 1: Using Run Configuration**
