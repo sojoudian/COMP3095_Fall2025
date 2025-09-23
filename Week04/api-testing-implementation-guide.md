@@ -479,13 +479,11 @@ dependencies {
 
 ### Step 9: Configure Test Class
 
-You have two options for configuring TestContainers with MongoDB. Choose **Option A** for Spring Boot 3.1+ (recommended) or **Option B** for traditional setup.
-
 #### 9.1 Open Test File
 Navigate to: `product-service/src/test/java/ca/gbc/comp3095/productservice/ProductServiceApplicationTests.java`
 
-#### 9.2 Option A: Modern Approach with @ServiceConnection (Spring Boot 3.1+)
-**Recommended for Spring Boot 3.1 or higher** - This approach uses the new `@ServiceConnection` annotation which automatically configures the connection.
+#### 9.2 Replace Entire File Content
+Since you're using Spring Boot 3.5.6, we'll use the modern `@ServiceConnection` approach which automatically configures the MongoDB connection.
 
 ```java
 package ca.gbc.comp3095.productservice;
@@ -507,6 +505,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.DockerImageName;
 
 import java.math.BigDecimal;
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Testcontainers
@@ -529,111 +530,92 @@ class ProductServiceApplicationTests {
 
     @BeforeEach
     void setUp() {
+        // Configure RestAssured for API testing
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = port;
+
+        // Clear database before each test
+        productRepository.deleteAll();
     }
 
     @Test
     void contextLoads() {
         // Verify container is running
-        org.junit.jupiter.api.Assertions.assertTrue(mongoDBContainer.isRunning());
+        assertTrue(mongoDBContainer.isRunning());
+        assertNotNull(port);
     }
 }
 ```
 
-#### 9.3 Option B: Traditional Approach with @DynamicPropertySource
-Use this approach if you're using Spring Boot versions before 3.1:
+#### 9.3 Understanding the Configuration
 
-```java
-package ca.gbc.comp3095.productservice;
+**Key Annotations and Components:**
 
-import ca.gbc.comp3095.productservice.dto.ProductRequest;
-import ca.gbc.comp3095.productservice.dto.ProductResponse;
-import ca.gbc.comp3095.productservice.repository.ProductRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.DynamicPropertyRegistry;
-import org.springframework.test.context.DynamicPropertySource;
-import org.springframework.test.web.servlet.MockMvc;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
+1. **@SpringBootTest(webEnvironment = RANDOM_PORT)**
+   - Starts the full Spring application context
+   - Uses a random port to avoid conflicts
 
-@SpringBootTest
-@Testcontainers
-@AutoConfigureMockMvc
-class ProductServiceApplicationTests {
+2. **@Testcontainers**
+   - Enables TestContainers JUnit 5 extension
+   - Manages container lifecycle automatically
 
-    @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:latest");
+3. **@Container + @ServiceConnection**
+   - `@Container`: Marks the field as a TestContainer
+   - `@ServiceConnection`: Automatically configures Spring Boot to connect to this container
+   - No manual property configuration needed!
 
-    @Autowired
-    private MockMvc mockMvc;
+4. **MongoDBContainer**
+   - Creates a real MongoDB instance in Docker
+   - Uses `DockerImageName.parse()` for proper image handling
 
-    @Autowired
-    private ObjectMapper objectMapper;
+5. **@LocalServerPort**
+   - Injects the random port number
+   - Used to configure RestAssured for API calls
 
-    @Autowired
-    private ProductRepository productRepository;
+6. **@BeforeEach setUp()**
+   - Configures RestAssured base URI and port
+   - Clears database to ensure test isolation
 
-    @DynamicPropertySource
-    static void setProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.data.mongodb.uri", mongoDBContainer::getReplicaSetUrl);
-    }
+#### 9.4 Verify Container Starts
 
-    @Test
-    void contextLoads() {
-    }
-}
+Run the test to verify TestContainers works:
+1. Right-click on `contextLoads()` method
+2. Select "Run contextLoads()"
+3. You should see Docker pulling/starting MongoDB container
+4. Test should pass with green checkmark
+
+**Expected Console Output:**
+```
+🐳 [testcontainers/ryuk] - Starting container...
+🐳 [mongo:latest] - Starting container...
+🐳 [mongo:latest] - Container started in PT2.345S
+✓ contextLoads() passed
 ```
 
-#### 9.4 (Optional) Create Separate TestContainers Configuration
-For better organization and reusability, create a separate configuration class:
+#### 9.5 Troubleshooting
 
-Create new file: `product-service/src/test/java/ca/gbc/comp3095/productservice/TestcontainersConfiguration.java`
+If the test fails:
 
-```java
-package ca.gbc.comp3095.productservice;
+1. **Docker not running:**
+   - Start Docker Desktop
+   - Verify with: `docker ps`
 
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.context.annotation.Bean;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.utility.DockerImageName;
+2. **Port conflicts:**
+   - The RANDOM_PORT should prevent this
+   - If issues persist, restart your IDE
 
-@TestConfiguration(proxyBeanMethods = false)
-public class TestcontainersConfiguration {
+3. **Container fails to start:**
+   - Check Docker has enough resources
+   - Try: `docker pull mongo:latest` manually
 
-    @Bean
-    @ServiceConnection
-    MongoDBContainer mongoDbContainer() {
-        return new MongoDBContainer(DockerImageName.parse("mongo:latest"));
-    }
-}
-```
-
-Then in your test class, you can import this configuration:
-```java
-@Import(TestcontainersConfiguration.class)
-class ProductServiceApplicationTests {
-    // Your test code
-}
-```
-
-**Key Differences Between Approaches:**
-- **@ServiceConnection** (Option A): Automatic configuration, less code, Spring Boot 3.1+ only
-- **@DynamicPropertySource** (Option B): Manual configuration, works with older Spring Boot versions
-- **Separate Configuration**: Better for sharing container setup across multiple test classes
+**Note:** The `@ServiceConnection` annotation eliminates the need for manual `setProperties()` configuration mentioned in the PDF. Spring Boot 3.1+ handles this automatically, achieving the same goal with cleaner code.
 
 ---
 
 ### Step 10: Implement POST Test
 
 #### 10.1 Add Helper Method
-Add this method to create test product requests:
+Add this helper method to your test class to create test product requests:
 ```java
     private ProductRequest getProductRequest() {
         return new ProductRequest(
@@ -645,8 +627,7 @@ Add this method to create test product requests:
 ```
 
 #### 10.2 Implement Create Product Test
-
-**For Option A (@ServiceConnection with RestAssured):**
+Add this test method to validate the POST endpoint:
 ```java
     @Test
     void createProduct() {
@@ -661,24 +642,13 @@ Add this method to create test product requests:
                 .statusCode(201);
 
         // Verify product was saved to database
-        Assertions.assertEquals(1, productRepository.findAll().size());
-    }
-```
+        assertEquals(1, productRepository.findAll().size());
 
-**For Option B (@DynamicPropertySource with MockMvc):**
-```java
-    @Test
-    void createProduct() throws Exception {
-        ProductRequest productRequest = getProductRequest();
-        String productRequestString = objectMapper.writeValueAsString(productRequest);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(productRequestString))
-                .andExpect(MockMvcResultMatchers.status().isCreated());
-
-        // Verify product was saved to database
-        Assertions.assertEquals(1, productRepository.findAll().size());
+        // Verify the saved product details
+        var savedProduct = productRepository.findAll().get(0);
+        assertEquals("Test Product", savedProduct.getName());
+        assertEquals("Test Product Description", savedProduct.getDescription());
+        assertEquals(BigDecimal.valueOf(199.99), savedProduct.getPrice());
     }
 ```
 
@@ -693,8 +663,7 @@ Add this method to create test product requests:
 ### Step 11: Implement GET Test
 
 #### 11.1 Add Get All Products Test
-
-**For Option A (@ServiceConnection with RestAssured):**
+Add this test method to validate the GET endpoint:
 ```java
     @Test
     void getAllProducts() {
@@ -721,44 +690,10 @@ Add this method to create test product requests:
                 .getList(".", ProductResponse.class);
 
         // Verify we have 1 product
-        Assertions.assertEquals(1, products.size());
-        Assertions.assertEquals("Test Product", products.get(0).name());
-        Assertions.assertEquals("Test Product Description", products.get(0).description());
-        Assertions.assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
-    }
-```
-
-**For Option B (@DynamicPropertySource with MockMvc):**
-```java
-    @Test
-    void getAllProducts() throws Exception {
-        // First, create a product
-        ProductRequest productRequest = getProductRequest();
-        String productRequestString = objectMapper.writeValueAsString(productRequest);
-
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/product")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(productRequestString))
-                .andExpect(MockMvcResultMatchers.status().isCreated());
-
-        // Then, get all products
-        MvcResult result = mockMvc.perform(MockMvcRequestBuilders.get("/api/product")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-        // Parse response
-        String content = result.getResponse().getContentAsString();
-        List<ProductResponse> products = objectMapper.readValue(
-                content,
-                new TypeReference<List<ProductResponse>>() {}
-        );
-
-        // Verify we have 1 product
-        Assertions.assertEquals(1, products.size());
-        Assertions.assertEquals("Test Product", products.get(0).name());
-        Assertions.assertEquals("Test Product Description", products.get(0).description());
-        Assertions.assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
+        assertEquals(1, products.size());
+        assertEquals("Test Product", products.get(0).name());
+        assertEquals("Test Product Description", products.get(0).description());
+        assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
     }
 ```
 
