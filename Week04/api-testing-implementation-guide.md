@@ -422,7 +422,7 @@ After the existing dependencies, add:
     testImplementation("org.testcontainers:junit-jupiter")
 
     // RestAssured for API testing
-    testImplementation("io.rest-assured:rest-assured:5.5.0")
+    testImplementation("io.rest-assured:rest-assured")
 
     // Additional testing utilities
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -430,10 +430,10 @@ After the existing dependencies, add:
 ```
 
 #### 8.4 Complete Dependencies Section
-Your complete test dependencies should look like:
+Your complete build.gradle.kts should look like:
 ```kotlin
 dependencies {
-    // TestContainers BOM
+    // IMPORTANT: TestContainers BOM must be FIRST in the dependencies block
     testImplementation(platform("org.testcontainers:testcontainers-bom:1.20.4"))
 
     // Spring Boot dependencies
@@ -444,15 +444,20 @@ dependencies {
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
 
-    // Test dependencies
+    // Test dependencies - Order matters!
     testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
     testImplementation("org.testcontainers:mongodb")
     testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("io.rest-assured:rest-assured:5.5.0")
+    testImplementation("io.rest-assured:rest-assured")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 ```
+
+**Critical Notes:**
+- The BOM (Bill of Materials) **MUST** be the first line in dependencies
+- This ensures all TestContainers modules use compatible versions
+- Order of dependencies matters for proper dependency resolution
 
 #### 8.5 Sync Gradle
 1. Click **Gradle** notification bar that appears
@@ -464,10 +469,14 @@ dependencies {
 
 ### Step 9: Configure Test Class
 
+You have two options for configuring TestContainers with MongoDB. Choose **Option A** for Spring Boot 3.1+ (recommended) or **Option B** for traditional setup.
+
 #### 9.1 Open Test File
 Navigate to: `product-service/src/test/java/ca/gbc/comp3095/productservice/ProductServiceApplicationTests.java`
 
-#### 9.2 Replace Entire File Content
+#### 9.2 Option A: Modern Approach with @ServiceConnection (Spring Boot 3.1+)
+**Recommended for Spring Boot 3.1 or higher** - This approach uses the new `@ServiceConnection` annotation which automatically configures the connection.
+
 ```java
 package ca.gbc.comp3095.productservice;
 
@@ -475,25 +484,73 @@ import ca.gbc.comp3095.productservice.dto.ProductRequest;
 import ca.gbc.comp3095.productservice.dto.ProductResponse;
 import ca.gbc.comp3095.productservice.repository.ProductRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.Assertions;
+import io.restassured.RestAssured;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+import org.testcontainers.utility.DockerImageName;
+
+import java.math.BigDecimal;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+class ProductServiceApplicationTests {
+
+    @Container
+    @ServiceConnection
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer(
+            DockerImageName.parse("mongo:latest")
+    );
+
+    @LocalServerPort
+    private Integer port;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
+    @Autowired
+    private ProductRepository productRepository;
+
+    @BeforeEach
+    void setUp() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+    }
+
+    @Test
+    void contextLoads() {
+        // Verify container is running
+        org.junit.jupiter.api.Assertions.assertTrue(mongoDBContainer.isRunning());
+    }
+}
+```
+
+#### 9.3 Option B: Traditional Approach with @DynamicPropertySource
+Use this approach if you're using Spring Boot versions before 3.1:
+
+```java
+package ca.gbc.comp3095.productservice;
+
+import ca.gbc.comp3095.productservice.dto.ProductRequest;
+import ca.gbc.comp3095.productservice.dto.ProductResponse;
+import ca.gbc.comp3095.productservice.repository.ProductRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.testcontainers.containers.MongoDBContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
-import com.fasterxml.jackson.core.type.TypeReference;
-
-import java.math.BigDecimal;
-import java.util.List;
 
 @SpringBootTest
 @Testcontainers
@@ -501,7 +558,7 @@ import java.util.List;
 class ProductServiceApplicationTests {
 
     @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0.5");
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:latest");
 
     @Autowired
     private MockMvc mockMvc;
@@ -523,6 +580,44 @@ class ProductServiceApplicationTests {
 }
 ```
 
+#### 9.4 (Optional) Create Separate TestContainers Configuration
+For better organization and reusability, create a separate configuration class:
+
+Create new file: `product-service/src/test/java/ca/gbc/comp3095/productservice/TestcontainersConfiguration.java`
+
+```java
+package ca.gbc.comp3095.productservice;
+
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.context.annotation.Bean;
+import org.testcontainers.containers.MongoDBContainer;
+import org.testcontainers.utility.DockerImageName;
+
+@TestConfiguration(proxyBeanMethods = false)
+public class TestcontainersConfiguration {
+
+    @Bean
+    @ServiceConnection
+    MongoDBContainer mongoDbContainer() {
+        return new MongoDBContainer(DockerImageName.parse("mongo:latest"));
+    }
+}
+```
+
+Then in your test class, you can import this configuration:
+```java
+@Import(TestcontainersConfiguration.class)
+class ProductServiceApplicationTests {
+    // Your test code
+}
+```
+
+**Key Differences Between Approaches:**
+- **@ServiceConnection** (Option A): Automatic configuration, less code, Spring Boot 3.1+ only
+- **@DynamicPropertySource** (Option B): Manual configuration, works with older Spring Boot versions
+- **Separate Configuration**: Better for sharing container setup across multiple test classes
+
 ---
 
 ### Step 10: Implement POST Test
@@ -540,7 +635,27 @@ Add this method to create test product requests:
 ```
 
 #### 10.2 Implement Create Product Test
-Add this test method:
+
+**For Option A (@ServiceConnection with RestAssured):**
+```java
+    @Test
+    void createProduct() {
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Verify product was saved to database
+        Assertions.assertEquals(1, productRepository.findAll().size());
+    }
+```
+
+**For Option B (@DynamicPropertySource with MockMvc):**
 ```java
     @Test
     void createProduct() throws Exception {
@@ -568,7 +683,42 @@ Add this test method:
 ### Step 11: Implement GET Test
 
 #### 11.1 Add Get All Products Test
-Add this test method:
+
+**For Option A (@ServiceConnection with RestAssured):**
+```java
+    @Test
+    void getAllProducts() {
+        // First, create a product
+        ProductRequest productRequest = getProductRequest();
+
+        RestAssured.given()
+                .contentType("application/json")
+                .body(productRequest)
+                .when()
+                .post("/api/product")
+                .then()
+                .statusCode(201);
+
+        // Then, get all products
+        List<ProductResponse> products = RestAssured.given()
+                .when()
+                .get("/api/product")
+                .then()
+                .statusCode(200)
+                .extract()
+                .body()
+                .jsonPath()
+                .getList(".", ProductResponse.class);
+
+        // Verify we have 1 product
+        Assertions.assertEquals(1, products.size());
+        Assertions.assertEquals("Test Product", products.get(0).name());
+        Assertions.assertEquals("Test Product Description", products.get(0).description());
+        Assertions.assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
+    }
+```
+
+**For Option B (@DynamicPropertySource with MockMvc):**
 ```java
     @Test
     void getAllProducts() throws Exception {
@@ -638,7 +788,7 @@ import java.util.List;
 class ProductServiceApplicationTests {
 
     @Container
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:7.0.5");
+    static MongoDBContainer mongoDBContainer = new MongoDBContainer("mongo:latest");
 
     @Autowired
     private MockMvc mockMvc;
