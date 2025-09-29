@@ -396,17 +396,17 @@ Docker Compose uses a **YAML file** to configure services, networks, and volumes
 
 **Our Application Architecture:**
 ```
-┌─────────────────────────────────────────┐
-│      microservices-network (bridge)     │
+┌──────────────────────────────────────────┐
+│      microservices-network (bridge)      │
 │                                          │
-│  ┌────────────────┐  ┌────────────────┐ │
-│  │ product-service│  │    mongodb     │ │
-│  │  (port 8084)   │→ │  (port 27017)  │ │
-│  └────────────────┘  └────────────────┘ │
+│  ┌────────────────┐  ┌────────────────┐  │
+│  │ product-service│  │    mongodb     │  │
+│  │  (port 8084)   │→ │  (port 27017)  │  │
+│  └────────────────┘  └────────────────┘  │
 │          ↓                    ↓          │
-│          └───────> mongo-express        │
-│                    (port 8081 - Web UI) │
-└─────────────────────────────────────────┘
+│          └───────> mongo-express         │
+│                    (port 8081 - Web UI)  │
+└──────────────────────────────────────────┘
               ↓
      mongodb-data (volume)
      Persists database data
