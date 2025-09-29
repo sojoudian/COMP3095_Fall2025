@@ -404,22 +404,24 @@ TestContainers is a Java library that provides lightweight, disposable instances
 #### 8.1 Open build.gradle.kts
 Navigate to: `product-service/build.gradle.kts`
 
-#### 8.2 Add TestContainers BOM
+#### 8.2 Add TestContainers BOM with Version
 In the `dependencies` block, add at the TOP (before other dependencies):
 ```kotlin
 dependencies {
-    // TestContainers BOM - Add this FIRST
-    testImplementation(platform("org.testcontainers:testcontainers-bom"))
+    // IMPORTANT: TestContainers BOM must be FIRST in the dependencies block
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
 
     // Existing dependencies...
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     // ... rest of your dependencies
 ```
 
+**Important:** The TestContainers BOM requires an explicit version number (1.21.3 in this case). Without the version, Gradle cannot resolve the dependency.
+
 #### 8.3 Add TestContainers Dependencies
 After the existing dependencies, add:
 ```kotlin
-    // TestContainers dependencies
+    // TestContainers Modules
     testImplementation("org.testcontainers:mongodb")
     testImplementation("org.testcontainers:junit-jupiter")
 
@@ -436,7 +438,7 @@ Your complete build.gradle.kts should look like:
 ```kotlin
 dependencies {
     // IMPORTANT: TestContainers BOM must be FIRST in the dependencies block
-    testImplementation(platform("org.testcontainers:testcontainers-bom"))
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
 
     // Spring Boot Starters
     implementation("org.springframework.boot:spring-boot-starter-actuator")
@@ -468,8 +470,16 @@ dependencies {
 
 **Critical Notes:**
 - The BOM (Bill of Materials) **MUST** be the first line in dependencies
+- **Version 1.21.3 is specified explicitly** - this is required for proper resolution
+- Use `testImplementation(platform(...))` not just `testImplementation(...)`
+- The `platform()` wrapper tells Gradle this is a BOM for version management
 - This ensures all TestContainers modules use compatible versions
 - Order of dependencies matters for proper dependency resolution
+
+**Compatible TestContainers Versions for Spring Boot 3.5.5 + Java 21:**
+- **1.21.3** (Used in this guide - Latest stable)
+- 1.20.4 (Alternative stable version)
+- 1.19.8 (Previous stable version)
 
 #### 8.5 Sync Gradle
 1. Click **Gradle** notification bar that appears
@@ -672,108 +682,15 @@ Add this test method **immediately after** the helper method you just added:
     }
 ```
 
-#### 10.5 Complete Test File After Step 10
-After completing all parts of Step 10, your complete `ProductServiceApplicationTests.java` file should look like this:
-
-```java
-package ca.gbc.comp3095.productservice;
-
-import ca.gbc.comp3095.productservice.dto.ProductRequest;
-import ca.gbc.comp3095.productservice.dto.ProductResponse;
-import ca.gbc.comp3095.productservice.repository.ProductRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.restassured.RestAssured;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-class ProductServiceApplicationTests {
-
-    @Container
-    @ServiceConnection
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer(
-            DockerImageName.parse("mongo:latest")
-    );
-
-    @LocalServerPort
-    private Integer port;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @BeforeEach
-    void setUp() {
-        // Configure RestAssured for API testing
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = port;
-
-        // Clear database before each test
-        productRepository.deleteAll();
-    }
-
-    @Test
-    void contextLoads() {
-        // Verify container is running
-        assertTrue(mongoDBContainer.isRunning());
-        assertNotNull(port);
-    }
-
-    private ProductRequest getProductRequest() {
-        return new ProductRequest(
-                "Test Product",
-                "Test Product Description",
-                BigDecimal.valueOf(199.99)
-        );
-    }
-
-    @Test
-    void createProduct() {
-        ProductRequest productRequest = getProductRequest();
-
-        RestAssured.given()
-                .contentType("application/json")
-                .body(productRequest)
-                .when()
-                .post("/api/product")
-                .then()
-                .statusCode(201);
-
-        // Verify product was saved to database
-        assertEquals(1, productRepository.findAll().size());
-
-        // Verify the saved product details
-        var savedProduct = productRepository.findAll().get(0);
-        assertEquals("Test Product", savedProduct.getName());
-        assertEquals("Test Product Description", savedProduct.getDescription());
-        assertEquals(BigDecimal.valueOf(199.99), savedProduct.getPrice());
-    }
-}
-```
-
-**Note:** At this point, your test file has:
+#### 10.5 Verify Your Progress
+At this point, your test file should have:
 - All necessary imports
 - TestContainers configuration with MongoDB
 - The `contextLoads()` test to verify setup
 - The helper method `getProductRequest()`
 - The `createProduct()` test for POST endpoint
-- Total of approximately 88 lines
+- **Total: 2 test methods** (contextLoads + createProduct)
+- Approximately 88 lines of code
 
 #### 10.6 Run the POST Test
 1. Click green arrow next to `createProduct()` method
@@ -820,213 +737,21 @@ Add this test method to validate the GET endpoint:
     }
 ```
 
-#### 11.2 Complete Test File With All CRUD Tests
-For reference, here's the complete `ProductServiceApplicationTests.java` file after implementing all CRUD operation tests (will be fully complete after Steps 12-13):
+#### 11.2 Run the GET Test
+1. Click green arrow next to `getAllProducts()` method
+2. Select **Run 'getAllProducts()'**
+3. Test should pass with green checkmark ✅
 
-```java
-package ca.gbc.comp3095.productservice;
-
-import ca.gbc.comp3095.productservice.dto.ProductRequest;
-import ca.gbc.comp3095.productservice.dto.ProductResponse;
-import ca.gbc.comp3095.productservice.repository.ProductRepository;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.restassured.RestAssured;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.testcontainers.containers.MongoDBContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
-import org.testcontainers.utility.DockerImageName;
-
-import java.math.BigDecimal;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
-
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-class ProductServiceApplicationTests {
-
-    @Container
-    @ServiceConnection
-    static MongoDBContainer mongoDBContainer = new MongoDBContainer(
-            DockerImageName.parse("mongo:latest")
-    );
-
-    @LocalServerPort
-    private Integer port;
-
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    @Autowired
-    private ProductRepository productRepository;
-
-    @BeforeEach
-    void setUp() {
-        // Configure RestAssured for API testing
-        RestAssured.baseURI = "http://localhost";
-        RestAssured.port = port;
-
-        // Clear database before each test
-        productRepository.deleteAll();
-    }
-
-    @Test
-    void contextLoads() {
-        // Verify container is running
-        assertTrue(mongoDBContainer.isRunning());
-        assertNotNull(port);
-    }
-
-    private ProductRequest getProductRequest() {
-        return new ProductRequest(
-                "Test Product",
-                "Test Product Description",
-                BigDecimal.valueOf(199.99)
-        );
-    }
-
-    @Test
-    void createProduct() {
-        ProductRequest productRequest = getProductRequest();
-
-        RestAssured.given()
-                .contentType("application/json")
-                .body(productRequest)
-                .when()
-                .post("/api/product")
-                .then()
-                .statusCode(201);
-
-        // Verify product was saved to database
-        assertEquals(1, productRepository.findAll().size());
-
-        // Verify the saved product details
-        var savedProduct = productRepository.findAll().get(0);
-        assertEquals("Test Product", savedProduct.getName());
-        assertEquals("Test Product Description", savedProduct.getDescription());
-        assertEquals(BigDecimal.valueOf(199.99), savedProduct.getPrice());
-    }
-
-    @Test
-    void getAllProducts() {
-        // First, create a product
-        ProductRequest productRequest = getProductRequest();
-
-        RestAssured.given()
-                .contentType("application/json")
-                .body(productRequest)
-                .when()
-                .post("/api/product")
-                .then()
-                .statusCode(201);
-
-        // Then, get all products
-        List<ProductResponse> products = RestAssured.given()
-                .when()
-                .get("/api/product")
-                .then()
-                .statusCode(200)
-                .extract()
-                .body()
-                .jsonPath()
-                .getList(".", ProductResponse.class);
-
-        // Verify we have 1 product
-        assertEquals(1, products.size());
-        assertEquals("Test Product", products.get(0).name());
-        assertEquals("Test Product Description", products.get(0).description());
-        assertEquals(BigDecimal.valueOf(199.99), products.get(0).price());
-    }
-
-    @Test
-    void updateProduct() {
-        // First, create a product
-        ProductRequest productRequest = getProductRequest();
-
-        RestAssured.given()
-                .contentType("application/json")
-                .body(productRequest)
-                .when()
-                .post("/api/product")
-                .then()
-                .statusCode(201);
-
-        // Get the created product ID
-        String productId = productRepository.findAll().get(0).getId();
-
-        // Update the product
-        ProductRequest updateRequest = new ProductRequest(
-                "Updated Product",
-                "Updated Description",
-                BigDecimal.valueOf(299.99)
-        );
-
-        RestAssured.given()
-                .contentType("application/json")
-                .body(updateRequest)
-                .when()
-                .put("/api/product/" + productId)
-                .then()
-                .statusCode(204);
-
-        // Verify the update
-        var updatedProduct = productRepository.findById(productId).orElseThrow();
-        assertEquals("Updated Product", updatedProduct.getName());
-        assertEquals("Updated Description", updatedProduct.getDescription());
-        assertEquals(BigDecimal.valueOf(299.99), updatedProduct.getPrice());
-    }
-
-    @Test
-    void deleteProduct() {
-        // First, create a product
-        ProductRequest productRequest = getProductRequest();
-
-        RestAssured.given()
-                .contentType("application/json")
-                .body(productRequest)
-                .when()
-                .post("/api/product")
-                .then()
-                .statusCode(201);
-
-        // Get the created product ID
-        String productId = productRepository.findAll().get(0).getId();
-
-        // Delete the product
-        RestAssured.given()
-                .when()
-                .delete("/api/product/" + productId)
-                .then()
-                .statusCode(204);
-
-        // Verify deletion
-        assertEquals(0, productRepository.findAll().size());
-        assertTrue(productRepository.findById(productId).isEmpty());
-    }
-}
-```
-
-**Note:** This complete test file includes:
-- All necessary imports for RestAssured testing
-- @ServiceConnection for automatic MongoDB configuration (Spring Boot 3.1+)
-- @LocalServerPort for random port injection
-- RestAssured configuration in setUp()
-- **5 test methods total:**
-  - contextLoads() - Verify setup
-  - createProduct() - POST endpoint test
-  - getAllProducts() - GET endpoint test
-  - updateProduct() - PUT endpoint test
-  - deleteProduct() - DELETE endpoint test
-- Helper method getProductRequest()
-- Total of approximately 180 lines
-
-All tests use the RestAssured approach consistently, matching the configuration from Steps 9-10.
+#### 11.3 Verify Your Progress
+At this point, your test file should have:
+- All necessary imports
+- TestContainers configuration with MongoDB
+- The `contextLoads()` test to verify setup
+- The helper method `getProductRequest()`
+- The `createProduct()` test for POST endpoint
+- The `getAllProducts()` test for GET endpoint (NEW)
+- **Total: 3 test methods** (contextLoads + createProduct + getAllProducts)
+- Approximately 117 lines of code
 
 ---
 
@@ -1082,6 +807,23 @@ Add this test method to validate the PUT endpoint. This test should be added **a
 - Expects 204 No Content response
 - Verifies the product was actually updated in the database
 
+#### 12.2 Run the PUT Test
+1. Click green arrow next to `updateProduct()` method
+2. Select **Run 'updateProduct()'**
+3. Test should pass with green checkmark ✅
+
+#### 12.3 Verify Your Progress
+At this point, your test file should have:
+- All necessary imports
+- TestContainers configuration with MongoDB
+- The `contextLoads()` test to verify setup
+- The helper method `getProductRequest()`
+- The `createProduct()` test for POST endpoint
+- The `getAllProducts()` test for GET endpoint
+- The `updateProduct()` test for PUT endpoint (NEW)
+- **Total: 4 test methods** (contextLoads + createProduct + getAllProducts + updateProduct)
+- Approximately 150 lines of code
+
 ---
 
 ### Step 13: Implement DELETE Test
@@ -1127,7 +869,28 @@ Add this test method to validate the DELETE endpoint. This test should be added 
 - Verifies the product was removed from the database
 - Double-checks using both `findAll().size()` and `findById()` methods
 
-#### 13.2 Complete Test File After Adding PUT and DELETE Tests
+#### 13.2 Run the DELETE Test
+1. Click green arrow next to `deleteProduct()` method
+2. Select **Run 'deleteProduct()'**
+3. Test should pass with green checkmark ✅
+
+#### 13.3 Run All Tests Together
+1. Right-click on `ProductServiceApplicationTests` class name
+2. Select **Run 'ProductServiceApplicationTests'**
+3. All 5 tests should pass with green checkmarks ✅
+
+**Expected Output:**
+```
+✅ contextLoads
+✅ createProduct
+✅ getAllProducts
+✅ updateProduct
+✅ deleteProduct
+
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
+```
+
+#### 13.4 Complete Test File After Adding PUT and DELETE Tests
 After completing Steps 12 and 13, your complete `ProductServiceApplicationTests.java` should now have 5 test methods. Here's the complete file with all CRUD operations tested:
 
 ```java
@@ -1325,23 +1088,32 @@ class ProductServiceApplicationTests {
 - **Line 28-32:** MongoDB container configuration with @ServiceConnection
 - **Line 34-41:** Autowired dependencies
 - **Line 43-51:** Setup method for RestAssured and database cleanup
-- **Line 53-58:** `contextLoads()` - Verifies container is running
-- **Line 60-66:** `getProductRequest()` - Helper method
-- **Line 68-88:** `createProduct()` - Tests POST endpoint
-- **Line 90-119:** `getAllProducts()` - Tests GET endpoint
-- **Line 121-153:** `updateProduct()` - Tests PUT endpoint (NEW from Step 12)
-- **Line 155-180:** `deleteProduct()` - Tests DELETE endpoint (NEW from Step 13)
+- **Line 53-58:** `contextLoads()` - Verifies container is running (from Step 9)
+- **Line 60-66:** `getProductRequest()` - Helper method (from Step 10)
+- **Line 68-88:** `createProduct()` - Tests POST endpoint (from Step 10)
+- **Line 90-119:** `getAllProducts()` - Tests GET endpoint (from Step 11)
+- **Line 121-153:** `updateProduct()` - Tests PUT endpoint (from Step 12)
+- **Line 155-180:** `deleteProduct()` - Tests DELETE endpoint (from Step 13)
 
-Total: **180 lines** with **5 test methods** covering all CRUD operations.
+**Total: 180 lines with 5 test methods covering all CRUD operations.**
+
+**Progression Summary:**
+- **After Step 9:** 1 test (contextLoads) - ~60 lines
+- **After Step 10:** 2 tests (+ createProduct) - ~88 lines
+- **After Step 11:** 3 tests (+ getAllProducts) - ~117 lines
+- **After Step 12:** 4 tests (+ updateProduct) - ~150 lines
+- **After Step 13:** 5 tests (+ deleteProduct) - ~180 lines ✅ COMPLETE
 
 ---
 
 ### Step 14: Run Integration Tests
 
-#### 14.1 Run All Tests
+**Note:** If you've been following along and running tests after each step (as instructed in Steps 10-13), all your tests should already be passing! This step confirms everything works together.
+
+#### 14.1 Run All Tests (Final Verification)
 1. Right-click on `ProductServiceApplicationTests` class name
 2. Select **Run 'ProductServiceApplicationTests'**
-3. Watch the test output
+3. Watch all 5 tests execute in sequence
 
 #### 14.2 Understanding Test Output
 You'll see:
@@ -1351,15 +1123,21 @@ Starting ProductServiceApplicationTests using Java 21
 🐳 [mongo:latest] - Starting container...
 🐳 [mongo:latest] - Container started in PT2.345S
 
-✅ contextLoads
-✅ createProduct
-✅ getAllProducts
-✅ updateProduct
-✅ deleteProduct
+✅ contextLoads          (Step 9)
+✅ createProduct         (Step 10)
+✅ getAllProducts        (Step 11)
+✅ updateProduct         (Step 12)
+✅ deleteProduct         (Step 13)
 
 Tests run: 5, Failures: 0, Errors: 0, Skipped: 0
-BUILD SUCCESSFUL
+BUILD SUCCESSFUL in 15s
 ```
+
+**What's Happening:**
+- TestContainers starts a fresh MongoDB container
+- Each test runs in isolation (database cleared before each)
+- All CRUD operations are validated
+- Container is automatically stopped and removed after tests
 
 #### 14.3 Run Tests from Terminal
 ```bash
