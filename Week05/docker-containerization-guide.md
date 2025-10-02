@@ -1037,7 +1037,7 @@ ls -la
 docker-compose -f docker-compose.yml up -d --build
 ```
 
-**If you need the logs, use the following command:
+**If you need the logs, use the following command:**
 ```bash
 docker-compose -f docker-compose.yml up -d --build && docker compose logs -f product-service &/
 ```
