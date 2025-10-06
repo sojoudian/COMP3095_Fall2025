@@ -319,93 +319,9 @@ BUILD SUCCESSFUL in 5s
 
 ---
 
-## Step 6: Verify Build
+## Step 6: Verify Dependencies
 
-### 6.1 Build the Project
-
-**Option A: Using Gradle Command**
-```bash
-cd /path/to/your/microservices-parent
-./gradlew :order-service:build
-```
-
-**Option B: Using IntelliJ**
-1. Open **Gradle** tab (right side)
-2. Expand **order-service → Tasks → build**
-3. Double-click **build**
-
-**Expected Output:**
-```
-> Task :order-service:compileJava
-> Task :order-service:processResources
-> Task :order-service:classes
-> Task :order-service:bootJar
-> Task :order-service:jar
-> Task :order-service:assemble
-> Task :order-service:compileTestJava
-> Task :order-service:processTestResources
-> Task :order-service:testClasses
-> Task :order-service:test
-> Task :order-service:check
-> Task :order-service:build
-
-BUILD SUCCESSFUL in 12s
-```
-
-### 6.2 Verify JAR File Created
-
-**Check build output:**
-```bash
-ls -la order-service/build/libs/
-```
-
-**Expected:**
-```
-order-service-0.0.1-SNAPSHOT.jar
-order-service-0.0.1-SNAPSHOT-plain.jar
-```
-
----
-
-## Step 7: Test Run (Optional)
-
-**Note:** This will fail because we haven't configured the database yet. This is expected.
-
-### 7.1 Try Running the Application
-
-**Run Command:**
-```bash
-cd order-service
-./gradlew bootRun
-```
-
-**Expected Error:**
-```
-***************************
-APPLICATION FAILED TO START
-***************************
-
-Description:
-
-Failed to configure a DataSource: 'url' attribute is not specified and no embedded datasource could be configured.
-
-Reason: Failed to determine a suitable driver class
-```
-
-**Why This Happens:**
-- We added `spring-boot-starter-data-jpa` dependency
-- Spring Boot expects database configuration
-- No database configuration provided yet
-- This is normal and expected
-
-**Solution:**
-- We'll configure the database in Section 5 (Database Configuration)
-
----
-
-## Step 8: Verify Dependencies
-
-### 8.1 Check Lombok is Working
+### 6.1 Check Lombok is Working
 
 **Create Test Class:**
 
@@ -432,7 +348,7 @@ public class TestLombok {
 - This was just for verification
 - Delete `TestLombok.java`
 
-### 8.2 Verify Spring Boot Actuator
+### 6.2 Verify Spring Boot Actuator
 
 **Check Actuator Dependency:**
 
