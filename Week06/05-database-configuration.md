@@ -124,33 +124,7 @@ application-{profile}.properties   ← Profile-specific (overrides base)
 Final Configuration
 ```
 
-**Activation:**
-
-**Local (No Profile):**
-```bash
-# Run from IntelliJ or:
-./gradlew bootRun
-# Uses: application.properties only
-```
-
-**Docker (docker profile):**
-```bash
-# Set environment variable:
-export SPRING_PROFILES_ACTIVE=docker
-./gradlew bootRun
-# Uses: application.properties + application-docker.properties
-```
-
-**In Dockerfile:**
-```dockerfile
-ENV SPRING_PROFILES_ACTIVE=docker
-```
-
-**In docker-compose.yml:**
-```yaml
-environment:
-  SPRING_PROFILES_ACTIVE: docker
-```
+**Note:** We'll run the application in the next section after PostgreSQL is set up.
 
 ### Configuration Comparison:
 
@@ -159,20 +133,25 @@ environment:
 | **File** | application.properties | application-docker.properties |
 | **Port** | 8082 | 8082 |
 | **Database Host** | localhost | postgres (service name) |
-| **Database Port** | 5432 | 5432 |
+| **Database Port** | 5433 (mapped from container) | 5432 (internal port) |
 | **Username** | admin | admin |
 | **Password** | password | password |
 | **Schema Management** | update | update |
 | **Show SQL** | true | true |
 
-**Only Difference:** Database host (localhost vs postgres)
+**Key Differences:**
+- Database host: `localhost` vs `postgres`
+- Database port: `5433` (host) vs `5432` (container)
 
 ### Why Two Files?
 
-**Scenario:**
-1. Develop locally → Use application.properties → Connect to localhost
-2. Deploy to Docker → Use application-docker.properties → Connect to postgres container
-3. No code changes needed → Just activate profile
+**Purpose:**
+- **Local development (IntelliJ):** Connect to PostgreSQL on `localhost:5433`
+- **Docker deployment:** Connect to postgres container using service name `postgres:5432`
+
+**Benefit:**
+- No code changes needed when switching environments
+- Automatically select correct configuration based on profile
 
 ---
 
