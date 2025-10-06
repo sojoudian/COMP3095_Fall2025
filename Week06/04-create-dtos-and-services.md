@@ -12,7 +12,7 @@ In this section, you will implement the complete layered architecture for the or
 
 ## Step 1: Create OrderLineItemDto
 
-### 1.1 Create OrderLineItemDto Class
+### 1.1 Create OrderLineItemDto Record
 
 **Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderLineItemDto.java`
 
@@ -20,7 +20,8 @@ In this section, you will implement the complete layered architecture for the or
 1. Right-click on `dto` package
 2. Select **New → Java Class**
 3. Name: `OrderLineItemDto`
-4. Click **OK**
+4. **Change "Kind" dropdown from "Class" to "Record"**
+5. Click **OK**
 
 ### 1.2 Implement OrderLineItemDto
 
@@ -55,7 +56,7 @@ public record OrderLineItemDto(
 
 ## Step 2: Create OrderRequest
 
-### 2.1 Create OrderRequest Class
+### 2.1 Create OrderRequest Record
 
 **Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderRequest.java`
 
@@ -63,7 +64,8 @@ public record OrderLineItemDto(
 1. Right-click on `dto` package
 2. Select **New → Java Class**
 3. Name: `OrderRequest`
-4. Click **OK**
+4. **Change "Kind" dropdown from "Class" to "Record"**
+5. Click **OK**
 
 ### 2.2 Implement OrderRequest
 
