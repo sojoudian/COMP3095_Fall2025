@@ -192,7 +192,7 @@ public class OrderService {
         String orderNumber = UUID.randomUUID().toString();
 
         // Convert DTOs to Entities
-        List<OrderLineItem> orderLineItems = orderRequest.getOrderLineItemDtoList()
+        List<OrderLineItem> orderLineItems = orderRequest.orderLineItemDtoList()
                 .stream()
                 .map(this::mapToOrderLineItem)
                 .toList();
@@ -251,11 +251,12 @@ String orderNumber = UUID.randomUUID().toString();
 
 **2. Convert DTOs to Entities:**
 ```java
-List<OrderLineItem> orderLineItems = orderRequest.getOrderLineItemDtoList()
+List<OrderLineItem> orderLineItems = orderRequest.orderLineItemDtoList()
         .stream()
         .map(this::mapToOrderLineItem)
         .toList();
 ```
+- Use record accessor: `orderLineItemDtoList()` (not `getOrderLineItemDtoList()`)
 - Stream over DTO list
 - Map each DTO to entity using helper method
 
