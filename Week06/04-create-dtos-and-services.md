@@ -29,27 +29,21 @@ In this section, you will implement the complete layered architecture for the or
 ```java
 package ca.gbc.comp3095.orderservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.math.BigDecimal;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class OrderLineItemDto {
-    private Long id;
-    private String skuCode;
-    private BigDecimal price;
-    private Integer quantity;
-}
+public record OrderLineItemDto(
+    Long id,
+    String skuCode,
+    BigDecimal price,
+    Integer quantity
+) {}
 ```
 
-**Lombok Annotations:**
-- `@Data` - Generates getters, setters, toString, equals, hashCode
-- `@AllArgsConstructor` - Constructor with all fields
-- `@NoArgsConstructor` - No-argument constructor (required for JSON deserialization)
+**Why Java Record?**
+- Immutable by default (best practice for DTOs)
+- Automatically generates constructor, getters, equals, hashCode, toString
+- Concise syntax (no Lombok needed)
+- Same pattern as product-service DTOs
 
 **Fields:**
 - `id` - Optional, not used in POST requests but available for future use
@@ -78,19 +72,18 @@ public class OrderLineItemDto {
 ```java
 package ca.gbc.comp3095.orderservice.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
 import java.util.List;
 
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class OrderRequest {
-    private List<OrderLineItemDto> orderLineItemDtoList;
-}
+public record OrderRequest(
+    List<OrderLineItemDto> orderLineItemDtoList
+) {}
 ```
+
+**Why Java Record?**
+- Consistent with product-service pattern
+- Immutable (DTOs should not be modified)
+- Clean, concise syntax
+- Automatically handles JSON serialization/deserialization
 
 **Purpose:**
 - Represents the request body for POST /api/order
@@ -217,9 +210,9 @@ public class OrderService {
 
     private OrderLineItem mapToOrderLineItem(OrderLineItemDto dto) {
         return OrderLineItem.builder()
-                .skuCode(dto.getSkuCode())
-                .price(dto.getPrice())
-                .quantity(dto.getQuantity())
+                .skuCode(dto.skuCode())
+                .price(dto.price())
+                .quantity(dto.quantity())
                 .build();
     }
 }
@@ -285,13 +278,14 @@ orderRepository.save(order);
 ```java
 private OrderLineItem mapToOrderLineItem(OrderLineItemDto dto) {
     return OrderLineItem.builder()
-            .skuCode(dto.getSkuCode())
-            .price(dto.getPrice())
-            .quantity(dto.getQuantity())
+            .skuCode(dto.skuCode())
+            .price(dto.price())
+            .quantity(dto.quantity())
             .build();
 }
 ```
-- Converts DTO to Entity
+- Converts DTO (record) to Entity
+- **Record accessor methods:** Use `dto.skuCode()` not `dto.getSkuCode()`
 - No ID set (auto-generated on save)
 
 ---
@@ -383,9 +377,9 @@ public String placeOrder(@RequestBody OrderRequest orderRequest)
 
 ### What You Created:
 
-**DTOs:**
-- ✅ `OrderLineItemDto` - Represents line item in API requests
-- ✅ `OrderRequest` - Represents order creation request
+**DTOs (Java Records):**
+- ✅ `OrderLineItemDto` - Immutable record for line items
+- ✅ `OrderRequest` - Immutable record for order requests
 
 **Repository:**
 - ✅ `OrderRepository` - Data access layer, extends JpaRepository
@@ -410,8 +404,8 @@ Continue to [05-database-configuration.md](05-database-configuration.md)
 ---
 
 **Files Created in This Section:**
-- ✅ `OrderLineItemDto.java` - DTO for line items
-- ✅ `OrderRequest.java` - DTO for order requests
+- ✅ `OrderLineItemDto.java` - Java record for line items
+- ✅ `OrderRequest.java` - Java record for order requests
 - ✅ `OrderRepository.java` - Repository interface
 - ✅ `OrderService.java` - Service with business logic
 - ✅ `OrderController.java` - REST controller
