@@ -39,151 +39,11 @@ These entities will demonstrate a **one-to-many relationship** where one Order c
 
 ---
 
-## Step 1: Create Order Entity
+## Step 1: Create OrderLineItem Entity First
 
-### 1.1 Create Order Class
+**IMPORTANT:** Create `OrderLineItem` first because `Order` references it. Creating them in the wrong order will cause compilation errors.
 
-**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/model/Order.java`
-
-**Steps:**
-1. Right-click on `model` package
-2. Select **New → Java Class**
-3. Name: `Order`
-4. Click **OK**
-
-### 1.2 Implement Order Entity
-
-**Complete Order.java:**
-
-```java
-package ca.gbc.comp3095.orderservice.model;
-
-import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.List;
-
-@Entity
-@Table(name = "orders")
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-@Builder
-public class Order {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-
-    @Column(name = "order_number", nullable = false)
-    private String orderNumber;
-
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "order_id")
-    private List<OrderLineItem> orderLineItems;
-}
-```
-
-### 1.3 Understanding the Code
-
-#### **Annotations Explained:**
-
-**Class-Level Annotations:**
-```java
-@Entity
-```
-- Marks class as JPA entity
-- JPA will manage instances of this class
-- Required for all JPA entities
-
-```java
-@Table(name = "orders")
-```
-- Specifies database table name
-- Without this, table name would be "order" (class name)
-- "order" is a reserved keyword in SQL, so we use "orders"
-
-**Lombok Annotations:**
-```java
-@Data
-```
-- Generates getters, setters, `toString()`, `equals()`, `hashCode()`
-- Reduces boilerplate code significantly
-
-```java
-@NoArgsConstructor
-```
-- Generates no-argument constructor
-- Required by JPA for entity instantiation
-
-```java
-@AllArgsConstructor
-```
-- Generates constructor with all fields
-- Useful for creating instances manually
-
-```java
-@Builder
-```
-- Implements Builder pattern
-- Allows fluent object creation: `Order.builder().orderNumber("123").build()`
-
-#### **Field-Level Annotations:**
-
-**Primary Key:**
-```java
-@Id
-@GeneratedValue(strategy = GenerationType.IDENTITY)
-private Long id;
-```
-- `@Id` - Marks field as primary key
-- `@GeneratedValue` - Auto-generates value
-- `GenerationType.IDENTITY` - Uses database auto-increment
-- Type `Long` - Standard for auto-generated IDs
-
-**Order Number Field:**
-```java
-@Column(name = "order_number", nullable = false)
-private String orderNumber;
-```
-- `@Column` - Maps to database column
-- `name = "order_number"` - Column name (snake_case convention)
-- `nullable = false` - Database constraint (NOT NULL)
-- Could be unique: `unique = true` if needed
-
-**Relationship Field:**
-```java
-@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-@JoinColumn(name = "order_id")
-private List<OrderLineItem> orderLineItems;
-```
-- `@OneToMany` - One Order has Many OrderLineItems
-- `cascade = CascadeType.ALL` - All operations cascade to children
-  - Save Order → Saves OrderLineItems
-  - Delete Order → Deletes OrderLineItems
-- `orphanRemoval = true` - Remove OrderLineItems not in list
-- `@JoinColumn(name = "order_id")` - Foreign key column in OrderLineItem table
-- Type `List<OrderLineItem>` - Collection of line items
-
-### 1.4 Generated SQL (for reference)
-
-When Hibernate creates the schema, it generates SQL like:
-
-```sql
-CREATE TABLE orders (
-    id BIGSERIAL PRIMARY KEY,
-    order_number VARCHAR(255) NOT NULL
-);
-```
-
----
-
-## Step 2: Create OrderLineItem Entity
-
-### 2.1 Create OrderLineItem Class
+### 1.1 Create OrderLineItem Class
 
 **Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/model/OrderLineItem.java`
 
@@ -193,7 +53,7 @@ CREATE TABLE orders (
 3. Name: `OrderLineItem`
 4. Click **OK**
 
-### 2.2 Implement OrderLineItem Entity
+### 1.2 Implement OrderLineItem Entity
 
 **Complete OrderLineItem.java:**
 
@@ -231,16 +91,205 @@ public class OrderLineItem {
 }
 ```
 
+### 1.3 Understanding the Code
+
+#### **Annotations Explained:**
+
+**Class-Level Annotations:**
+```java
+@Entity
+```
+- Marks class as JPA entity
+- JPA will manage instances of this class
+- Required for all JPA entities
+
+```java
+@Table(name = "order_line_items")
+```
+- Specifies database table name
+- Without this, table name would be "orderlineitem"
+- Using snake_case convention: "order_line_items"
+
+**Lombok Annotations:**
+```java
+@Data
+```
+- Generates getters, setters, `toString()`, `equals()`, `hashCode()`
+- Reduces boilerplate code significantly
+
+```java
+@NoArgsConstructor
+```
+- Generates no-argument constructor
+- Required by JPA for entity instantiation
+
+```java
+@AllArgsConstructor
+```
+- Generates constructor with all fields
+- Useful for creating instances manually
+
+```java
+@Builder
+```
+- Implements Builder pattern
+- Allows fluent object creation: `OrderLineItem.builder().skuCode("ABC").build()`
+
+#### **Field-Level Annotations:**
+
+**Primary Key:**
+```java
+@Id
+@GeneratedValue(strategy = GenerationType.IDENTITY)
+private Long id;
+```
+- `@Id` - Marks field as primary key
+- `@GeneratedValue` - Auto-generates value
+- `GenerationType.IDENTITY` - Uses database auto-increment
+- Type `Long` - Standard for auto-generated IDs
+
+**SKU Code Field:**
+```java
+@Column(name = "sku_code", nullable = false)
+private String skuCode;
+```
+- `@Column` - Maps to database column
+- `name = "sku_code"` - Column name (snake_case convention)
+- `nullable = false` - Database constraint (NOT NULL)
+- SKU = Stock Keeping Unit (product identifier)
+
+**Price Field:**
+```java
+@Column(nullable = false, precision = 19, scale = 2)
+private BigDecimal price;
+```
+- `BigDecimal` - Used for currency (accurate decimal arithmetic)
+- `precision = 19` - Total number of digits
+- `scale = 2` - Number of digits after decimal point
+- Example: 9999999999999999.99 (max value)
+- Never use `double` or `float` for money!
+
+**Quantity Field:**
+```java
+@Column(nullable = false)
+private Integer quantity;
+```
+- `Integer` - Number of items
+- `nullable = false` - Must have a value
+
+### 1.4 Generated SQL (for reference)
+
+When Hibernate creates the schema, it generates SQL like:
+
+```sql
+CREATE TABLE order_line_items (
+    id BIGSERIAL PRIMARY KEY,
+    sku_code VARCHAR(255) NOT NULL,
+    price NUMERIC(19, 2) NOT NULL,
+    quantity INTEGER NOT NULL,
+    order_id BIGINT  -- Foreign key (added when Order is created)
+);
+```
+
+---
+
+## Step 2: Create Order Entity
+
+### 2.1 Create Order Class
+
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/model/Order.java`
+
+**Steps:**
+1. Right-click on `model` package
+2. Select **New → Java Class**
+3. Name: `Order`
+4. Click **OK**
+
+### 2.2 Implement Order Entity
+
+**Complete Order.java:**
+
+```java
+package ca.gbc.comp3095.orderservice.model;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+import java.util.List;
+
+@Entity
+@Table(name = "orders")
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Order {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "order_number", nullable = false)
+    private String orderNumber;
+
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "order_id")
+    private List<OrderLineItem> orderLineItems;
+}
+```
+
 ### 2.3 Understanding the Code
 
-#### **Why No @ManyToOne?**
+#### **Relationship Field:**
 
-Notice we don't have `@ManyToOne` back-reference in OrderLineItem. This is a **unidirectional relationship**.
+```java
+@OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+@JoinColumn(name = "order_id")
+private List<OrderLineItem> orderLineItems;
+```
+
+This is a **unidirectional one-to-many relationship**.
 
 **Unidirectional:**
 ```java
 Order → OrderLineItem (Order knows about OrderLineItem)
 OrderLineItem ✗ Order (OrderLineItem doesn't know about Order)
+```
+
+**Annotations Explained:**
+
+**`@OneToMany`:**
+- One Order has Many OrderLineItems
+- Defines parent-child relationship
+
+**`cascade = CascadeType.ALL`:**
+- All operations cascade to children
+- When you save Order → OrderLineItems are saved automatically
+- When you delete Order → OrderLineItems are deleted automatically
+- Operations: PERSIST, MERGE, REMOVE, REFRESH, DETACH
+
+**`orphanRemoval = true`:**
+- Removes OrderLineItems not in the list
+- If you remove an item from `orderLineItems` list and save → That item is deleted from database
+- Example:
+```java
+order.getOrderLineItems().remove(0);  // Remove first item
+orderRepository.save(order);          // Item deleted from database
+```
+
+**`@JoinColumn(name = "order_id")`:**
+- Specifies foreign key column in `order_line_items` table
+- Column name: `order_id`
+- Links OrderLineItem back to Order
+
+**Why Unidirectional?**
+
+```java
+Order → OrderLineItem  ✅ (Order knows about OrderLineItem)
+OrderLineItem ✗ Order  ❌ (OrderLineItem doesn't know about Order)
 ```
 
 **Advantages:**
@@ -249,7 +298,7 @@ OrderLineItem ✗ Order (OrderLineItem doesn't know about Order)
 - Easier JSON serialization
 - Sufficient for most use cases
 
-**If Bidirectional (Optional):**
+**If Bidirectional Needed (Optional):**
 ```java
 // In OrderLineItem.java
 @ManyToOne
@@ -259,7 +308,7 @@ private Order order;
 
 For this lab, unidirectional is sufficient.
 
-#### **Field Explanations:**
+#### **Other Fields:**
 
 **Primary Key:**
 ```java
@@ -267,50 +316,32 @@ For this lab, unidirectional is sufficient.
 @GeneratedValue(strategy = GenerationType.IDENTITY)
 private Long id;
 ```
-- Same pattern as Order entity
-- Each line item has unique ID
+- Auto-generated ID for each order
 
-**SKU Code Field:**
+**Order Number:**
 ```java
-@Column(name = "sku_code", nullable = false)
-private String skuCode;
+@Column(name = "order_number", nullable = false)
+private String orderNumber;
 ```
-- SKU = Stock Keeping Unit
-- Identifies the product being ordered
-- Example: "sku_12334A", "sku_799533"
-- Links to product in product-service (future enhancement)
-
-**Price Field:**
-```java
-@Column(nullable = false, precision = 19, scale = 2)
-private BigDecimal price;
-```
-- Type `BigDecimal` - Exact decimal arithmetic (no floating-point errors)
-- `precision = 19` - Total digits (including decimal)
-- `scale = 2` - Digits after decimal point
-- Examples: 999.99, 12345.67, 0.01
-- **Why BigDecimal?** Currency calculations require exact precision
-
-**Quantity Field:**
-```java
-@Column(nullable = false)
-private Integer quantity;
-```
-- Number of items ordered
-- Type `Integer` - Whole numbers only
-- Non-null constraint
+- Unique identifier for the order
+- Example: UUID string like "123e4567-e89b-12d3-a456-426614174000"
+- Generated in service layer, not by database
 
 ### 2.4 Generated SQL (for reference)
 
+When Hibernate creates the schema, it generates SQL like:
+
 ```sql
-CREATE TABLE order_line_items (
+CREATE TABLE orders (
     id BIGSERIAL PRIMARY KEY,
-    sku_code VARCHAR(255) NOT NULL,
-    price DECIMAL(19,2) NOT NULL,
-    quantity INTEGER NOT NULL,
-    order_id BIGINT NOT NULL,
-    FOREIGN KEY (order_id) REFERENCES orders(id)
+    order_number VARCHAR(255) NOT NULL
 );
+
+-- Foreign key is added to order_line_items table:
+ALTER TABLE order_line_items
+    ADD COLUMN order_id BIGINT,
+    ADD CONSTRAINT fk_order
+    FOREIGN KEY (order_id) REFERENCES orders(id);
 ```
 
 ---
