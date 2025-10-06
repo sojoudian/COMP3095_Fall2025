@@ -8,27 +8,6 @@ In this section, you will configure the PostgreSQL database connection for the o
 
 ---
 
-## Understanding PostgreSQL Configuration
-
-### Connection String Format
-
-**JDBC URL Format:**
-```
-jdbc:postgresql://[host]:[port]/[database]
-```
-
-**Examples:**
-- Local: `jdbc:postgresql://localhost:5432/order-service`
-- Docker: `jdbc:postgresql://postgres:5432/order-service`
-
-**Components:**
-- `jdbc:postgresql://` - JDBC protocol for PostgreSQL
-- `localhost` or `postgres` - Database host
-- `5432` - PostgreSQL default port
-- `order-service` - Database name
-
----
-
 ## Step 1: Configure application.properties (Local Development)
 
 ### 1.1 Open application.properties
@@ -72,129 +51,6 @@ logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 management.endpoints.web.exposure.include=health,info,metrics
 management.endpoint.health.show-details=always
 ```
-
-### 1.3 Understanding Each Configuration
-
-#### **Application Configuration**
-
-```properties
-spring.application.name=order-service
-```
-- Sets application name
-- Used in logs and monitoring
-- Identifies service in distributed systems
-
-```properties
-server.port=8082
-```
-- HTTP port for the application
-- Different from product-service (8084)
-- Avoids port conflicts
-
-#### **PostgreSQL DataSource Configuration**
-
-```properties
-spring.datasource.url=jdbc:postgresql://localhost:5432/order-service
-```
-- Connection URL to PostgreSQL
-- `localhost:5432` - Local PostgreSQL instance
-- `order-service` - Database name
-
-```properties
-spring.datasource.username=admin
-spring.datasource.password=password
-```
-- Database credentials
-- Must match PostgreSQL user created later
-- **Security Note:** Use environment variables in production
-
-```properties
-spring.datasource.driver-class-name=org.postgresql.Driver
-```
-- JDBC driver class
-- Tells Spring which driver to use
-- Usually auto-detected, but explicit is better
-
-#### **JPA/Hibernate Configuration**
-
-```properties
-spring.jpa.hibernate.ddl-auto=update
-```
-- Controls schema generation
-- `update` - Updates schema if needed, preserves data
-- Other options:
-  - `create` - Drops and creates schema on startup (loses data)
-  - `create-drop` - Creates on startup, drops on shutdown
-  - `validate` - Only validates schema, no changes
-  - `none` - No schema management
-
-**Development:** `update`
-**Production:** `validate` or `none` (use Flyway for migrations)
-
-```properties
-spring.jpa.show-sql=true
-```
-- Prints SQL statements to console
-- Useful for debugging
-- Disable in production for performance
-
-```properties
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-```
-- SQL dialect for PostgreSQL
-- Optimizes SQL for PostgreSQL specific features
-- Auto-detected, but explicit is better
-
-```properties
-spring.jpa.properties.hibernate.format_sql=true
-```
-- Pretty-prints SQL in console
-- Makes SQL easier to read
-- Useful for debugging
-
-#### **Logging Configuration**
-
-```properties
-logging.level.ca.gbc.comp3095=INFO
-```
-- Sets log level for application packages
-- `INFO` - General informational messages
-- Other levels: `DEBUG`, `TRACE`, `WARN`, `ERROR`
-
-```properties
-logging.level.org.hibernate.SQL=DEBUG
-```
-- Shows SQL statements in logs
-- Helpful for debugging queries
-
-```properties
-logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
-```
-- Shows parameter values in SQL
-- Example: `binding parameter [1] as [VARCHAR] - [sku_12334A]`
-- Very detailed, use for debugging only
-
-#### **Actuator Configuration**
-
-```properties
-management.endpoints.web.exposure.include=health,info,metrics
-```
-- Exposes actuator endpoints
-- `health` - Health check endpoint
-- `info` - Application information
-- `metrics` - Application metrics
-
-```properties
-management.endpoint.health.show-details=always
-```
-- Shows detailed health information
-- Includes database connection status
-- Useful for monitoring
-
-**Actuator Endpoints:**
-- `http://localhost:8082/actuator/health` - Health status
-- `http://localhost:8082/actuator/info` - App info
-- `http://localhost:8082/actuator/metrics` - Metrics
 
 ---
 
@@ -249,39 +105,13 @@ management.endpoints.web.exposure.include=health,info,metrics
 management.endpoint.health.show-details=always
 ```
 
-### 2.3 Key Differences from Local Configuration
-
-**The ONLY Difference:**
-```properties
-# Local (application.properties)
-spring.datasource.url=jdbc:postgresql://localhost:5432/order-service
-
-# Docker (application-docker.properties)
-spring.datasource.url=jdbc:postgresql://postgres:5432/order-service
-                                       ^^^^^^^^
-                                    Service name!
-```
-
-**Why "postgres" instead of "localhost"?**
-- Docker containers use Docker's internal DNS
-- Service names (from docker-compose.yml) resolve to container IPs
-- `postgres` is the service name we'll define in docker-compose.yml
-- Containers on same network can communicate by service name
-
-**Docker Network Resolution:**
-```
-order-service container → "postgres:5432" → Docker DNS
-                                          ↓
-                          PostgreSQL container (IP: 172.18.0.3)
-```
-
 ---
 
-## Step 3: Understanding Spring Profiles
+## Summary
 
-### What are Spring Profiles?
+### What You Configured:
 
-**Definition:**
+**Spring Profiles:**
 - Way to configure different settings for different environments
 - Activated with `SPRING_PROFILES_ACTIVE` environment variable
 
@@ -294,12 +124,7 @@ application-{profile}.properties   ← Profile-specific (overrides base)
 Final Configuration
 ```
 
-**Examples:**
-- `application-dev.properties` - Development settings
-- `application-prod.properties` - Production settings
-- `application-docker.properties` - Docker settings
-
-### Activation
+**Activation:**
 
 **Local (No Profile):**
 ```bash
@@ -327,11 +152,7 @@ environment:
   SPRING_PROFILES_ACTIVE: docker
 ```
 
----
-
-## Step 4: Configuration Comparison
-
-### Side-by-Side Comparison
+### Configuration Comparison:
 
 | Configuration | Local | Docker |
 |--------------|-------|--------|
@@ -345,130 +166,6 @@ environment:
 | **Show SQL** | true | true |
 
 **Only Difference:** Database host (localhost vs postgres)
-
----
-
-## Step 5: Environment-Specific Settings
-
-### Development vs Production
-
-**Development (Local):**
-```properties
-# Show SQL for debugging
-spring.jpa.show-sql=true
-spring.jpa.properties.hibernate.format_sql=true
-
-# Auto-update schema
-spring.jpa.hibernate.ddl-auto=update
-
-# Detailed logging
-logging.level.org.hibernate.SQL=DEBUG
-```
-
-**Production (Recommended):**
-```properties
-# Don't show SQL (performance)
-spring.jpa.show-sql=false
-spring.jpa.properties.hibernate.format_sql=false
-
-# No automatic schema changes
-spring.jpa.hibernate.ddl-auto=validate
-
-# Less verbose logging
-logging.level.org.hibernate.SQL=WARN
-
-# Externalize credentials
-spring.datasource.username=${DB_USERNAME}
-spring.datasource.password=${DB_PASSWORD}
-```
-
----
-
-## Step 6: Connection Pool Configuration (Optional)
-
-### HikariCP Configuration
-
-Spring Boot uses HikariCP by default. You can configure it:
-
-```properties
-# Connection Pool Configuration (Optional)
-spring.datasource.hikari.maximum-pool-size=10
-spring.datasource.hikari.minimum-idle=5
-spring.datasource.hikari.connection-timeout=30000
-spring.datasource.hikari.idle-timeout=600000
-spring.datasource.hikari.max-lifetime=1800000
-```
-
-**Explanation:**
-- `maximum-pool-size=10` - Max 10 connections to database
-- `minimum-idle=5` - Keep 5 idle connections ready
-- `connection-timeout=30000` - 30 seconds to get connection
-- `idle-timeout=600000` - 10 minutes before idle connection closed
-- `max-lifetime=1800000` - 30 minutes max connection lifetime
-
-**For this lab, default settings are sufficient.**
-
----
-
-## Step 7: Verify Configuration
-
-### 7.1 Check Both Files Exist
-
-```
-order-service/src/main/resources/
-├── application.properties              ✅
-└── application-docker.properties       ✅
-```
-
-### 7.2 Verify No Typos
-
-**Common Mistakes:**
-- ❌ `spring.datasource.ur` (missing 'l')
-- ❌ `postgre` (missing 'sql')
-- ❌ `spring.jpa.hiberate` (missing 'n')
-- ❌ Wrong port: 5433 instead of 5432
-
-**Correct:**
-- ✅ `spring.datasource.url`
-- ✅ `postgresql`
-- ✅ `spring.jpa.hibernate`
-- ✅ Port: 5432
-
----
-
-## Summary
-
-### What You Configured:
-
-**application.properties (Local):**
-- ✅ Server port: 8082
-- ✅ PostgreSQL connection: localhost:5432
-- ✅ Database credentials: admin/password
-- ✅ JPA schema auto-update
-- ✅ SQL logging enabled
-- ✅ Hibernate dialect: PostgreSQL
-- ✅ Actuator endpoints exposed
-
-**application-docker.properties (Docker):**
-- ✅ Same as local except:
-- ✅ Database host: postgres (service name)
-
-### Key Concepts:
-
-- ✅ JDBC connection strings
-- ✅ Spring profiles for environment-specific config
-- ✅ JPA/Hibernate configuration
-- ✅ Schema management with ddl-auto
-- ✅ SQL logging for debugging
-- ✅ Actuator for monitoring
-
-### Configuration Files Comparison:
-
-**Similarities:**
-- Port, credentials, JPA settings, logging
-
-**Difference:**
-- Database host: `localhost` vs `postgres`
 
 ### Why Two Files?
 

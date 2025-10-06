@@ -526,6 +526,53 @@ Continue to [03-create-entities.md](03-create-entities.md) to start implementing
 
 ---
 
+## Understanding Spring Boot DevTools
+
+### What is DevTools?
+
+Spring Boot DevTools is a development-time tool that improves the developer experience with automatic restarts and LiveReload functionality.
+
+**Key Features:**
+- **Automatic Restart:** Application restarts automatically when code changes
+- **LiveReload:** Browser refreshes automatically (requires browser plugin)
+- **Disabled in Production:** Automatically disabled when running packaged JAR (java -jar)
+- **Fast Restart:** Only restarts the application classloader, not the entire JVM
+
+### How It Works
+
+**In IntelliJ IDEA:**
+1. Make code changes
+2. **Build → Build Project** (Ctrl+F9 / Cmd+F9)
+3. Application restarts automatically
+4. Changes are reflected immediately
+
+**Note:** IntelliJ doesn't auto-compile by default. You must manually trigger the build.
+
+**Advanced Setup (Optional):**
+1. **Settings → Build, Execution, Deployment → Compiler**
+2. Enable **"Build project automatically"**
+3. **Settings → Advanced Settings**
+4. Enable **"Allow auto-make to start even if developed application is currently running"**
+
+**LiveReload:**
+- Install browser extension: [LiveReload](http://livereload.com/extensions/)
+- DevTools includes LiveReload server (port 35729)
+- Browser refreshes automatically when files change
+
+**Verification:**
+```properties
+# In application.properties (already included by default)
+# DevTools is active when you see this in logs:
+# "LiveReload server is running on port 35729"
+```
+
+**When DevTools is Disabled:**
+- Running packaged application: `java -jar order-service.jar`
+- `SPRING_PROFILES_ACTIVE=production` is set
+- Running in Docker containers (uses packaged JAR)
+
+---
+
 ## Summary
 
 ### What You Created:
@@ -540,7 +587,7 @@ Continue to [03-create-entities.md](03-create-entities.md) to start implementing
 - ✅ Spring Web (REST API)
 - ✅ Lombok (reduce boilerplate)
 - ✅ Spring Actuator (production features)
-- ✅ DevTools (development productivity)
+- ✅ DevTools (development productivity with automatic restarts)
 - ✅ Flyway (database migrations - optional)
 
 ### Verified:
