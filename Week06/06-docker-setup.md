@@ -220,7 +220,7 @@ PGADMIN_DEFAULT_PASSWORD=admin
 
 **Port Bindings:**
 ```
-Host Port: 5050
+Host Port: 8888
 Container Port: 80
 ```
 
@@ -231,7 +231,7 @@ docker run -d \
   --name pgadmin-container \
   -e PGADMIN_DEFAULT_EMAIL=admin@admin.com \
   -e PGADMIN_DEFAULT_PASSWORD=admin \
-  -p 5050:80 \
+  -p 8888:80 \
   dpage/pgadmin4:latest
 ```
 
@@ -239,7 +239,7 @@ docker run -d \
 
 **Open Browser:**
 ```
-http://localhost:5050
+http://localhost:8888
 ```
 
 **Login:**
@@ -405,7 +405,7 @@ Use `host.docker.internal` instead of `localhost`:
 **pgAdmin Setup (Optional):**
 - ✅ Pulled dpage/pgadmin4:latest image
 - ✅ Created pgadmin-container
-- ✅ Accessed pgAdmin web interface (localhost:5050)
+- ✅ Accessed pgAdmin web interface (localhost:8888)
 - ✅ Registered PostgreSQL server in pgAdmin
 
 **Connection Verification:**
@@ -432,7 +432,7 @@ Password: password
 **pgAdmin Container:**
 ```
 Container Name: pgadmin-container
-Port Mapping: 5050:80
+Port Mapping: 8888:80
 Email: admin@admin.com
 Password: admin
 ```

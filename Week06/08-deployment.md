@@ -347,7 +347,7 @@ services:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
     ports:
-      - "5050:80"
+      - "8888:80"
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@admin.com
       PGADMIN_DEFAULT_PASSWORD: admin
@@ -464,7 +464,7 @@ docker-compose ps
 NAME               IMAGE                      STATUS         PORTS
 mongodb            mongo:latest               Up 1 minute    0.0.0.0:27018->27017/tcp
 mongo-express      mongo-express:latest       Up 1 minute    0.0.0.0:8081->8081/tcp
-pgadmin            dpage/pgadmin4:latest      Up 1 minute    0.0.0.0:5050->80/tcp
+pgadmin            dpage/pgadmin4:latest      Up 1 minute    0.0.0.0:8888->80/tcp
 postgres           postgres:latest            Up 1 minute    0.0.0.0:5433->5432/tcp
 order-service      order-service:latest       Up 30 seconds  0.0.0.0:8082->8082/tcp
 product-service    product-service:latest     Up 30 seconds  0.0.0.0:8084->8084/tcp
@@ -564,7 +564,7 @@ curl http://localhost:8084/api/product
 
 **pgAdmin:**
 ```
-URL: http://localhost:5050
+URL: http://localhost:8888
 Email: admin@admin.com
 Password: admin
 ```
@@ -773,7 +773,7 @@ Docker Network: microservices-network
 │   └── MongoDB :8084
 ├── postgres :5433
 ├── mongodb :27018
-├── pgadmin :5050
+├── pgadmin :8888
 └── mongo-express :8081
 ```
 

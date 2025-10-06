@@ -138,7 +138,7 @@ Order Placed Successfully
 
 **Open pgAdmin:**
 ```
-http://localhost:5050
+http://localhost:8888
 ```
 
 **Login:**
