@@ -434,18 +434,6 @@ order-service/src/main/resources/
 - ✅ `spring.jpa.hibernate`
 - ✅ Port: 5432
 
-### 7.3 Build Project
-
-```bash
-cd order-service
-./gradlew clean build -x test
-```
-
-**Expected:**
-```
-BUILD SUCCESSFUL
-```
-
 ---
 
 ## Summary
