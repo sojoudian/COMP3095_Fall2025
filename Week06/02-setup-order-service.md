@@ -217,10 +217,10 @@ tasks.withType<Test> {
 
 **Initial Content:**
 ```properties
-# Application will be configured in Step 5
+spring.application.name=order-service
 ```
 
-**Note:** Initially empty or with minimal configuration. We'll add database configuration later.
+**Note:** Spring Initializr generates this with the application name. We'll add database configuration later.
 
 ---
 
