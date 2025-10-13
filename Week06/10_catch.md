@@ -4,7 +4,7 @@
 
 Open `microservices-parent/order-service/build.gradle.kts`
 
-Add these dependencies after the existing testRuntimeOnly line:
+Add TestContainers dependencies after the existing testRuntimeOnly line:
 
 ```kotlin
 dependencies {
@@ -33,7 +33,7 @@ dependencies {
 
 Open `microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/OrderServiceApplicationTests.java`
 
-Replace entire file with:
+Replace entire file:
 
 ```java
 package ca.gbc.comp3095.orderservice;
@@ -118,11 +118,108 @@ Change PostgreSQL port from 5441 to 5432:
 spring.datasource.url=jdbc:postgresql://localhost:5432/order-service
 ```
 
-## Step 4: Update docker-compose.yml
+## Step 4: Create Dockerfile
+
+Create `microservices-parent/order-service/Dockerfile`:
+
+```dockerfile
+# ============================================
+# Stage 1: Build Stage
+# ============================================
+FROM eclipse-temurin:21-jdk AS builder
+
+# Set working directory
+WORKDIR /app
+
+# Copy Gradle wrapper and build files
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
+
+# Copy source code
+COPY src src
+
+# Make gradlew executable
+RUN chmod +x gradlew
+
+# Build the application (skip tests for faster builds)
+RUN ./gradlew clean build -x test
+
+# ============================================
+# Stage 2: Runtime Stage
+# ============================================
+FROM eclipse-temurin:21-jre
+
+# Set working directory
+WORKDIR /app
+
+# Copy JAR from build stage
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+# Create non-root user for security
+RUN addgroup --system spring && adduser --system --group spring
+
+# Change ownership of app directory
+RUN chown -R spring:spring /app
+
+# Switch to non-root user
+USER spring:spring
+
+# Expose port
+EXPOSE 8082
+
+# Set environment variables
+ENV SPRING_PROFILES_ACTIVE=docker
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8082/actuator/health || exit 1
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+## Step 5: Create PostgreSQL Init Script
+
+Create directory and file:
+
+```bash
+mkdir -p microservices-parent/init/postgres/docker-entrypoint-initdb.d
+```
+
+Create `microservices-parent/init/postgres/docker-entrypoint-initdb.d/init.sql`:
+
+```sql
+-- ============================================
+-- Order Service Database Initialization
+-- ============================================
+
+-- Check if database exists, create if not
+SELECT 'CREATE DATABASE "order-service"'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'order-service')\gexec
+
+-- Connect to database
+\c order-service
+
+-- Create extension for UUID support (optional)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Grant privileges
+GRANT ALL PRIVILEGES ON DATABASE "order-service" TO admin;
+
+-- Log successful initialization
+DO $$
+BEGIN
+  RAISE NOTICE 'Database order-service initialized successfully';
+END $$;
+```
+
+## Step 6: Update docker-compose.yml
 
 Open `microservices-parent/docker-compose.yml`
 
-Replace entire file with:
+Replace entire file:
 
 ```yaml
 version: '3.8'
@@ -271,63 +368,89 @@ volumes:
   pgadmin-data:
 ```
 
-## Step 5: Create Dockerfile for order-service
-
-Create `microservices-parent/order-service/Dockerfile`:
-
-```dockerfile
-FROM eclipse-temurin:21-jdk-alpine
-WORKDIR /app
-COPY build/libs/*.jar app.jar
-EXPOSE 8082
-ENTRYPOINT ["java", "-jar", "app.jar"]
-```
-
-## Step 6: Create PostgreSQL Init Directory
-
-Create directory structure:
-
-```bash
-mkdir -p microservices-parent/init/postgres/docker-entrypoint-initdb.d
-```
-
 ## Step 7: Configure IntelliJ Test Runner
 
-Open IntelliJ IDEA:
+**Option A: Via IntelliJ Settings (Recommended)**
+
 1. Go to **Settings/Preferences → Build, Execution, Deployment → Build Tools → Gradle**
 2. Find **"Run tests using:"** dropdown
 3. Change to **"IntelliJ IDEA"**
 4. Click OK
 
+**Option B: Manual Configuration (If Option A doesn't work)**
+
+If IntelliJ doesn't apply the setting correctly:
+
+1. Close IntelliJ IDEA completely
+2. Open `.idea/gradle.xml` in a text editor
+3. Find the first `<GradleProjectSettings>` block
+4. Add `<option name="testRunner" value="PLATFORM" />` after the opening tag:
+
+```xml
+<GradleProjectSettings>
+  <option name="testRunner" value="PLATFORM" />
+  <option name="externalProjectPath" value="$PROJECT_DIR$/microservices-parent" />
+```
+
+5. Save the file
+6. Reopen IntelliJ IDEA
+
 ## Step 8: Reload Gradle
 
-In IntelliJ:
+**In IntelliJ:**
 - Click Gradle reload button (elephant icon with circular arrow)
 
-Or via command line:
+**Or via command line:**
 ```bash
+cd microservices-parent/order-service
 ./gradlew --refresh-dependencies
 ```
 
 ## Step 9: Run Tests
 
-**From Gradle Tool Window:**
+**Method 1: From Gradle Tool Window**
 1. Open Gradle tool window (View → Tool Windows → Gradle)
 2. Navigate to: `microservices-parent > order-service > Tasks > verification > test`
 3. Double-click "test"
 
-**From Command Line:**
+**Method 2: From Command Line**
 ```bash
 cd microservices-parent/order-service
 ./gradlew test
 ```
 
-## Verification
+**Method 3: Right-click (after Step 7)**
+- Right-click on `OrderServiceApplicationTests.java`
+- Select "Run 'OrderServiceApplicationTests'"
 
-After completing all steps:
-- Tests should pass in IntelliJ
-- Docker Compose should start all services correctly
-- Order service accessible at http://localhost:8082
-- Product service accessible at http://localhost:8084
-- Mongo Express at http://localhost:8081
-- pgAdmin at http://localhost:8888
+## Step 10: Verify Docker Setup
+
+**Start all services:**
+```bash
+cd microservices-parent
+docker-compose up -d
+```
+
+**Verify services are running:**
+```bash
+docker-compose ps
+```
+
+**Access services:**
+- Order Service: http://localhost:8082
+- Product Service: http://localhost:8084
+- Mongo Express: http://localhost:8081 (admin/password)
+- pgAdmin: http://localhost:8888 (admin@admin.com/admin)
+
+**Stop services:**
+```bash
+docker-compose down
+```
+
+## Expected Results
+
+✅ Tests pass in IntelliJ and command line
+✅ Docker containers start without errors
+✅ All services accessible at their ports
+✅ Databases initialized with proper schemas
+✅ Health checks passing for all services
