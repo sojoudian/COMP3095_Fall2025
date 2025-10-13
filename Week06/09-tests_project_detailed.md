@@ -54,13 +54,47 @@ For **order-service**, open:
 microservices-parent/order-service/build.gradle.kts
 ```
 
-### Add TestContainers Dependencies
+### Current Dependencies (Before Adding TestContainers)
 
-Add these lines inside the `dependencies {}` block:
+Your `dependencies {}` block currently looks like this:
 
 ```kotlin
 dependencies {
-    // ... your existing dependencies stay here ...
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    runtimeOnly("org.postgresql:postgresql")
+    annotationProcessor("org.projectlombok:lombok")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+```
+
+### Complete Dependencies (After Adding TestContainers)
+
+**Replace your entire `dependencies {}` block with this:**
+
+```kotlin
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    runtimeOnly("org.postgresql:postgresql")
+    annotationProcessor("org.projectlombok:lombok")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // ========================================
+    // TestContainers Dependencies (NEW)
+    // ========================================
 
     // TestContainers BOM (Bill of Materials) - manages versions
     testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
