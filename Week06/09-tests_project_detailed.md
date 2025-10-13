@@ -99,6 +99,9 @@ dependencies {
     // TestContainers BOM (Bill of Materials) - manages versions
     testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
 
+    // Spring Boot TestContainers support - REQUIRED FOR @ServiceConnection
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+
     // TestContainers PostgreSQL module
     testImplementation("org.testcontainers:postgresql")
 
@@ -115,6 +118,7 @@ dependencies {
 | Dependency | Purpose |
 |------------|---------|
 | `testcontainers-bom` | Manages versions of all TestContainers modules |
+| `spring-boot-testcontainers` | Provides @ServiceConnection support for automatic configuration |
 | `testcontainers:postgresql` | Provides PostgreSQL container support |
 | `testcontainers:junit-jupiter` | Integrates TestContainers with JUnit 5 |
 | `rest-assured` | HTTP client for testing REST APIs |
@@ -142,6 +146,8 @@ microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/Or
 ```
 
 ### Replace the Entire File Contents
+
+Copy and paste this complete test class:
 
 ```java
 package ca.gbc.comp3095.orderservice;
@@ -217,66 +223,7 @@ class OrderServiceApplicationTests {
 }
 ```
 
-### Understanding the Code
-
-Let's break down each part:
-
-#### 1. Test Class Annotations
-
-```java
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
-class OrderServiceApplicationTests {
-```
-
-- `@SpringBootTest`: Starts your entire Spring application for testing
-- `webEnvironment = RANDOM_PORT`: Uses a random port to avoid conflicts
-- `@Testcontainers`: Enables TestContainers JUnit 5 extension
-
-#### 2. PostgreSQL Container Setup
-
-```java
-@Container
-@ServiceConnection
-static PostgreSQLContainer<?> postgresContainer =
-    new PostgreSQLContainer<>("postgres:latest")
-        .withDatabaseName("order-service-test")
-        .withUsername("test")
-        .withPassword("test");
-```
-
-- `@Container`: Tells TestContainers to manage this container's lifecycle
-- `@ServiceConnection`: Auto-configures Spring Boot to connect to this container
-- `static`: Container is shared across all tests (Singleton pattern)
-- `.withDatabaseName()`: Creates a database named "order-service-test"
-
-#### 3. REST Assured Configuration
-
-```java
-@LocalServerPort
-private Integer port;
-
-@BeforeEach
-void setUp() {
-    RestAssured.baseURI = "http://localhost";
-    RestAssured.port = port;
-}
-```
-
-- `@LocalServerPort`: Injects the random port Spring Boot started on
-- `@BeforeEach`: Runs before each test method
-- Sets REST Assured to target your running application
-
-#### 4. Container Initialization
-
-```java
-static {
-    postgresContainer.start();
-}
-```
-
-- Static block starts the container once when the class loads
-- Faster than starting/stopping for each test
+**That's it!** This test class is complete and ready to run
 
 ---
 
