@@ -1,0 +1,698 @@
+# Inventory Service Setup Guide
+
+## Introduction
+
+This guide walks you through creating a new microservice called **inventory-service** that tracks product stock levels.
+
+**What you'll build:**
+- New Spring Boot microservice
+- PostgreSQL database integration
+- REST API to check inventory
+- Docker containerization
+
+**Time:** 90-120 minutes
+
+---
+
+## Step 1: Create Inventory Service
+
+### 1.1 Generate Project
+
+Go to [Spring Initializr](https://start.spring.io/):
+
+**Project Settings:**
+- Project: Gradle - Kotlin
+- Language: Java
+- Spring Boot: 3.5.6
+- Java: 21
+- Group: `ca.gbc.comp3095`
+- Artifact: `inventory-service`
+- Name: `inventory-service`
+- Package name: `ca.gbc.comp3095.inventoryservice`
+- Packaging: Jar
+
+**Dependencies:**
+- Lombok
+- Spring Web
+- Spring Data JPA
+- PostgreSQL Driver
+- Spring Boot DevTools
+- Spring Boot Actuator
+- Testcontainers
+
+Click **Generate** and extract the zip file.
+
+### 1.2 Add to Multi-Module Project
+
+Move the `inventory-service` folder to:
+```
+microservices-parent/inventory-service/
+```
+
+Update `microservices-parent/settings.gradle.kts`:
+
+```kotlin
+rootProject.name = "microservices-parent"
+
+include("product-service")
+include("order-service")
+include("inventory-service")
+```
+
+---
+
+## Step 2: Package Structure
+
+Create these packages in `src/main/java/ca/gbc/comp3095/inventoryservice/`:
+
+```
+inventoryservice/
+├── controller/
+├── service/
+├── dto/
+├── model/
+├── repository/
+└── bootstrap/
+```
+
+---
+
+## Step 3: Configure PostgreSQL
+
+### 3.1 Update application.properties
+
+Open `src/main/resources/application.properties`:
+
+```properties
+# Application Configuration
+spring.application.name=inventory-service
+
+# Server Configuration
+server.port=8083
+
+# PostgreSQL Configuration for LOCAL development
+spring.datasource.url=jdbc:postgresql://localhost:5432/inventory-service
+spring.datasource.username=admin
+spring.datasource.password=password
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA/Hibernate Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# Actuator Configuration
+management.endpoints.web.exposure.include=health,info
+```
+
+### 3.2 Create application-docker.properties
+
+Create `src/main/resources/application-docker.properties`:
+
+```properties
+# Application Configuration
+spring.application.name=inventory-service
+
+# Server Configuration
+server.port=8083
+
+# PostgreSQL Configuration for DOCKER
+spring.datasource.url=jdbc:postgresql://postgres:5432/inventory-service
+spring.datasource.username=admin
+spring.datasource.password=password
+spring.datasource.driver-class-name=org.postgresql.Driver
+
+# JPA/Hibernate Configuration
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+
+# Actuator Configuration
+management.endpoints.web.exposure.include=health,info
+```
+
+---
+
+## Step 4: Create Inventory Model
+
+Create `model/Inventory.java`:
+
+```java
+package ca.gbc.comp3095.inventoryservice.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+@Entity
+@Table(name = "inventory")
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
+public class Inventory {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(nullable = false, unique = true)
+    private String skuCode;
+
+    @Column(nullable = false)
+    private Integer quantity;
+}
+```
+
+**What this does:**
+- Represents inventory table in database
+- Each row has: id, skuCode, quantity
+- `skuCode` is unique (each product has one inventory record)
+
+---
+
+## Step 5: Create Inventory Repository
+
+Create `repository/InventoryRepository.java`:
+
+```java
+package ca.gbc.comp3095.inventoryservice.repository;
+
+import ca.gbc.comp3095.inventoryservice.model.Inventory;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.Optional;
+
+public interface InventoryRepository extends JpaRepository<Inventory, Long> {
+
+    // Custom query method - Spring Data JPA implements this automatically
+    Optional<Inventory> findBySkuCode(String skuCode);
+}
+```
+
+**What this does:**
+- Provides database operations (save, find, delete)
+- `findBySkuCode()` is a custom method - Spring creates the SQL query automatically
+
+---
+
+## Step 6: Create Inventory Service
+
+Create `service/InventoryService.java`:
+
+```java
+package ca.gbc.comp3095.inventoryservice.service;
+
+import ca.gbc.comp3095.inventoryservice.repository.InventoryRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Slf4j
+public class InventoryService {
+
+    private final InventoryRepository inventoryRepository;
+
+    @Transactional(readOnly = true)
+    public boolean isInStock(String skuCode) {
+        log.info("Checking inventory for skuCode: {}", skuCode);
+
+        return inventoryRepository.findBySkuCode(skuCode)
+                .map(inventory -> inventory.getQuantity() > 0)
+                .orElse(false);
+    }
+}
+```
+
+**What this does:**
+- `isInStock()` checks if product has quantity > 0
+- Returns `true` if in stock, `false` if out of stock or not found
+- `@Transactional` ensures database consistency
+
+---
+
+## Step 7: Create Inventory Controller
+
+Create `controller/InventoryController.java`:
+
+```java
+package ca.gbc.comp3095.inventoryservice.controller;
+
+import ca.gbc.comp3095.inventoryservice.service.InventoryService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/inventory")
+@RequiredArgsConstructor
+@Slf4j
+public class InventoryController {
+
+    private final InventoryService inventoryService;
+
+    @GetMapping
+    @ResponseStatus(HttpStatus.OK)
+    public boolean isInStock(@RequestParam String skuCode) {
+        log.info("Received request to check stock for skuCode: {}", skuCode);
+        return inventoryService.isInStock(skuCode);
+    }
+}
+```
+
+**What this does:**
+- Exposes REST endpoint: `GET /api/inventory?skuCode=sku_123456`
+- Returns boolean: `true` or `false`
+
+---
+
+## Step 8: Bootstrap Seed Data
+
+Create `bootstrap/DataLoader.java`:
+
+```java
+package ca.gbc.comp3095.inventoryservice.bootstrap;
+
+import ca.gbc.comp3095.inventoryservice.model.Inventory;
+import ca.gbc.comp3095.inventoryservice.repository.InventoryRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.stereotype.Component;
+
+@Component
+@RequiredArgsConstructor
+@Slf4j
+public class DataLoader implements CommandLineRunner {
+
+    private final InventoryRepository inventoryRepository;
+
+    @Override
+    public void run(String... args) throws Exception {
+        log.info("Loading inventory data...");
+
+        if (inventoryRepository.count() == 0) {
+            Inventory inventory1 = Inventory.builder()
+                    .skuCode("sku_123456")
+                    .quantity(10)
+                    .build();
+
+            Inventory inventory2 = Inventory.builder()
+                    .skuCode("sku_789012")
+                    .quantity(0)
+                    .build();
+
+            Inventory inventory3 = Inventory.builder()
+                    .skuCode("sku_321765")
+                    .quantity(5)
+                    .build();
+
+            inventoryRepository.save(inventory1);
+            inventoryRepository.save(inventory2);
+            inventoryRepository.save(inventory3);
+
+            log.info("Inventory data loaded successfully");
+        } else {
+            log.info("Inventory data already exists, skipping seed");
+        }
+    }
+}
+```
+
+**What this does:**
+- Runs automatically when application starts
+- Seeds 3 inventory records if database is empty
+- Won't duplicate data on restarts
+
+---
+
+## Step 9: Create Database Manually
+
+PostgreSQL doesn't auto-create databases. You must create it manually.
+
+### Using Docker Exec:
+
+```bash
+docker exec -it postgres psql -U admin
+```
+
+Then run:
+```sql
+CREATE DATABASE "inventory-service";
+\q
+```
+
+### Or Update init.sql:
+
+Edit `microservices-parent/init/postgres/docker-entrypoint-initdb.d/init.sql`:
+
+Add:
+
+```sql
+-- ============================================
+-- Inventory Service Database Initialization
+-- ============================================
+
+SELECT 'CREATE DATABASE "inventory-service"'
+    WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'inventory-service')\gexec
+
+\c inventory-service
+
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+GRANT ALL PRIVILEGES ON DATABASE "inventory-service" TO admin;
+
+DO $$
+BEGIN
+  RAISE NOTICE 'Database inventory-service initialized successfully';
+END $$;
+```
+
+---
+
+## Step 10: Run and Test Locally
+
+### 10.1 Start PostgreSQL Container
+
+```bash
+docker start postgres
+```
+
+### 10.2 Run inventory-service
+
+In IntelliJ: Run `InventoryServiceApplication`
+
+Or via command line:
+```bash
+cd microservices-parent/inventory-service
+./gradlew bootRun
+```
+
+### 10.3 Verify Seed Data
+
+Check database:
+```bash
+docker exec -it postgres psql -U admin -d inventory-service
+```
+
+Query:
+```sql
+SELECT * FROM inventory;
+```
+
+Expected output:
+```
+ id | sku_code    | quantity
+----|-------------|----------
+  1 | sku_123456  |       10
+  2 | sku_789012  |        0
+  3 | sku_321765  |        5
+```
+
+### 10.4 Test with Postman
+
+**Request:**
+```
+GET http://localhost:8083/api/inventory?skuCode=sku_123456
+```
+
+**Expected Response:**
+```
+true
+```
+
+**Request:**
+```
+GET http://localhost:8083/api/inventory?skuCode=sku_789012
+```
+
+**Expected Response:**
+```
+false
+```
+
+---
+
+## Step 11: Add TestContainers
+
+### 11.1 Update build.gradle.kts
+
+Open `inventory-service/build.gradle.kts`
+
+Add dependencies:
+
+```kotlin
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    runtimeOnly("org.postgresql:postgresql")
+    annotationProcessor("org.projectlombok:lombok")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // TestContainers Dependencies
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("io.rest-assured:rest-assured")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+```
+
+Reload Gradle.
+
+### 11.2 Create Integration Test
+
+Open `src/test/java/ca/gbc/comp3095/inventoryservice/InventoryServiceApplicationTests.java`
+
+Replace with:
+
+```java
+package ca.gbc.comp3095.inventoryservice;
+
+import io.restassured.RestAssured;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.http.HttpStatus;
+import org.testcontainers.containers.PostgreSQLContainer;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
+
+import static org.hamcrest.Matchers.equalTo;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+class InventoryServiceApplicationTests {
+
+    @Container
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgresContainer =
+            new PostgreSQLContainer<>("postgres:latest")
+                    .withDatabaseName("inventory-service-test")
+                    .withUsername("test")
+                    .withPassword("test");
+
+    @LocalServerPort
+    private Integer port;
+
+    @BeforeEach
+    void setUp() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+    }
+
+    static {
+        postgresContainer.start();
+    }
+
+    @Test
+    void isInStockTest() {
+        // Given: Inventory is seeded by DataLoader
+        String skuCode = "sku_123456";
+
+        // When: Check if product is in stock
+        // Then: Should return true
+        RestAssured.given()
+                .queryParam("skuCode", skuCode)
+                .when()
+                .get("/api/inventory")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body(equalTo("true"));
+    }
+
+    @Test
+    void isOutOfStockTest() {
+        // Given: Product with quantity 0
+        String skuCode = "sku_789012";
+
+        // When: Check if product is in stock
+        // Then: Should return false
+        RestAssured.given()
+                .queryParam("skuCode", skuCode)
+                .when()
+                .get("/api/inventory")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body(equalTo("false"));
+    }
+
+    @Test
+    void productNotFoundTest() {
+        // Given: Non-existent product
+        String skuCode = "nonexistent";
+
+        // When: Check if product is in stock
+        // Then: Should return false
+        RestAssured.given()
+                .queryParam("skuCode", skuCode)
+                .when()
+                .get("/api/inventory")
+                .then()
+                .log().all()
+                .statusCode(HttpStatus.OK.value())
+                .body(equalTo("false"));
+    }
+}
+```
+
+### 11.3 Run Tests
+
+```bash
+cd microservices-parent/inventory-service
+./gradlew test
+```
+
+All tests should pass.
+
+---
+
+## Step 12: Create Dockerfile
+
+Create `inventory-service/Dockerfile`:
+
+```dockerfile
+# ============================================
+# Stage 1: Build Stage
+# ============================================
+FROM eclipse-temurin:21-jdk AS builder
+
+WORKDIR /app
+
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle.kts .
+COPY settings.gradle.kts .
+COPY src src
+
+RUN chmod +x gradlew
+RUN ./gradlew clean build -x test
+
+# ============================================
+# Stage 2: Runtime Stage
+# ============================================
+FROM eclipse-temurin:21-jre
+
+WORKDIR /app
+
+COPY --from=builder /app/build/libs/*.jar app.jar
+
+RUN addgroup --system spring && adduser --system --group spring
+RUN chown -R spring:spring /app
+
+USER spring:spring
+
+EXPOSE 8083
+
+ENV SPRING_PROFILES_ACTIVE=docker
+
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8083/actuator/health || exit 1
+
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+---
+
+## Step 13: Update docker-compose.yml
+
+Open `microservices-parent/docker-compose.yml`
+
+Add inventory-service:
+
+```yaml
+  # ============================================
+  # Inventory Service (Spring Boot - PostgreSQL)
+  # ============================================
+  inventory-service:
+    build:
+      context: ./inventory-service
+      dockerfile: Dockerfile
+    image: inventory-service:latest
+    container_name: inventory-service
+    ports:
+      - "8083:8083"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/inventory-service
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-network
+```
+
+---
+
+## Step 14: Run with Docker Compose
+
+```bash
+cd microservices-parent
+docker-compose up -d
+```
+
+Verify all services:
+```bash
+docker-compose ps
+```
+
+Test inventory-service:
+```
+GET http://localhost:8083/api/inventory?skuCode=sku_123456
+```
+
+---
+
+## Summary
+
+You've created:
+- ✅ New inventory-service microservice
+- ✅ PostgreSQL database integration
+- ✅ REST API to check stock
+- ✅ Seed data loader
+- ✅ Integration tests with TestContainers
+- ✅ Docker containerization
+
+**Ports:**
+- product-service: 8084
+- order-service: 8082
+- inventory-service: 8083
