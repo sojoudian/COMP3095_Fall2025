@@ -329,6 +329,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
       - mongodb-data:/data/db
+      - ./init/mongo/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     networks:
       - microservices-network
     healthcheck:
@@ -371,6 +372,7 @@ services:
       POSTGRES_PASSWORD: password
     volumes:
       - postgres-data:/var/lib/postgresql/data
+      - ./init/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     networks:
       - microservices-network
     healthcheck:
