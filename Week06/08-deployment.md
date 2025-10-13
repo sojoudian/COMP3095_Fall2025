@@ -22,13 +22,15 @@ In this final section, you will containerize the order-service and deploy the co
 
 ### 1.2 Write Dockerfile
 
+**IMPORTANT:** Use `eclipse-temurin` base images instead of `openjdk` images. The `openjdk` images are missing required utilities like `xargs` that Gradle needs, which will cause build failures with the error "xargs is not available".
+
 **Complete Dockerfile:**
 
 ```dockerfile
 # ============================================
 # Stage 1: Build Stage
 # ============================================
-FROM openjdk:21-jdk AS builder
+FROM eclipse-temurin:21-jdk AS builder
 
 # Set working directory
 WORKDIR /app
@@ -51,7 +53,7 @@ RUN ./gradlew clean build -x test
 # ============================================
 # Stage 2: Runtime Stage
 # ============================================
-FROM openjdk:21-jre-slim
+FROM eclipse-temurin:21-jre
 
 # Set working directory
 WORKDIR /app
@@ -82,6 +84,34 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
+**Understanding the Dockerfile:**
+
+**Stage 1 - Build Stage:**
+- `FROM eclipse-temurin:21-jdk AS builder` - Use Eclipse Temurin JDK 21 (includes all build tools)
+- Copies Gradle wrapper and source code
+- `RUN ./gradlew clean build -x test` - Builds the application (skips tests for faster builds)
+
+**Stage 2 - Runtime Stage:**
+- `FROM eclipse-temurin:21-jre` - Use Eclipse Temurin JRE 21 (smaller, runtime-only)
+- Copies only the compiled JAR from build stage
+- Creates non-root user `spring` for security
+- Exposes port 8082
+- Sets `SPRING_PROFILES_ACTIVE=docker` to use Docker-specific configuration
+- Includes health check for container orchestration
+
+**Why Eclipse Temurin?**
+- ✅ Official OpenJDK builds from Eclipse Foundation
+- ✅ Includes all necessary utilities (xargs, etc.)
+- ✅ Well-maintained and secure
+- ✅ Replaces deprecated openjdk images
+- ✅ Fully compatible with Gradle builds
+
+**Why Multistage Build?**
+- ✅ Smaller final image (JRE vs JDK: ~300MB vs ~600MB)
+- ✅ Better security (no build tools in production)
+- ✅ Faster deployments
+- ✅ Clear separation between build and runtime
+
 ---
 
 ## Step 2: Build Docker Image
@@ -111,13 +141,15 @@ docker build -t order-service:latest .
 ```
 [+] Building 45.2s (18/18) FINISHED
 
-Step 1/17 : FROM openjdk:21-jdk AS builder
+Step 1/17 : FROM eclipse-temurin:21-jdk AS builder
 ...
 Step 17/17 : ENTRYPOINT ["java", "-jar", "app.jar"]
 
 Successfully built 9a8b7c6d5e4f
 Successfully tagged order-service:latest
 ```
+
+**Note:** First build will take longer (2-5 minutes) as Docker downloads base images. Subsequent builds are faster due to caching.
 
 ### 2.3 Verify Image Created
 
@@ -129,8 +161,13 @@ docker images | grep order-service
 **Expected Output:**
 ```
 REPOSITORY        TAG       IMAGE ID       CREATED          SIZE
-order-service     latest    9a8b7c6d5e4f   2 minutes ago    387MB
+order-service     latest    9a8b7c6d5e4f   2 minutes ago    350MB
 ```
+
+**Image Size Notes:**
+- Expected size with Eclipse Temurin JRE: ~300-400MB
+- If using JDK instead of JRE: ~600-800MB
+- Multistage build reduces final size by 50-70%
 
 ---
 
@@ -269,6 +306,8 @@ postgres:
 **Location:** `microservices-parent/docker-compose.yml`
 
 ### 5.2 Complete Updated docker-compose.yml
+
+**IMPORTANT:** Ensure both `product-service/Dockerfile` and `order-service/Dockerfile` use Eclipse Temurin base images (`eclipse-temurin:21-jdk` and `eclipse-temurin:21-jre`). Docker Compose builds these images using the respective Dockerfiles.
 
 **Replace entire file with:**
 
@@ -724,6 +763,23 @@ docker-compose down     # Good - keeps volumes
 docker-compose down -v  # Bad - deletes volumes
 ```
 
+### Issue 4: "xargs is not available" Build Error
+
+**Error:**
+```
+xargs is not available
+ERROR: failed to build: process "/bin/sh -c ./gradlew clean build -x test" did not complete successfully: exit code: 1
+```
+
+**Cause:** Using `openjdk` base images which lack required utilities
+
+**Solution:**
+Replace in Dockerfile:
+- Line 4: Change `FROM openjdk:21-jdk AS builder` to `FROM eclipse-temurin:21-jdk AS builder`
+- Line 27: Change `FROM openjdk:21-jre-slim` to `FROM eclipse-temurin:21-jre`
+
+Eclipse Temurin images include all necessary build utilities that Gradle requires.
+
 ---
 
 ## Summary
@@ -738,8 +794,8 @@ docker-compose down -v  # Bad - deletes volumes
 - ✅ Health check configuration
 
 **Docker Image:**
-- ✅ Built order-service:latest image
-- ✅ Verified image (~387MB)
+- ✅ Built order-service:latest image using Eclipse Temurin
+- ✅ Verified image size (~300-400MB with multistage build)
 - ✅ Tested image locally
 
 **docker-compose.yml:**
