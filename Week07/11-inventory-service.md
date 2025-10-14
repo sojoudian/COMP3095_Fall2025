@@ -135,6 +135,8 @@ management.endpoints.web.exposure.include=health,info
 
 ## Step 4: Create Inventory Model
 
+**In IntelliJ:** Right-click on `model` package → New → Java Class → Select **Class**
+
 Create `model/Inventory.java`:
 
 ```java
@@ -172,6 +174,8 @@ public class Inventory {
 ---
 
 ## Step 5: Create Inventory Repository
+
+**In IntelliJ:** Right-click on `repository` package → New → Java Class → Select **Interface**
 
 Create `repository/InventoryRepository.java`:
 
@@ -225,6 +229,8 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
 ### 6.1 Create Service Interface
 
+**In IntelliJ:** Right-click on `service` package → New → Java Class → Select **Interface**
+
 Create `service/InventoryService.java`:
 
 ```java
@@ -238,6 +244,8 @@ public interface InventoryService {
 ```
 
 ### 6.2 Create Service Implementation
+
+**In IntelliJ:** Right-click on `service` package → New → Java Class → Select **Class**
 
 Create `service/InventoryServiceImpl.java`:
 
@@ -270,6 +278,8 @@ public class InventoryServiceImpl implements InventoryService {
 ---
 
 ## Step 7: Create Inventory Controller
+
+**In IntelliJ:** Right-click on `controller` package → New → Java Class → Select **Class**
 
 Create `controller/InventoryController.java`:
 
@@ -305,6 +315,10 @@ public class InventoryController {
 ---
 
 ## Step 8: Bootstrap Seed Data
+
+**In IntelliJ:** Right-click on `inventoryservice` package → New → Package → Name it `bootstrap`
+
+Then: Right-click on `bootstrap` package → New → Java Class → Select **Class**
 
 Create `bootstrap/DataLoader.java`:
 
