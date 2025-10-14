@@ -144,6 +144,7 @@ package ca.gbc.comp3095.inventoryservice.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -154,6 +155,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class Inventory {
 
     @Id
@@ -180,9 +182,9 @@ public class Inventory {
 Create `repository/InventoryRepository.java`:
 
 ```java
-package ca.gbc.inventoryservice.repository;
+package ca.gbc.comp3095.inventoryservice.repository;
 
-import ca.gbc.inventoryservice.model.Inventory;
+import ca.gbc.comp3095.inventoryservice.model.Inventory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -234,7 +236,7 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 Create `service/InventoryService.java`:
 
 ```java
-package ca.gbc.inventoryservice.service;
+package ca.gbc.comp3095.inventoryservice.service;
 
 public interface InventoryService {
 
@@ -250,9 +252,9 @@ public interface InventoryService {
 Create `service/InventoryServiceImpl.java`:
 
 ```java
-package ca.gbc.inventoryservice.service;
+package ca.gbc.comp3095.inventoryservice.service;
 
-import ca.gbc.inventoryservice.repository.InventoryRepository;
+import ca.gbc.comp3095.inventoryservice.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -284,9 +286,9 @@ public class InventoryServiceImpl implements InventoryService {
 Create `controller/InventoryController.java`:
 
 ```java
-package ca.gbc.inventoryservice.controller;
+package ca.gbc.comp3095.inventoryservice.controller;
 
-import ca.gbc.inventoryservice.service.InventoryService;
+import ca.gbc.comp3095.inventoryservice.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
