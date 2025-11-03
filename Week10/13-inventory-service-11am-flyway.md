@@ -157,6 +157,11 @@ curl "http://localhost:8083/api/inventory?skuCode=SKU001&quantity=50"
 
 Open `inventory-service/src/test/java/ca/gbc/comp3095/inventoryservice/InventoryServiceApplicationTests.java`
 
+```bash
+  1. shouldReturnTrueWhenItemIsInStock (line 205) - Tests SKU001 with quantity 100, expects true
+  2. shouldReturnFalseWhenItemDoesNotExist (line 218) - Tests NON_EXISTENT_SKU, expects false
+```
+
 Replace with:
 
 ```java
