@@ -1,16 +1,21 @@
-# Inventory Service Setup Guide
+# Inventory Service Setup Guide (Production Approach)
 
 ## Introduction
 
-This guide walks you through creating a new microservice called **inventory-service** that tracks product stock levels.
+This guide walks you through creating a new microservice called **inventory-service** that tracks product stock levels using **production-ready practices** including Flyway database migrations.
 
 **What you'll build:**
 - New Spring Boot microservice
-- PostgreSQL database integration
+- PostgreSQL database integration with Flyway migrations
 - REST API to check inventory
 - Docker containerization
+- Integration tests with TestContainers
 
 **Time:** 90-120 minutes
+
+**Key Difference from Week 7:**
+- Uses **Flyway migrations** for database schema and data management (production standard)
+- No CommandLineRunner/DataLoader approach
 
 ---
 
@@ -23,12 +28,12 @@ Go to [Spring Initializr](https://start.spring.io/):
 **Project Settings:**
 - Project: Gradle - Kotlin
 - Language: Java
-- Spring Boot: 3.5.6
-- Java: 21
-- Group: `ca.gbc.comp3095`
+- Spring Boot: 3.4.4
+- Java: 22
+- Group: `ca.gbc`
 - Artifact: `inventory-service`
 - Name: `inventory-service`
-- Package name: `ca.gbc.comp3095.inventoryservice`
+- Package name: `ca.gbc.inventoryservice`
 - Packaging: Jar
 
 **Dependencies:**
@@ -63,16 +68,24 @@ include("inventory-service")
 
 ## Step 2: Package Structure
 
-Create these packages in `src/main/java/ca/gbc/comp3095/inventoryservice/`:
+Create these packages in `src/main/java/ca/gbc/inventoryservice/`:
 
 ```
 inventoryservice/
 ├── controller/
 ├── service/
-├── dto/
 ├── model/
-├── repository/
-└── bootstrap/
+└── repository/
+```
+
+**Note:** No `bootstrap` package needed - we'll use Flyway migrations instead.
+
+Also create this directory for database migrations:
+
+```
+src/main/resources/
+└── db/
+    └── migration/
 ```
 
 ---
@@ -97,7 +110,8 @@ spring.datasource.password=password
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA/Hibernate Configuration
-spring.jpa.hibernate.ddl-auto=update
+# IMPORTANT: Use 'none' because Flyway manages schema
+spring.jpa.hibernate.ddl-auto=none
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
@@ -117,13 +131,14 @@ spring.application.name=inventory-service
 server.port=8083
 
 # PostgreSQL Configuration for DOCKER
-spring.datasource.url=jdbc:postgresql://postgres-inventory:5432/inventory-service
+spring.datasource.url=jdbc:postgresql://postgres-inventory:5432/inventory_service
 spring.datasource.username=admin
 spring.datasource.password=password
 spring.datasource.driver-class-name=org.postgresql.Driver
 
 # JPA/Hibernate Configuration
-spring.jpa.hibernate.ddl-auto=update
+# IMPORTANT: Use 'none' because Flyway manages schema
+spring.jpa.hibernate.ddl-auto=none
 spring.jpa.show-sql=true
 spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
@@ -131,20 +146,70 @@ spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 management.endpoints.web.exposure.include=health,info
 ```
 
+**Key Point:** `ddl-auto=none` because Flyway will manage the database schema, not JPA/Hibernate.
+
 ---
 
-## Step 4: Create Inventory Model
+## Step 4: Update build.gradle.kts
+
+### 4.1 Add Flyway Dependencies
+
+Open `inventory-service/build.gradle.kts`
+
+Update dependencies section:
+
+```kotlin
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+
+    // Flyway for Database Migrations
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    runtimeOnly("org.postgresql:postgresql")
+    annotationProcessor("org.projectlombok:lombok")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // TestContainers Dependencies
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("io.rest-assured:rest-assured")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+```
+
+**Reload Gradle** after making changes.
+
+**What is Flyway?**
+- Database migration tool
+- Version control for your database
+- Manages schema changes and data seeding
+- Production standard for database management
+
+---
+
+## Step 5: Create Inventory Model
 
 **In IntelliJ:** Right-click on `model` package → New → Java Class → Select **Class**
 
 Create `model/Inventory.java`:
 
 ```java
-package ca.gbc.comp3095.inventoryservice.model;
+package ca.gbc.inventoryservice.model;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -155,7 +220,6 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Builder
 public class Inventory {
 
     @Id
@@ -172,19 +236,20 @@ public class Inventory {
 - Represents `t_inventory` table in database
 - Each row has: id, skuCode, quantity
 - Auto-generates primary key
+- **Note:** No `@Builder` annotation - we'll use SQL to insert data
 
 ---
 
-## Step 5: Create Inventory Repository
+## Step 6: Create Inventory Repository
 
 **In IntelliJ:** Right-click on `repository` package → New → Java Class → Select **Interface**
 
 Create `repository/InventoryRepository.java`:
 
 ```java
-package ca.gbc.comp3095.inventoryservice.repository;
+package ca.gbc.inventoryservice.repository;
 
-import ca.gbc.comp3095.inventoryservice.model.Inventory;
+import ca.gbc.inventoryservice.model.Inventory;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
@@ -227,34 +292,34 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
 ---
 
-## Step 6: Create Inventory Service
+## Step 7: Create Inventory Service
 
-### 6.1 Create Service Interface
+### 7.1 Create Service Interface
 
 **In IntelliJ:** Right-click on `service` package → New → Java Class → Select **Interface**
 
 Create `service/InventoryService.java`:
 
 ```java
-package ca.gbc.comp3095.inventoryservice.service;
+package ca.gbc.inventoryservice.service;
 
 public interface InventoryService {
 
-    public boolean isInStock(String skuCode, Integer quantity);
+    boolean isInStock(String skuCode, Integer quantity);
 
 }
 ```
 
-### 6.2 Create Service Implementation
+### 7.2 Create Service Implementation
 
 **In IntelliJ:** Right-click on `service` package → New → Java Class → Select **Class**
 
 Create `service/InventoryServiceImpl.java`:
 
 ```java
-package ca.gbc.comp3095.inventoryservice.service;
+package ca.gbc.inventoryservice.service;
 
-import ca.gbc.comp3095.inventoryservice.repository.InventoryRepository;
+import ca.gbc.inventoryservice.repository.InventoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -279,16 +344,16 @@ public class InventoryServiceImpl implements InventoryService {
 
 ---
 
-## Step 7: Create Inventory Controller
+## Step 8: Create Inventory Controller
 
 **In IntelliJ:** Right-click on `controller` package → New → Java Class → Select **Class**
 
 Create `controller/InventoryController.java`:
 
 ```java
-package ca.gbc.comp3095.inventoryservice.controller;
+package ca.gbc.inventoryservice.controller;
 
-import ca.gbc.comp3095.inventoryservice.service.InventoryService;
+import ca.gbc.inventoryservice.service.InventoryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -310,81 +375,105 @@ public class InventoryController {
 ```
 
 **What this does:**
-- Exposes REST endpoint: `GET /api/inventory?skuCode=sku_123456&quantity=2`
+- Exposes REST endpoint: `GET /api/inventory?skuCode=SKU001&quantity=50`
 - Takes two parameters: product code and quantity needed
 - Returns boolean: `true` if enough stock, `false` otherwise
 
 ---
 
-## Step 8: Bootstrap Seed Data
+## Step 9: Create Flyway Migration Scripts
 
-**In IntelliJ:** Right-click on `inventoryservice` package → New → Package → Name it `bootstrap`
+### 9.1 Understanding Flyway Migration Naming
 
-Then: Right-click on `bootstrap` package → New → Java Class → Select **Class**
+Flyway uses a specific naming convention:
 
-Create `bootstrap/DataLoader.java`:
+```
+V<version>__<description>.sql
 
-```java
-package ca.gbc.comp3095.inventoryservice.bootstrap;
+Examples:
+V1__init.sql           (Version 1: Initial schema)
+V2__add_inventory.sql  (Version 2: Add inventory data)
+V3__add_indexes.sql    (Version 3: Add indexes)
+```
 
-import ca.gbc.comp3095.inventoryservice.model.Inventory;
-import ca.gbc.comp3095.inventoryservice.repository.InventoryRepository;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.stereotype.Component;
+**Rules:**
+- Prefix: `V` (uppercase)
+- Version: Number (1, 2, 3, etc.)
+- Separator: `__` (double underscore)
+- Description: Lowercase with underscores
+- Extension: `.sql`
 
-@Component
-@RequiredArgsConstructor
-@Slf4j
-public class DataLoader implements CommandLineRunner {
+### 9.2 Create V1__init.sql (Schema Creation)
 
-    private final InventoryRepository inventoryRepository;
+Create `src/main/resources/db/migration/V1__init.sql`:
 
-    @Override
-    public void run(String... args) throws Exception {
-        log.info("Loading inventory data...");
+```sql
+-- ============================================
+-- Flyway Migration V1: Create Inventory Table
+-- ============================================
 
-        if (inventoryRepository.count() == 0) {
-            Inventory inventory1 = Inventory.builder()
-                    .skuCode("sku_123456")
-                    .quantity(10)
-                    .build();
+CREATE TABLE t_inventory (
+    id BIGSERIAL PRIMARY KEY,           -- Auto-incrementing primary key
+    sku_code VARCHAR(255) DEFAULT NULL, -- Product SKU code
+    quantity INT                        -- Available quantity
+);
 
-            Inventory inventory2 = Inventory.builder()
-                    .skuCode("sku_789012")
-                    .quantity(0)
-                    .build();
-
-            Inventory inventory3 = Inventory.builder()
-                    .skuCode("sku_321765")
-                    .quantity(5)
-                    .build();
-
-            inventoryRepository.save(inventory1);
-            inventoryRepository.save(inventory2);
-            inventoryRepository.save(inventory3);
-
-            log.info("Inventory data loaded successfully");
-        } else {
-            log.info("Inventory data already exists, skipping seed");
-        }
-    }
-}
+-- Add comments for documentation
+COMMENT ON TABLE t_inventory IS 'Inventory table storing product stock levels';
+COMMENT ON COLUMN t_inventory.id IS 'Auto-generated unique identifier';
+COMMENT ON COLUMN t_inventory.sku_code IS 'Stock Keeping Unit code (product identifier)';
+COMMENT ON COLUMN t_inventory.quantity IS 'Available quantity in stock';
 ```
 
 **What this does:**
-- Runs automatically when application starts
-- Seeds 3 inventory records if database is empty
-- Won't duplicate data on restarts
+- Creates `t_inventory` table
+- `BIGSERIAL` = auto-incrementing Long
+- Adds documentation via comments
+
+### 9.3 Create V2__add_inventory.sql (Data Seeding)
+
+Create `src/main/resources/db/migration/V2__add_inventory.sql`:
+
+```sql
+-- ============================================
+-- Flyway Migration V2: Seed Inventory Data
+-- ============================================
+
+INSERT INTO t_inventory (quantity, sku_code)
+VALUES
+    (100, 'SKU001'),
+    (200, 'SKU002'),
+    (300, 'SKU003'),
+    (400, 'SKU004'),
+    (500, 'SKU005'),
+    (600, 'SKU006');
+
+-- Log the seeding
+DO $$
+BEGIN
+  RAISE NOTICE 'Inventory data seeded successfully: 6 items added';
+END $$;
+```
+
+**What this does:**
+- Inserts 6 inventory items
+- SKU001 through SKU006
+- Quantities: 100, 200, 300, 400, 500, 600
+
+**Why Flyway is Better:**
+- ✅ Version controlled
+- ✅ Idempotent (won't run twice)
+- ✅ Tracks migration history
+- ✅ Production standard
+- ✅ Works across all environments
 
 ---
 
-## Step 9: Create PostgreSQL Init Script
+## Step 10: Create PostgreSQL Init Script
 
 PostgreSQL doesn't auto-create databases. We need to create an initialization script.
 
-### 9.1 Create Init Script Directory
+### 10.1 Create Init Script Directory
 
 Create the directory structure:
 
@@ -392,7 +481,7 @@ Create the directory structure:
 mkdir -p microservices-parent/docker/integrated/postgres/inventory-service/init
 ```
 
-### 9.2 Create init.sql Script
+### 10.2 Create init.sql Script
 
 Create `microservices-parent/docker/integrated/postgres/inventory-service/init/init.sql`:
 
@@ -432,17 +521,17 @@ END $$;
 
 ---
 
-## Step 10: Run and Test Locally
+## Step 11: Run and Test Locally
 
 **Note:** For local testing, we'll use the shared postgres container. When we containerize with docker-compose, we'll use a dedicated postgres-inventory container.
 
-### 10.1 Start PostgreSQL Container
+### 11.1 Start PostgreSQL Container
 
 ```bash
 docker start postgres
 ```
 
-### 10.2 Create Database (if not already created)
+### 11.2 Create Database (if not already created)
 
 ```bash
 docker exec -it postgres psql -U admin -c "CREATE DATABASE inventory_service;"
@@ -450,7 +539,7 @@ docker exec -it postgres psql -U admin -c "CREATE DATABASE inventory_service;"
 
 If it already exists, you'll get an error message (safe to ignore).
 
-### 10.3 Run inventory-service
+### 11.3 Run inventory-service
 
 In IntelliJ: Run `InventoryServiceApplication`
 
@@ -460,12 +549,41 @@ cd microservices-parent/inventory-service
 ./gradlew bootRun
 ```
 
-### 10.4 Verify Seed Data
+**Watch the logs** - you should see:
+
+```
+Flyway: Migrating schema "public" to version "1 - init"
+Flyway: Migrating schema "public" to version "2 - add inventory"
+Flyway: Successfully applied 2 migrations
+```
+
+This means Flyway:
+1. Created the `t_inventory` table
+2. Inserted 6 inventory items
+
+### 11.4 Verify Flyway Migrations
 
 Check database:
 ```bash
 docker exec -it postgres psql -U admin -d inventory_service
 ```
+
+Check Flyway migration history:
+```sql
+SELECT * FROM flyway_schema_history;
+```
+
+Expected output:
+```
+installed_rank | version | description   | type | script              | checksum    | installed_by | installed_on        | execution_time | success
+---------------|---------|---------------|------|---------------------|-------------|--------------|---------------------|----------------|--------
+             1 | 1       | init          | SQL  | V1__init.sql        | 1234567890  | admin        | 2024-01-01 10:00:00 |            45  | t
+             2 | 2       | add inventory | SQL  | V2__add_inventory.sql| 9876543210 | admin        | 2024-01-01 10:00:01 |            23  | t
+```
+
+This table is automatically created by Flyway to track which migrations have been applied.
+
+### 11.5 Verify Inventory Data
 
 Query:
 ```sql
@@ -474,11 +592,14 @@ SELECT * FROM t_inventory;
 
 Expected output:
 ```
- id | sku_code    | quantity
-----|-------------|----------
-  1 | sku_123456  |       10
-  2 | sku_789012  |        0
-  3 | sku_321765  |        5
+ id | sku_code | quantity
+----|----------|----------
+  1 | SKU001   |      100
+  2 | SKU002   |      200
+  3 | SKU003   |      300
+  4 | SKU004   |      400
+  5 | SKU005   |      500
+  6 | SKU006   |      600
 ```
 
 Exit psql:
@@ -486,11 +607,11 @@ Exit psql:
 \q
 ```
 
-### 10.5 Test with Postman
+### 11.6 Test with Postman
 
-**Request 1: Check if 2 units of sku_123456 are available (quantity=10)**
+**Request 1: Check if 50 units of SKU001 are available (has 100)**
 ```
-GET http://localhost:8083/api/inventory?skuCode=sku_123456&quantity=2
+GET http://localhost:8083/api/inventory?skuCode=SKU001&quantity=50
 ```
 
 **Expected Response:**
@@ -498,71 +619,38 @@ GET http://localhost:8083/api/inventory?skuCode=sku_123456&quantity=2
 true
 ```
 
-**Request 2: Check if 20 units of sku_123456 are available (quantity=10)**
+**Request 2: Check if 150 units of SKU001 are available (has only 100)**
 ```
-GET http://localhost:8083/api/inventory?skuCode=sku_123456&quantity=20
-```
-
-**Expected Response:**
-```
-false
-```
-
-**Request 3: Check if any units of sku_789012 are available (quantity=0)**
-```
-GET http://localhost:8083/api/inventory?skuCode=sku_789012&quantity=1
+GET http://localhost:8083/api/inventory?skuCode=SKU001&quantity=150
 ```
 
 **Expected Response:**
 ```
 false
+```
+
+**Request 3: Check if 300 units of SKU003 are available (has exactly 300)**
+```
+GET http://localhost:8083/api/inventory?skuCode=SKU003&quantity=300
+```
+
+**Expected Response:**
+```
+true
 ```
 
 ---
 
-## Step 11: Add TestContainers
+## Step 12: Add TestContainers
 
-### 11.1 Update build.gradle.kts
+### 12.1 Create Integration Test
 
-Open `inventory-service/build.gradle.kts`
-
-Add dependencies:
-
-```kotlin
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    runtimeOnly("org.postgresql:postgresql")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-    // TestContainers Dependencies
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("io.rest-assured:rest-assured")
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-```
-
-Reload Gradle.
-
-### 11.2 Create Integration Test
-
-Open `src/test/java/ca/gbc/comp3095/inventoryservice/InventoryServiceApplicationTests.java`
+Open `src/test/java/ca/gbc/inventoryservice/InventoryServiceApplicationTests.java`
 
 Replace with:
 
 ```java
-package ca.gbc.comp3095.inventoryservice;
+package ca.gbc.inventoryservice;
 
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
@@ -603,13 +691,13 @@ class InventoryServiceApplicationTests {
     }
 
     @Test
-    void isInStockTest() {
-        // Given: Inventory is seeded by DataLoader (sku_123456 has quantity=10)
-        String skuCode = "sku_123456";
-        Integer quantity = 2;
+    void shouldReturnTrueWhenSufficientStock() {
+        // Given: SKU001 has quantity=100 (seeded by Flyway V2 migration)
+        String skuCode = "SKU001";
+        Integer quantity = 50;
 
-        // When: Check if 2 units are available
-        // Then: Should return true
+        // When: Check if 50 units are available
+        // Then: Should return true (100 >= 50)
         RestAssured.given()
                 .queryParam("skuCode", skuCode)
                 .queryParam("quantity", quantity)
@@ -622,13 +710,13 @@ class InventoryServiceApplicationTests {
     }
 
     @Test
-    void isOutOfStockTest() {
-        // Given: Product sku_789012 has quantity=0
-        String skuCode = "sku_789012";
-        Integer quantity = 1;
+    void shouldReturnFalseWhenInsufficientStock() {
+        // Given: SKU001 has quantity=100
+        String skuCode = "SKU001";
+        Integer quantity = 150;
 
-        // When: Check if 1 unit is available
-        // Then: Should return false (no stock)
+        // When: Check if 150 units are available
+        // Then: Should return false (100 < 150)
         RestAssured.given()
                 .queryParam("skuCode", skuCode)
                 .queryParam("quantity", quantity)
@@ -641,13 +729,13 @@ class InventoryServiceApplicationTests {
     }
 
     @Test
-    void insufficientStockTest() {
-        // Given: Product sku_123456 has quantity=10
-        String skuCode = "sku_123456";
-        Integer quantity = 20;
+    void shouldReturnTrueWhenExactStock() {
+        // Given: SKU003 has quantity=300
+        String skuCode = "SKU003";
+        Integer quantity = 300;
 
-        // When: Check if 20 units are available
-        // Then: Should return false (not enough stock)
+        // When: Check if 300 units are available
+        // Then: Should return true (300 >= 300)
         RestAssured.given()
                 .queryParam("skuCode", skuCode)
                 .queryParam("quantity", quantity)
@@ -656,13 +744,13 @@ class InventoryServiceApplicationTests {
                 .then()
                 .log().all()
                 .statusCode(HttpStatus.OK.value())
-                .body(equalTo("false"));
+                .body(equalTo("true"));
     }
 
     @Test
-    void productNotFoundTest() {
+    void shouldReturnFalseWhenProductNotFound() {
         // Given: Non-existent product
-        String skuCode = "nonexistent";
+        String skuCode = "NONEXISTENT";
         Integer quantity = 1;
 
         // When: Check if product is in stock
@@ -680,18 +768,33 @@ class InventoryServiceApplicationTests {
 }
 ```
 
-### 11.3 Run Tests
+**What this does:**
+- Spins up PostgreSQL TestContainer automatically
+- Flyway runs migrations automatically in test container
+- Tests against seeded data (SKU001-SKU006)
+- 4 test scenarios covering all cases
+
+### 12.2 Run Tests
 
 ```bash
 cd microservices-parent/inventory-service
 ./gradlew test
 ```
 
-All tests should pass.
+All tests should pass. Look for:
+
+```
+InventoryServiceApplicationTests > shouldReturnTrueWhenSufficientStock() PASSED
+InventoryServiceApplicationTests > shouldReturnFalseWhenInsufficientStock() PASSED
+InventoryServiceApplicationTests > shouldReturnTrueWhenExactStock() PASSED
+InventoryServiceApplicationTests > shouldReturnFalseWhenProductNotFound() PASSED
+
+BUILD SUCCESSFUL
+```
 
 ---
 
-## Step 12: Create Dockerfile
+## Step 13: Create Dockerfile
 
 Create `inventory-service/Dockerfile`:
 
@@ -699,7 +802,7 @@ Create `inventory-service/Dockerfile`:
 # ============================================
 # Stage 1: Build Stage
 # ============================================
-FROM eclipse-temurin:21-jdk AS builder
+FROM eclipse-temurin:22-jdk AS builder
 
 WORKDIR /app
 
@@ -715,7 +818,7 @@ RUN ./gradlew clean build -x test
 # ============================================
 # Stage 2: Runtime Stage
 # ============================================
-FROM eclipse-temurin:21-jre
+FROM eclipse-temurin:22-jre
 
 WORKDIR /app
 
@@ -736,13 +839,20 @@ HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
 ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
+**What this does:**
+- **Stage 1 (Builder):** Compiles the application with Java 22 JDK
+- **Stage 2 (Runtime):** Runs the application with Java 22 JRE (smaller image)
+- Creates non-root `spring` user for security
+- Sets Docker profile automatically
+- Health check via Actuator endpoint
+
 ---
 
-## Step 13: Update docker-compose.yml
+## Step 14: Update docker-compose.yml
 
 Open `microservices-parent/docker-compose.yml`
 
-### 13.1 Add Dedicated PostgreSQL Container for Inventory Service
+### 14.1 Add Dedicated PostgreSQL Container for Inventory Service
 
 **Important:** Each microservice should have its own database instance for proper isolation.
 
@@ -775,7 +885,7 @@ Add the postgres-inventory service:
     restart: unless-stopped
 ```
 
-### 13.2 Add Inventory Service
+### 14.2 Add Inventory Service
 
 Add the inventory-service:
 
@@ -796,7 +906,7 @@ Add the inventory-service:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inventory:5432/inventory_service
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
     depends_on:
       postgres-inventory:
         condition: service_healthy
@@ -811,12 +921,13 @@ Add the inventory-service:
 - Inventory service waits for postgres-inventory to be healthy before starting
 - Database name is `inventory_service` (underscore, not hyphen)
 - Separate data volume for isolation: `postgres-inventory`
+- Flyway migrations run automatically on startup
 
 ---
 
-## Step 14: Run with Docker Compose
+## Step 15: Run with Docker Compose
 
-### 14.1 Build and Start All Services
+### 15.1 Build and Start All Services
 
 ```bash
 cd microservices-parent
@@ -825,7 +936,7 @@ docker-compose up --build -d
 
 The `--build` flag ensures Docker rebuilds the inventory-service image with your latest code.
 
-### 14.2 Verify All Services are Running
+### 15.2 Verify All Services are Running
 
 ```bash
 docker-compose ps
@@ -836,7 +947,7 @@ Expected output should show:
 - ✅ inventory-service (running)
 - Plus your other services (product-service, order-service, etc.)
 
-### 14.3 Check Logs
+### 15.3 Check Logs
 
 View inventory-service logs:
 ```bash
@@ -845,16 +956,27 @@ docker-compose logs -f inventory-service
 
 You should see:
 - "Started InventoryServiceApplication"
-- "Loading inventory data..."
-- "Inventory data loaded successfully"
+- Flyway migration messages:
+  ```
+  Flyway: Migrating schema "public" to version "1 - init"
+  Flyway: Migrating schema "public" to version "2 - add inventory"
+  Flyway: Successfully applied 2 migrations
+  ```
 
 Press `Ctrl+C` to exit logs.
 
-### 14.4 Verify Database
+### 15.4 Verify Database
 
 Connect to postgres-inventory container:
 ```bash
 docker exec -it postgres-inventory psql -U admin -d inventory_service
+```
+
+Check Flyway migrations:
+```sql
+SELECT version, description, installed_on, success
+FROM flyway_schema_history
+ORDER BY installed_rank;
 ```
 
 Check inventory data:
@@ -864,11 +986,14 @@ SELECT * FROM t_inventory;
 
 Expected output:
 ```
- id | sku_code    | quantity
-----|-------------|----------
-  1 | sku_123456  |       10
-  2 | sku_789012  |        0
-  3 | sku_321765  |        5
+ id | sku_code | quantity
+----|----------|----------
+  1 | SKU001   |      100
+  2 | SKU002   |      200
+  3 | SKU003   |      300
+  4 | SKU004   |      400
+  5 | SKU005   |      500
+  6 | SKU006   |      600
 ```
 
 Exit:
@@ -876,27 +1001,27 @@ Exit:
 \q
 ```
 
-### 14.5 Test API with Postman or cURL
+### 15.5 Test API with Postman or cURL
 
 **Test 1: Item in stock**
 ```bash
-curl "http://localhost:8083/api/inventory?skuCode=sku_123456&quantity=2"
+curl "http://localhost:8083/api/inventory?skuCode=SKU001&quantity=50"
 ```
 Expected: `true`
 
 **Test 2: Insufficient stock**
 ```bash
-curl "http://localhost:8083/api/inventory?skuCode=sku_123456&quantity=20"
+curl "http://localhost:8083/api/inventory?skuCode=SKU001&quantity=150"
 ```
 Expected: `false`
 
-**Test 3: Out of stock item**
+**Test 3: Exact stock match**
 ```bash
-curl "http://localhost:8083/api/inventory?skuCode=sku_789012&quantity=1"
+curl "http://localhost:8083/api/inventory?skuCode=SKU006&quantity=600"
 ```
-Expected: `false`
+Expected: `true`
 
-### 14.6 Stop Services
+### 15.6 Stop Services
 
 When done testing:
 ```bash
@@ -908,29 +1033,33 @@ To remove volumes (clears database data):
 docker-compose down -v
 ```
 
+**Note:** If you remove volumes, Flyway will re-run migrations when you start again.
+
 ---
 
 ## Summary
 
 ### What You've Built
 
-You've successfully created a complete inventory microservice with:
+You've successfully created a production-ready inventory microservice with:
 
 **Core Functionality:**
 - ✅ New inventory-service microservice
 - ✅ Dedicated PostgreSQL database instance (postgres-inventory)
 - ✅ REST API to check stock availability
-- ✅ Automatic data seeding with CommandLineRunner
+- ✅ **Flyway database migrations** for schema and data management
 - ✅ Spring Data JPA custom query methods
 - ✅ Integration tests with TestContainers
 - ✅ Multistage Docker containerization
 
-**Microservices Best Practices Implemented:**
+**Production Best Practices Implemented:**
+- ✅ **Flyway Migrations**: Version-controlled database changes
 - ✅ **Database per Service Pattern**: Each microservice has its own database instance
 - ✅ **Service Isolation**: Inventory service can be deployed/scaled independently
 - ✅ **Health Checks**: PostgreSQL health checks ensure proper startup order
 - ✅ **Environment-based Configuration**: Separate configs for local vs Docker
 - ✅ **Container Orchestration**: Docker Compose manages all services
+- ✅ **Migration Tracking**: Flyway tracks which migrations have been applied
 
 ### Architecture Overview
 
@@ -944,15 +1073,62 @@ You've successfully created a complete inventory microservice with:
 - PostgreSQL (order-service): 5432
 - **PostgreSQL (inventory-service): 5434** (NEW)
 
+### Flyway Benefits
+
+**Why Flyway over CommandLineRunner?**
+
+| Aspect | CommandLineRunner | Flyway |
+|--------|------------------|--------|
+| **Production Ready** | ❌ No | ✅ Yes |
+| **Version Control** | ❌ No tracking | ✅ Full history |
+| **Idempotent** | ⚠️ Needs custom logic | ✅ Built-in |
+| **Team Collaboration** | ❌ Difficult | ✅ Easy |
+| **Rollback Support** | ❌ No | ✅ Yes (paid) |
+| **CI/CD Integration** | ⚠️ Complex | ✅ Simple |
+| **Schema Evolution** | ❌ Hard to track | ✅ Automatic |
+
+### Key Flyway Concepts Learned
+
+1. **Versioned Migrations**: `V1__`, `V2__`, etc.
+2. **Naming Convention**: `V<version>__<description>.sql`
+3. **Migration History**: `flyway_schema_history` table
+4. **Automatic Execution**: Runs on application startup
+5. **Schema Management**: `ddl-auto=none` - Flyway controls everything
+
 ### Next Steps
 
-Now that you have an inventory service, you can:
-1. Integrate it with order-service to check stock before placing orders
-2. Add more endpoints (update inventory, add new items, etc.)
-3. Implement inventory reservation logic
-4. Add pub/sub events for inventory updates
+Now that you have a production-ready inventory service, you can:
+
+1. **Add More Migrations:**
+   ```sql
+   V3__add_indexes.sql      -- Add performance indexes
+   V4__add_audit_columns.sql -- Add created_at, updated_at
+   V5__add_location.sql     -- Add warehouse location
+   ```
+
+2. **Integrate with Order Service:**
+   - Check inventory before placing orders
+   - Reserve inventory during order processing
+   - Release inventory if order fails
+
+3. **Add More Endpoints:**
+   - `PUT /api/inventory/{id}` - Update quantity
+   - `POST /api/inventory` - Add new product
+   - `GET /api/inventory/{skuCode}` - Get specific item
+
+4. **Implement Business Logic:**
+   - Inventory reservation (temporary holds)
+   - Low stock alerts
+   - Reorder point calculations
+   - Stock movement history
 
 ### Troubleshooting
+
+**If Flyway migrations fail:**
+- Check `flyway_schema_history` table for errors
+- Look at console logs for specific error messages
+- Verify SQL syntax in migration files
+- Ensure version numbers are sequential
 
 **If inventory-service won't start:**
 - Check postgres-inventory is healthy: `docker-compose ps`
@@ -960,11 +1136,36 @@ Now that you have an inventory service, you can:
 - Verify init script ran: `docker exec -it postgres-inventory psql -U admin -l`
 
 **If data isn't seeded:**
-- Check logs: `docker-compose logs inventory-service`
-- Look for "Loading inventory data..." message
-- Verify DataLoader ran successfully
+- Check Flyway logs in application startup
+- Query `flyway_schema_history` to see if V2 migration ran
+- Verify `t_inventory` table exists
 
 **Database connection errors:**
 - Ensure `SPRING_DATASOURCE_URL` points to `postgres-inventory:5432`
 - Check username/password match in docker-compose and application-docker.properties
 - Verify database name is `inventory_service` (underscore, not hyphen)
+
+**To re-run migrations (DANGER - only for development):**
+```sql
+-- Connect to database
+docker exec -it postgres-inventory psql -U admin -d inventory_service
+
+-- Delete migration history (CAUTION!)
+TRUNCATE flyway_schema_history;
+
+-- Drop and recreate tables
+DROP TABLE t_inventory;
+
+-- Restart service to re-run migrations
+docker-compose restart inventory-service
+```
+
+### Learning Resources
+
+- [Flyway Documentation](https://flywaydb.org/documentation/)
+- [Spring Boot Flyway Integration](https://docs.spring.io/spring-boot/docs/current/reference/html/howto.html#howto.data-initialization.migration-tool.flyway)
+- [Database Migration Best Practices](https://flywaydb.org/documentation/concepts/migrations)
+
+---
+
+**Congratulations!** You've built a production-ready inventory microservice using industry-standard tools and practices. This approach scales from development to production seamlessly.
