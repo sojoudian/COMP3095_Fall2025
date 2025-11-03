@@ -250,49 +250,95 @@ cd microservices-parent/inventory-service
 Create `inventory-service/Dockerfile`:
 
 ```dockerfile
-FROM eclipse-temurin:21-jdk AS builder
+FROM gradle:8-jdk21 AS builder
 
-WORKDIR /app
+COPY --chown=gradle:gradle . /home/gradle/src
 
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle.kts .
-COPY settings.gradle.kts .
-COPY src src
+WORKDIR /home/gradle/src
 
-RUN chmod +x gradlew
-RUN ./gradlew clean build -x test
+RUN gradle build -x test
 
-FROM eclipse-temurin:21-jre
+FROM openjdk:21-jdk
 
-WORKDIR /app
+RUN mkdir /app
 
-COPY --from=builder /app/build/libs/*.jar app.jar
+COPY --from=builder /home/gradle/src/build/libs/*.jar /app/inventory-service.jar
 
-RUN addgroup --system spring && adduser --system --group spring
-RUN chown -R spring:spring /app
-
-USER spring:spring
+ENV POSTGRES_USER=admin \
+    POSTGRES_USER=password
 
 EXPOSE 8083
 
-ENV SPRING_PROFILES_ACTIVE=docker
-
-HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:8083/actuator/health || exit 1
-
-ENTRYPOINT ["java", "-jar", "app.jar"]
+ENTRYPOINT ["java", "-jar", "/app/inventory-service.jar"]
 ```
 
 ---
 
 ## Step 8: Update docker-compose.yml
 
-Open `microservices-parent/docker-compose.yml`
-
-Add postgres-inventory service:
+Replace `microservices-parent/docker-compose.yml` with:
 
 ```yaml
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - mongo-data:/data/db
+      - ./init/mongo/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    command: mongod --auth
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo-express:
+    image: mongo-express:latest
+    container_name: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_BASICAUTH_USERNAME=admin
+      - ME_CONFIG_BASICAUTH_PASSWORD=password
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: order-service
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d order-service"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   postgres-inventory:
     image: postgres:latest
     container_name: postgres-inventory
@@ -302,44 +348,88 @@ Add postgres-inventory service:
       POSTGRES_DB: inventory-service
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
     volumes:
-      - postgres-inventory-data:/var/lib/postgresql/data
+      - postgres-inventory-data:/data/postgres
     networks:
       - microservices-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d inventory-service"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-```
 
-Add inventory-service:
-
-```yaml
-  inventory-service:
-    build:
-      context: ./inventory-service
-      dockerfile: Dockerfile
-    image: inventory-service:latest
-    container_name: inventory-service
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
     ports:
-      - "8083:8083"
+      - "8888:80"
     environment:
-      SPRING_PROFILES_ACTIVE: docker
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inventory:5433/inventory-service
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
     depends_on:
-      postgres-inventory:
+      postgres:
         condition: service_healthy
     networks:
       - microservices-network
-```
 
-Add volume to volumes section:
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    image: product-service:latest
+    container_name: product-service
+    ports:
+      - "8084:8084"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://admin:password@mongodb:27017/product-service?authSource=admin
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - microservices-network
 
-```yaml
+  order-service:
+    build:
+      context: ./order-service
+      dockerfile: Dockerfile
+    image: order-service:latest
+    container_name: order-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order-service
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - microservices-network
+
+  inventory-service:
+    image: inventory-service
+    ports:
+      - "8083:8083"
+    build:
+      context: ./inventory-service
+      dockerfile: ./Dockerfile
+    container_name: inventory-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory/inventory-service
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - postgres-inventory
+    networks:
+      - microservices-network
+
+networks:
+  microservices-network:
+    driver: bridge
+
 volumes:
   mongo-data:
     driver: local
