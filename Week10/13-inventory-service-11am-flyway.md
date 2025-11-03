@@ -165,71 +165,66 @@ package ca.gbc.comp3095.inventoryservice;
 import io.restassured.RestAssured;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.http.HttpStatus;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
-import static org.hamcrest.Matchers.equalTo;
+import static io.restassured.RestAssured.given;
+import static org.hamcrest.Matchers.is;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@Testcontainers
 class InventoryServiceApplicationTests {
 
-    @Container
     @ServiceConnection
-    static PostgreSQLContainer<?> postgresContainer =
-            new PostgreSQLContainer<>("postgres:latest")
-                    .withDatabaseName("inventory-service-test")
-                    .withUsername("test")
-                    .withPassword("test");
+    static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest");
 
     @LocalServerPort
     private Integer port;
 
-    static {
-        postgresContainer.start();
-    }
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
-    void setUp() {
+    void setup() {
         RestAssured.baseURI = "http://localhost";
         RestAssured.port = port;
+
+        jdbcTemplate.execute("DELETE FROM t_inventory;");
+        jdbcTemplate.execute("INSERT INTO t_inventory (sku_code, quantity) VALUES ('SKU001', 200);");
+        jdbcTemplate.execute("INSERT INTO t_inventory (sku_code, quantity) VALUES ('SKU002', 50);");
+    }
+
+    static {
+        postgreSQLContainer.start();
     }
 
     @Test
-    void shouldReturnTrueWhenSufficientStock() {
-        String skuCode = "SKU001";
-        Integer quantity = 50;
-
-        RestAssured.given()
-                .queryParam("skuCode", skuCode)
-                .queryParam("quantity", quantity)
+    void shouldReturnTrueWhenItemIsInStock() {
+        given()
+                .queryParam("skuCode", "SKU001")
+                .queryParam("quantity", 100)
                 .when()
                 .get("/api/inventory")
                 .then()
                 .log().all()
-                .statusCode(HttpStatus.OK.value())
-                .body(equalTo("true"));
+                .statusCode(200)
+                .body(is("true"));
     }
 
     @Test
-    void shouldReturnFalseWhenInsufficientStock() {
-        String skuCode = "SKU001";
-        Integer quantity = 150;
-
-        RestAssured.given()
-                .queryParam("skuCode", skuCode)
-                .queryParam("quantity", quantity)
+    void shouldReturnFalseWhenItemDoesNotExist() {
+        given()
+                .queryParam("skuCode", "NON_EXISTENT_SKU")
+                .queryParam("quantity", 100)
                 .when()
                 .get("/api/inventory")
                 .then()
                 .log().all()
-                .statusCode(HttpStatus.OK.value())
-                .body(equalTo("false"));
+                .statusCode(200)
+                .body(is("false"));
     }
 }
 ```
