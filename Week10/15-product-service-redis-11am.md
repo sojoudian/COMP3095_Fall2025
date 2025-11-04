@@ -19,8 +19,9 @@ Add Redis caching to product-service for comp3095_fall2025_11am.
 - [Step 7: Create RedisConfig](#step-7-create-redisconfig)
 - [Step 8: Create ProductService Interface and ProductServiceImpl](#step-8-create-productservice-interface-and-productserviceimpl)
 - [Step 9: Create ProductServiceApplicationCacheTests](#step-9-create-productserviceapplicationcachetests)
-- [Step 10: Test Locally](#step-10-test-locally)
-- [Step 11: Test with Docker Compose](#step-11-test-with-docker-compose)
+- [Step 10: Update ProductController](#step-10-update-productcontroller)
+- [Step 11: Test Locally](#step-11-test-locally)
+- [Step 12: Test with Docker Compose](#step-12-test-with-docker-compose)
 - [Summary](#summary)
 
 ---
@@ -897,7 +898,38 @@ public class ProductServiceApplicationCacheTests {
 
 ---
 
-## Step 10: Test Locally
+## Step 10: Update ProductController
+
+```
+microservices-parent
+└── product-service
+    └── src
+        └── main
+            └── java
+                └── ca
+                    └── gbc
+                        └── comp3095
+                            └── productservice
+                                └── controller
+                                    └── ProductController.java
+```
+
+Open `microservices-parent/product-service/src/main/java/ca/gbc/comp3095/productservice/controller/ProductController.java`
+
+Remove the `getProductById` endpoint (lines 31-36):
+
+```java
+// GET by ID endpoint - Not required in lab instructions, optionally added by Maziar
+@GetMapping("/{id}")
+@ResponseStatus(HttpStatus.OK)
+public ProductResponse getProductById(@PathVariable String id) {
+    return productService.getProductById(id);
+}
+```
+
+---
+
+## Step 11: Test Locally
 
 ### Start mongodb container
 
@@ -928,7 +960,7 @@ cd microservices-parent/product-service
 
 ---
 
-## Step 11: Test with Docker Compose
+## Step 12: Test with Docker Compose
 
 ```bash
 cd microservices-parent
