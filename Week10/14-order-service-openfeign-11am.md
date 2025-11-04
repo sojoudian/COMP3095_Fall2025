@@ -8,6 +8,23 @@ Add OpenFeign for inter-service communication between order-service and inventor
 
 ---
 
+## Table of Contents
+
+- [Step 1: Update build.gradle.kts](#step-1-update-buildgradlekts)
+- [Step 2: Create InventoryClient](#step-2-create-inventoryclient)
+- [Step 3: Enable Feign Clients](#step-3-enable-feign-clients)
+- [Step 4: Update OrderService](#step-4-update-orderservice)
+- [Step 5: Update application.properties](#step-5-update-applicationproperties)
+- [Step 6: Update application-docker.properties](#step-6-update-application-dockerproperties)
+- [Step 7: Create InventoryClientStub](#step-7-create-inventoryclientstub)
+- [Step 8: Create test application.properties](#step-8-create-test-applicationproperties)
+- [Step 9: Update OrderServiceApplicationTests](#step-9-update-orderserviceapplicationtests)
+- [Step 10: Test Locally](#step-10-test-locally)
+- [Step 11: Test with Docker Compose](#step-11-test-with-docker-compose)
+- [Summary](#summary)
+
+---
+
 ## Step 1: Update build.gradle.kts
 
 Open `order-service/build.gradle.kts`
@@ -83,7 +100,7 @@ Reload Gradle.
 
 Create directory: `order-service/src/main/java/ca/gbc/comp3095/orderservice/client`
 
-Create `InventoryClient.java`:
+Create `InventoryClient.java` (interface):
 
 ```java
 package ca.gbc.comp3095.orderservice.client;
@@ -233,7 +250,7 @@ inventory.service.url=http://inventory-service:8083
 
 Create directory: `order-service/src/test/java/ca/gbc/comp3095/orderservice/stubs`
 
-Create `InventoryClientStub.java`:
+Create `InventoryClientStub.java` (class):
 
 ```java
 package ca.gbc.comp3095.orderservice.stubs;
