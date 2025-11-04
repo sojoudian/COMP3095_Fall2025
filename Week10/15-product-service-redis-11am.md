@@ -17,7 +17,7 @@ Add Redis caching to product-service for comp3095_fall2025_11am.
 - [Step 5: Update application.properties](#step-5-update-applicationproperties)
 - [Step 6: Update application-docker.properties](#step-6-update-application-dockerproperties)
 - [Step 7: Create RedisConfig](#step-7-create-redisconfig)
-- [Step 8: Update ProductServiceImpl](#step-8-update-productserviceimpl)
+- [Step 8: Create ProductService Interface and ProductServiceImpl](#step-8-create-productservice-interface-and-productserviceimpl)
 - [Step 9: Create ProductServiceApplicationCacheTests](#step-9-create-productserviceapplicationcachetests)
 - [Step 10: Test Locally](#step-10-test-locally)
 - [Step 11: Test with Docker Compose](#step-11-test-with-docker-compose)
