@@ -27,7 +27,7 @@ Add OpenFeign for inter-service communication between order-service and inventor
 
 ## Step 1: Update build.gradle.kts
 
-Open `order-service/build.gradle.kts`
+Open `microservices-parent/order-service/build.gradle.kts`
 
 Add Spring Cloud BOM and OpenFeign dependencies:
 
@@ -98,7 +98,7 @@ Reload Gradle.
 
 ## Step 2: Create InventoryClient
 
-Create directory: `order-service/src/main/java/ca/gbc/comp3095/orderservice/client`
+Create directory: `microservices-parent/order-service/src/main/java/ca/gbc/comp3095/orderservice/client`
 
 Create `InventoryClient.java` (interface):
 
@@ -122,7 +122,7 @@ public interface InventoryClient {
 
 ## Step 3: Enable Feign Clients
 
-Open `order-service/src/main/java/ca/gbc/comp3095/orderservice/OrderServiceApplication.java`
+Open `microservices-parent/order-service/src/main/java/ca/gbc/comp3095/orderservice/OrderServiceApplication.java`
 
 Replace with:
 
@@ -148,7 +148,7 @@ public class OrderServiceApplication {
 
 ## Step 4: Update OrderService
 
-Open `order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderService.java`
+Open `microservices-parent/order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderService.java`
 
 Replace with:
 
@@ -224,7 +224,7 @@ public class OrderService {
 
 ## Step 5: Update application.properties
 
-Open `order-service/src/main/resources/application.properties`
+Open `microservices-parent/order-service/src/main/resources/application.properties`
 
 Add at the end:
 
@@ -236,7 +236,7 @@ inventory.service.url=http://localhost:8083
 
 ## Step 6: Update application-docker.properties
 
-Open `order-service/src/main/resources/application-docker.properties`
+Open `microservices-parent/order-service/src/main/resources/application-docker.properties`
 
 Add at the end:
 
@@ -248,7 +248,7 @@ inventory.service.url=http://inventory-service:8083
 
 ## Step 7: Create InventoryClientStub
 
-Create directory: `order-service/src/test/java/ca/gbc/comp3095/orderservice/stubs`
+Create directory: `microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/stubs`
 
 Create `InventoryClientStub.java` (class):
 
@@ -273,7 +273,7 @@ public class InventoryClientStub {
 
 ## Step 8: Create test application.properties
 
-Create file: `order-service/src/test/resources/application.properties`
+Create file: `microservices-parent/order-service/src/test/resources/application.properties`
 
 ```properties
 inventory.service.url=http://localhost:${wiremock.server.port}
@@ -283,7 +283,7 @@ inventory.service.url=http://localhost:${wiremock.server.port}
 
 ## Step 9: Update OrderServiceApplicationTests
 
-Open `order-service/src/test/java/ca/gbc/comp3095/orderservice/OrderServiceApplicationTests.java`
+Open `microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/OrderServiceApplicationTests.java`
 
 Replace with:
 
