@@ -569,7 +569,6 @@ public interface ProductService {
 
     ProductResponse createProduct(ProductRequest productRequest);
     List<ProductResponse> getAllProducts();
-    ProductResponse getProductById(String id);
     String updateProduct(String productId, ProductRequest productRequest);
     void deleteProduct(String productId);
 
@@ -655,13 +654,6 @@ public class ProductServiceImpl implements ProductService {
     private ProductResponse maptoProductResponse(Product product) {
         return new ProductResponse(product.getId(), product.getName(),
                 product.getDescription(), product.getPrice());
-    }
-
-    @Override
-    public ProductResponse getProductById(String id) {
-        Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-        return maptoProductResponse(product);
     }
 
     @Override
