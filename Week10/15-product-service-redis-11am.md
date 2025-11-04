@@ -535,7 +535,47 @@ public class RedisConfig {
 
 ---
 
-## Step 8: Update ProductServiceImpl
+## Step 8: Create ProductService Interface and ProductServiceImpl
+
+### 8.1: Create ProductService Interface
+
+```
+microservices-parent
+└── product-service
+    └── src
+        └── main
+            └── java
+                └── ca
+                    └── gbc
+                        └── comp3095
+                            └── productservice
+                                └── service
+                                    └── ProductService.java
+```
+
+Rename existing `ProductService.java` to `ProductServiceOld.java`
+
+Create `ProductService.java` (interface):
+
+```java
+package ca.gbc.comp3095.productservice.service;
+
+import ca.gbc.comp3095.productservice.dto.ProductRequest;
+import ca.gbc.comp3095.productservice.dto.ProductResponse;
+
+import java.util.List;
+
+public interface ProductService {
+
+    ProductResponse createProduct(ProductRequest productRequest);
+    List<ProductResponse> getAllProducts();
+    String updateProduct(String productId, ProductRequest productRequest);
+    void deleteProduct(String productId);
+
+}
+```
+
+### 8.2: Create ProductServiceImpl
 
 ```
 microservices-parent
@@ -551,9 +591,7 @@ microservices-parent
                                     └── ProductServiceImpl.java
 ```
 
-Open `microservices-parent/product-service/src/main/java/ca/gbc/comp3095/productservice/service/ProductServiceImpl.java`
-
-Replace with:
+Create `ProductServiceImpl.java` (class):
 
 ```java
 package ca.gbc.comp3095.productservice.service;
