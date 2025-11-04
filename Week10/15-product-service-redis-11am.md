@@ -791,7 +791,7 @@ public class ProductServiceApplicationCacheTests {
     void testCreateProductAndCacheIt() throws Exception {
 
         ProductRequest productRequest =
-                new ProductRequest(null, "Samsung TV", "Samsung TV - 2025", BigDecimal.valueOf(2000));
+                new ProductRequest("Samsung TV", "Samsung TV - 2025", BigDecimal.valueOf(2000));
 
         MvcResult result = mockMvc.perform(post("/api/product")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -852,7 +852,7 @@ public class ProductServiceApplicationCacheTests {
 
         productRepository.save(product);
 
-        ProductRequest updatedProductRequest = new ProductRequest(product.getId(),
+        ProductRequest updatedProductRequest = new ProductRequest(
                 "Gaming Laptop", "Gaming Laptop Pro", BigDecimal.valueOf(3000L));
 
         mockMvc.perform(MockMvcRequestBuilders.put("/api/product/{productId}", product.getId())
