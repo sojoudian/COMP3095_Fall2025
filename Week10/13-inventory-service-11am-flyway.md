@@ -258,14 +258,14 @@ WORKDIR /home/gradle/src
 
 RUN gradle build -x test
 
-FROM openjdk:21-jdk
+FROM eclipse-temurin:21-jdk
 
 RUN mkdir /app
 
 COPY --from=builder /home/gradle/src/build/libs/*.jar /app/inventory-service.jar
 
 ENV POSTGRES_USER=admin \
-    POSTGRES_USER=password
+    POSTGRES_PASSWORD=password
 
 EXPOSE 8083
 
@@ -416,11 +416,11 @@ services:
       dockerfile: ./Dockerfile
     container_name: inventory-service
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory/inventory-service
-      - SPRING_DATASOURCE_USERNAME=admin
-      - SPRING_DATASOURCE_PASSWORD=password
-      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
-      - SPRING_PROFILES_ACTIVE=docker
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inventory/inventory-service
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
     depends_on:
       - postgres-inventory
     networks:
