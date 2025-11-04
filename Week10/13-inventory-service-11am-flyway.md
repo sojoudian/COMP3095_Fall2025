@@ -329,7 +329,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresql
       - ./init/postgres/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d
     networks:
       - microservices-network
