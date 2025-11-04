@@ -100,6 +100,20 @@ Reload Gradle.
 
 Create directory: `microservices-parent/order-service/src/main/java/ca/gbc/comp3095/orderservice/client`
 
+```
+microservices-parent
+└── order-service
+    └── src
+        └── main
+            └── java
+                └── ca
+                    └── gbc
+                        └── comp3095
+                            └── orderservice
+                                └── client
+                                    └── InventoryClient.java
+```
+
 Create `InventoryClient.java` (interface):
 
 ```java
@@ -121,6 +135,19 @@ public interface InventoryClient {
 ---
 
 ## Step 3: Enable Feign Clients
+
+```
+microservices-parent
+└── order-service
+    └── src
+        └── main
+            └── java
+                └── ca
+                    └── gbc
+                        └── comp3095
+                            └── orderservice
+                                └── OrderServiceApplication.java
+```
 
 Open `microservices-parent/order-service/src/main/java/ca/gbc/comp3095/orderservice/OrderServiceApplication.java`
 
@@ -147,6 +174,20 @@ public class OrderServiceApplication {
 ---
 
 ## Step 4: Update OrderService
+
+```
+microservices-parent
+└── order-service
+    └── src
+        └── main
+            └── java
+                └── ca
+                    └── gbc
+                        └── comp3095
+                            └── orderservice
+                                └── service
+                                    └── OrderService.java
+```
 
 Open `microservices-parent/order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderService.java`
 
@@ -224,6 +265,15 @@ public class OrderService {
 
 ## Step 5: Update application.properties
 
+```
+microservices-parent
+└── order-service
+    └── src
+        └── main
+            └── resources
+                └── application.properties
+```
+
 Open `microservices-parent/order-service/src/main/resources/application.properties`
 
 Add at the end:
@@ -235,6 +285,15 @@ inventory.service.url=http://localhost:8083
 ---
 
 ## Step 6: Update application-docker.properties
+
+```
+microservices-parent
+└── order-service
+    └── src
+        └── main
+            └── resources
+                └── application-docker.properties
+```
 
 Open `microservices-parent/order-service/src/main/resources/application-docker.properties`
 
@@ -249,6 +308,20 @@ inventory.service.url=http://inventory-service:8083
 ## Step 7: Create InventoryClientStub
 
 Create directory: `microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/stubs`
+
+```
+microservices-parent
+└── order-service
+    └── src
+        └── test
+            └── java
+                └── ca
+                    └── gbc
+                        └── comp3095
+                            └── orderservice
+                                └── stubs
+                                    └── InventoryClientStub.java
+```
 
 Create `InventoryClientStub.java` (class):
 
@@ -273,6 +346,15 @@ public class InventoryClientStub {
 
 ## Step 8: Create test application.properties
 
+```
+microservices-parent
+└── order-service
+    └── src
+        └── test
+            └── resources
+                └── application.properties
+```
+
 Create file: `microservices-parent/order-service/src/test/resources/application.properties`
 
 ```properties
@@ -283,12 +365,20 @@ inventory.service.url=http://localhost:${wiremock.server.port}
 
 ## Step 9: Update OrderServiceApplicationTests
 
-Open `microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/OrderServiceApplicationTests.java`
+```
+microservices-parent
+└── order-service
+    └── src
+        └── test
+            └── java
+                └── ca
+                    └── gbc
+                        └── comp3095
+                            └── orderservice
+                                └── OrderServiceApplicationTests.java
+```
 
-```
-microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/
-└── OrderServiceApplicationTests.java
-```
+Open `microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/OrderServiceApplicationTests.java`
 
 Replace with:
 
