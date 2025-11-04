@@ -29,27 +29,62 @@ Add Redis caching to product-service for comp3095_fall2025_11am.
 
 Open `microservices-parent/product-service/build.gradle.kts`
 
-Add Redis dependencies:
+Replace entire file with:
 
 ```kotlin
+plugins {
+    java
+    id("org.springframework.boot") version "3.5.6"
+    id("io.spring.dependency-management") version "1.1.7"
+}
+
+group = "ca.gbc.comp3095"
+version = "0.0.1-SNAPSHOT"
+description = "product-service"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
 dependencies {
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+
     implementation("org.springframework.boot:spring-boot-starter-actuator")
     implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 
-    // TestContainers Dependencies
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
     testImplementation("org.springframework.boot:spring-boot-testcontainers")
+
     testImplementation("org.testcontainers:mongodb")
     testImplementation("org.testcontainers:junit-jupiter")
     testImplementation("org.testcontainers:redis")
+
     testImplementation("io.rest-assured:rest-assured")
+
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
 }
 ```
 
@@ -58,6 +93,11 @@ Reload Gradle.
 ---
 
 ## Step 2: Update Docker Compose
+
+```
+microservices-parent
+└── docker-compose.yml
+```
 
 Open `microservices-parent/docker-compose.yml`
 
@@ -108,6 +148,13 @@ volumes:
 ## Step 3: Create redis.conf
 
 Create directory: `microservices-parent/init/redis`
+
+```
+microservices-parent
+└── init
+    └── redis
+        └── redis.conf
+```
 
 Create file: `microservices-parent/init/redis/redis.conf`
 
