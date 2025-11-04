@@ -285,6 +285,11 @@ inventory.service.url=http://localhost:${wiremock.server.port}
 
 Open `microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/OrderServiceApplicationTests.java`
 
+```
+microservices-parent/order-service/src/test/java/ca/gbc/comp3095/orderservice/
+└── OrderServiceApplicationTests.java
+```
+
 Replace with:
 
 ```java
