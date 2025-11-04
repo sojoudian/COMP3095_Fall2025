@@ -553,9 +553,9 @@ microservices-parent
                                     └── ProductService.java
 ```
 
-Rename existing `ProductService.java` to `ProductServiceOld.java`
 
-Create `ProductService.java` (interface):
+
+Update `ProductService.java` (interface):
 
 ```java
 package ca.gbc.comp3095.productservice.service;
