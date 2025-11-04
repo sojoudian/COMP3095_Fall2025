@@ -13,15 +13,16 @@ Add Redis caching to product-service for comp3095_fall2025_11am.
 - [Step 1: Update build.gradle.kts](#step-1-update-buildgradlekts)
 - [Step 2: Update Docker Compose](#step-2-update-docker-compose)
 - [Step 3: Create redis.conf](#step-3-create-redisconf)
-- [Step 4: Enable Caching](#step-4-enable-caching)
-- [Step 5: Update application.properties](#step-5-update-applicationproperties)
-- [Step 6: Update application-docker.properties](#step-6-update-application-dockerproperties)
-- [Step 7: Create RedisConfig](#step-7-create-redisconfig)
-- [Step 8: Create ProductService Interface and ProductServiceImpl](#step-8-create-productservice-interface-and-productserviceimpl)
-- [Step 9: Create ProductServiceApplicationCacheTests](#step-9-create-productserviceapplicationcachetests)
-- [Step 10: Update ProductController](#step-10-update-productcontroller)
-- [Step 11: Test Locally](#step-11-test-locally)
-- [Step 12: Test with Docker Compose](#step-12-test-with-docker-compose)
+- [Step 4: Create Dockerfile](#step-4-create-dockerfile)
+- [Step 5: Enable Caching](#step-5-enable-caching)
+- [Step 6: Update application.properties](#step-6-update-applicationproperties)
+- [Step 7: Update application-docker.properties](#step-7-update-application-dockerproperties)
+- [Step 8: Create RedisConfig](#step-8-create-redisconfig)
+- [Step 9: Create ProductService Interface and ProductServiceImpl](#step-9-create-productservice-interface-and-productserviceimpl)
+- [Step 10: Create ProductServiceApplicationCacheTests](#step-10-create-productserviceapplicationcachetests)
+- [Step 11: Update ProductController](#step-11-update-productcontroller)
+- [Step 12: Test Locally](#step-12-test-locally)
+- [Step 13: Test with Docker Compose](#step-13-test-with-docker-compose)
 - [Summary](#summary)
 
 ---
@@ -83,7 +84,7 @@ dependencies {
     // TestContainers Modules
     testImplementation("org.testcontainers:mongodb")
     testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:redis")
+    //testImplementation("org.testcontainers:redis")
 
     // REST Assured for testing
     testImplementation("io.rest-assured:rest-assured")
@@ -369,7 +370,79 @@ appendonly yes
 
 ---
 
-## Step 4: Enable Caching
+## Step 4: Create Dockerfile
+
+```
+microservices-parent
+└── product-service
+    └── Dockerfile
+```
+
+Create file: `microservices-parent/product-service/Dockerfile`
+
+```dockerfile
+# ============================================
+# STAGE 1: BUILD
+# Purpose: Compile Java code and create JAR
+# ============================================
+FROM eclipse-temurin:21-jdk AS build
+
+# Set working directory inside container
+WORKDIR /app
+
+# Copy all project files into container
+# This includes: src/, build.gradle.kts, gradlew, etc.
+COPY . .
+
+# Make gradlew executable (needed on Linux containers)
+RUN chmod +x gradlew
+
+# Run Gradle build
+# -x test: Skip tests (we already ran them in Week 4)
+# --no-daemon: Don't start Gradle daemon (not needed in container)
+RUN ./gradlew clean build -x test --no-daemon
+
+# ============================================
+# STAGE 2: RUNTIME
+# Purpose: Create minimal runtime image
+# ============================================
+FROM eclipse-temurin:21-jre
+
+# Set working directory
+WORKDIR /app
+
+# Create a non-root user for security
+# Running as root in containers is a security risk
+RUN groupadd -r spring && useradd -r -g spring spring
+
+# Copy JAR file from build stage
+# --from=build: Copy from the "build" stage
+# Only copy the JAR, not the source code or build tools
+COPY --from=build /app/build/libs/*.jar app.jar
+
+# Change ownership of the JAR to the spring user
+RUN chown spring:spring app.jar
+
+# Switch to non-root user
+USER spring:spring
+
+# Document which port the application listens on
+# This doesn't actually open the port (docker-compose does that)
+# It's documentation for other developers
+EXPOSE 8084
+
+# Set environment variable to activate Docker profile
+# This will make Spring Boot use application-docker.properties
+ENV SPRING_PROFILES_ACTIVE=docker
+
+# Define the command to run when container starts
+# java -jar app.jar: Start the Spring Boot application
+ENTRYPOINT ["java", "-jar", "app.jar"]
+```
+
+---
+
+## Step 5: Enable Caching
 
 ```
 microservices-parent
@@ -408,7 +481,7 @@ public class ProductServiceApplication {
 
 ---
 
-## Step 5: Update application.properties
+## Step 6: Update application.properties
 
 ```
 microservices-parent
@@ -434,7 +507,7 @@ spring.cache.redis.time-to-live=60s
 
 ---
 
-## Step 6: Update application-docker.properties
+## Step 7: Update application-docker.properties
 
 ```
 microservices-parent
@@ -460,7 +533,7 @@ spring.cache.redis.time-to-live=60s
 
 ---
 
-## Step 7: Create RedisConfig
+## Step 8: Create RedisConfig
 
 Create directory: `microservices-parent/product-service/src/main/java/ca/gbc/comp3095/productservice/config`
 
@@ -536,9 +609,9 @@ public class RedisConfig {
 
 ---
 
-## Step 8: Create ProductService Interface and ProductServiceImpl
+## Step 9: Create ProductService Interface and ProductServiceImpl
 
-### 8.1: Create ProductService Interface
+### 9.1: Create ProductService Interface
 
 ```
 microservices-parent
@@ -576,7 +649,7 @@ public interface ProductService {
 }
 ```
 
-### 8.2: Create ProductServiceImpl
+### 9.2: Create ProductServiceImpl
 
 ```
 microservices-parent
@@ -688,7 +761,7 @@ public class ProductServiceImpl implements ProductService {
 
 ---
 
-## Step 9: Create ProductServiceApplicationCacheTests
+## Step 10: Create ProductServiceApplicationCacheTests
 
 Create directory: `microservices-parent/product-service/src/test/java/ca/gbc/comp3095/productservice`
 
@@ -898,7 +971,7 @@ public class ProductServiceApplicationCacheTests {
 
 ---
 
-## Step 10: Update ProductController
+## Step 11: Update ProductController
 
 ```
 microservices-parent
@@ -988,7 +1061,7 @@ public class ProductController {
 
 ---
 
-## Step 11: Test Locally
+## Step 12: Test Locally
 
 ### Start mongodb container
 
@@ -1019,7 +1092,7 @@ cd microservices-parent/product-service
 
 ---
 
-## Step 12: Test with Docker Compose
+## Step 13: Test with Docker Compose
 
 ```bash
 cd microservices-parent
