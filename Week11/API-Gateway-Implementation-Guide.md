@@ -78,6 +78,10 @@ Client → API Gateway (9000) → Product Service (8084)
 | **Packaging** | Jar |
 | **Spring Boot** | 3.5.7 |
 
+**Note on naming:**
+- **Group:** `ca.gbc` (matches Spring Initializr default for this course)
+- **Package:** `ca.gbc.comp3095.apigateway` (maintains consistency with existing services in your project)
+
 ### 1.3 Select Dependencies
 
 #### **Developer Tools**
@@ -396,7 +400,7 @@ include("api-gateway")
 
 **Location:** `microservices-parent/docker-compose.yml`
 
-Add api-gateway service at the beginning of services section:
+Add api-gateway service at the **very beginning** of services section (before mongodb):
 
 ```yaml
   api-gateway:
@@ -413,14 +417,14 @@ Add api-gateway service at the beginning of services section:
       - microservices-network
 ```
 
-**Complete docker-compose.yml structure:**
+**Final structure:**
 
 ```yaml
 version: '3.8'
 
 services:
 
-  api-gateway:
+  api-gateway:              # ADD THIS SERVICE FIRST
     image: api-gateway
     ports:
       - "9000:9000"
@@ -433,8 +437,10 @@ services:
     networks:
       - microservices-network
 
-  mongodb:
-    # ... existing configuration
+  mongodb:                  # EXISTING SERVICES BELOW
+    image: mongo:latest
+    container_name: mongodb
+    # ... rest of mongodb configuration
 
   mongo-express:
     # ... existing configuration
@@ -464,7 +470,16 @@ services:
     # ... existing configuration
 
 volumes:
-  # ... existing volumes
+  mongo-data:
+    driver: local
+  postgres-data:
+    driver: local
+  postgres-inventory-data:
+    driver: local
+  pgadmin-data:
+    driver: local
+  redis-data:
+    driver: local
 
 networks:
   microservices-network:
