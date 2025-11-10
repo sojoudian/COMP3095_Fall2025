@@ -212,7 +212,14 @@ No changes needed.
 
 ### 4.2 Create Routes Class
 
+1. **Right-click** on `routes` package
+2. Select **New → Java Class**
+3. Name: `Routes`
+4. Click **OK**
+
 **Location:** `api-gateway/src/main/java/ca/gbc/comp3095/apigateway/routes/Routes.java`
+
+Replace entire file with:
 
 ```java
 package ca.gbc.comp3095.apigateway.routes;
