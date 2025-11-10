@@ -90,11 +90,11 @@ Client → API Gateway (9000) → Product Service (8084)
 #### **Ops**
 - ✅ **Spring Boot Actuator**
 
-#### **Search for Gateway**
-- ✅ In the dependencies search box, type: `Gateway MVC`
-- ✅ Select **Gateway MVC** from results
+#### **Spring Cloud Routing**
+- ✅ Expand **Spring Cloud Routing** section
+- ✅ Select **Gateway**
 
-**Important:** Do NOT select "Gateway" (reactive). Select "Gateway MVC" (servlet-based).
+**Important:** Do NOT select "Reactive Gateway".
 
 ### 1.4 Complete Creation
 
