@@ -19,9 +19,8 @@ Add API Gateway to your microservices architecture. The gateway acts as a single
 - [Step 7: Create Dockerfile](#step-7-create-dockerfile)
 - [Step 8: Update settings.gradle.kts](#step-8-update-settingsgradlekts)
 - [Step 9: Update docker-compose.yml](#step-9-update-docker-composeyml)
-- [Step 10: Clean Up Submodule Settings Files](#step-10-clean-up-submodule-settings-files)
-- [Step 11: Test Locally](#step-11-test-locally)
-- [Step 12: Test with Docker Compose](#step-12-test-with-docker-compose)
+- [Step 10: Test Locally](#step-10-test-locally)
+- [Step 11: Test with Docker Compose](#step-11-test-with-docker-compose)
 - [Summary](#summary)
 
 ---
@@ -628,33 +627,9 @@ volumes:
 
 ---
 
-## Step 10: Clean Up Submodule Settings Files
+## Step 10: Test Locally
 
-**Important:** Remove `settings.gradle.kts` from all submodules. Only the parent project should have this file.
-
-```bash
-cd microservices-parent
-rm product-service/settings.gradle.kts
-rm order-service/settings.gradle.kts
-rm inventory-service/settings.gradle.kts
-rm api-gateway/settings.gradle.kts
-```
-
-**Why?**
-- Submodule `settings.gradle.kts` files make Gradle treat them as separate root projects
-- This prevents them from appearing in the parent project's Gradle panel
-- Only `microservices-parent/settings.gradle.kts` should exist
-
-**Reload Gradle:**
-1. Open **Gradle** panel (right side of IntelliJ)
-2. Click **Reload All Gradle Projects** (circular arrows icon)
-3. All 4 modules should now appear: product-service, order-service, inventory-service, api-gateway
-
----
-
-## Step 11: Test Locally
-
-### 11.1 Build Project
+### 10.1 Build Project
 
 ```bash
 cd microservices-parent
@@ -666,7 +641,7 @@ cd microservices-parent
 BUILD SUCCESSFUL
 ```
 
-### 11.2 Start Backend Services
+### 10.2 Start Backend Services
 
 **Terminal 1 - Product Service:**
 ```bash
@@ -684,7 +659,7 @@ cd order-service
 
 Wait for: `Started OrderServiceApplication`
 
-### 11.3 Start API Gateway
+### 10.3 Start API Gateway
 
 **Terminal 3 - API Gateway:**
 ```bash
@@ -699,7 +674,7 @@ Initializing order service route with URL: http://localhost:8082
 Started ApiGatewayApplication on port 9000
 ```
 
-### 11.4 Test with Postman
+### 10.4 Test with Postman
 
 #### Test 1: Get Products Through Gateway
 
@@ -753,7 +728,7 @@ Started ApiGatewayApplication on port 9000
 - Status: `201 Created`
 - Body: `Order Placed Successfully`
 
-### 11.5 Verify Gateway Logs
+### 10.5 Verify Gateway Logs
 
 Check Terminal 3 for routing logs:
 
@@ -764,13 +739,13 @@ Response status: 200 OK
 
 ---
 
-## Step 12: Test with Docker Compose
+## Step 11: Test with Docker Compose
 
-### 12.1 Stop Local Services
+### 11.1 Stop Local Services
 
 Stop all three terminals (Ctrl+C).
 
-### 12.2 Build Docker Images
+### 11.2 Build Docker Images
 
 ```bash
 cd microservices-parent
@@ -785,13 +760,13 @@ Successfully built order-service
 Successfully built inventory-service
 ```
 
-### 12.3 Start All Services
+### 11.3 Start All Services
 
 ```bash
 docker-compose up -d
 ```
 
-### 12.4 Verify Services Running
+### 11.4 Verify Services Running
 
 ```bash
 docker-compose ps
@@ -811,7 +786,7 @@ redis              Up
 ... (other services)
 ```
 
-### 12.5 Check Gateway Logs
+### 11.5 Check Gateway Logs
 
 ```bash
 docker logs api-gateway
@@ -824,16 +799,16 @@ Initializing order service route with URL: http://order-service:8082
 Started ApiGatewayApplication
 ```
 
-### 12.6 Test with Postman
+### 11.6 Test with Postman
 
-Repeat tests from Step 11.4, same endpoints:
+Repeat tests from Step 10.4, same endpoints:
 - `GET http://localhost:9000/api/product`
 - `POST http://localhost:9000/api/product`
 - `POST http://localhost:9000/api/order`
 
 All should work identically.
 
-### 12.7 Test with cURL (Optional)
+### 11.7 Test with cURL (Optional)
 
 ```bash
 # Get products
