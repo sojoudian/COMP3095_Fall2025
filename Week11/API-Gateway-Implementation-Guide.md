@@ -69,7 +69,7 @@ Client → API Gateway (9000) → Product Service (8084)
 | Setting | Value |
 |---------|-------|
 | **Name** | `api-gateway` |
-| **Group** | `ca.gbc` |
+| **Group** | `ca.gbc.comp3095` |
 | **Artifact** | `api-gateway` |
 | **Package name** | `ca.gbc.comp3095.apigateway` |
 | **Type** | Gradle - Kotlin |
@@ -78,9 +78,7 @@ Client → API Gateway (9000) → Product Service (8084)
 | **Packaging** | Jar |
 | **Spring Boot** | 3.5.7 |
 
-**Note on naming:**
-- **Group:** `ca.gbc` (matches Spring Initializr default for this course)
-- **Package:** `ca.gbc.comp3095.apigateway` (maintains consistency with existing services in your project)
+**Note:** Use `ca.gbc.comp3095` for Group to match your existing services (product-service, order-service, inventory-service).
 
 ### 1.3 Select Dependencies
 
@@ -123,7 +121,7 @@ plugins {
     id("io.spring.dependency-management") version "1.1.7"
 }
 
-group = "ca.gbc"
+group = "ca.gbc.comp3095"
 version = "0.0.1-SNAPSHOT"
 description = "api-gateway"
 
