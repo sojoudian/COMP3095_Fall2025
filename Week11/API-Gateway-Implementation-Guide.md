@@ -19,8 +19,9 @@ Add API Gateway to your microservices architecture. The gateway acts as a single
 - [Step 7: Create Dockerfile](#step-7-create-dockerfile)
 - [Step 8: Update settings.gradle.kts](#step-8-update-settingsgradlekts)
 - [Step 9: Update docker-compose.yml](#step-9-update-docker-composeyml)
-- [Step 10: Test Locally](#step-10-test-locally)
-- [Step 11: Test with Docker Compose](#step-11-test-with-docker-compose)
+- [Step 10: Create Flyway Migration for Order Service](#step-10-create-flyway-migration-for-order-service)
+- [Step 11: Test Locally](#step-11-test-locally)
+- [Step 12: Test with Docker Compose](#step-12-test-with-docker-compose)
 - [Summary](#summary)
 
 ---
@@ -627,9 +628,42 @@ volumes:
 
 ---
 
-## Step 10: Test Locally
+## Step 10: Create Flyway Migration for Order Service
 
-### 10.1 Build Project
+**Important:** Order-service tests require database tables. Create Flyway migration to set up the schema.
+
+### 10.1 Create Migration Directory
+
+```bash
+cd microservices-parent/order-service
+mkdir -p src/main/resources/db/migration
+```
+
+### 10.2 Create Migration File
+
+**Location:** `order-service/src/main/resources/db/migration/V1__init.sql`
+
+```sql
+CREATE TABLE t_orders (
+   id BIGSERIAL NOT NULL,
+   order_number VARCHAR(255) DEFAULT NULL,
+   sku_code VARCHAR(255),
+   price DECIMAL(19, 2),
+   quantity INT,
+   PRIMARY KEY (id)
+);
+```
+
+**Why this is needed:**
+- Tests use **TestContainers** which creates isolated PostgreSQL containers
+- TestContainers **only** uses Flyway migrations (not docker-compose init scripts)
+- Without this migration, tests fail with: `ERROR: relation "orders" does not exist`
+
+---
+
+## Step 11: Test Locally
+
+### 11.1 Build Project
 
 ```bash
 cd microservices-parent
@@ -641,7 +675,7 @@ cd microservices-parent
 BUILD SUCCESSFUL
 ```
 
-### 10.2 Start Backend Services
+### 11.2 Start Backend Services
 
 **Terminal 1 - Product Service:**
 ```bash
@@ -659,7 +693,7 @@ cd order-service
 
 Wait for: `Started OrderServiceApplication`
 
-### 10.3 Start API Gateway
+### 11.3 Start API Gateway
 
 **Terminal 3 - API Gateway:**
 ```bash
@@ -674,7 +708,7 @@ Initializing order service route with URL: http://localhost:8082
 Started ApiGatewayApplication on port 9000
 ```
 
-### 10.4 Test with Postman
+### 11.4 Test with Postman
 
 #### Test 1: Get Products Through Gateway
 
@@ -728,7 +762,7 @@ Started ApiGatewayApplication on port 9000
 - Status: `201 Created`
 - Body: `Order Placed Successfully`
 
-### 10.5 Verify Gateway Logs
+### 11.5 Verify Gateway Logs
 
 Check Terminal 3 for routing logs:
 
@@ -739,13 +773,13 @@ Response status: 200 OK
 
 ---
 
-## Step 11: Test with Docker Compose
+## Step 12: Test with Docker Compose
 
-### 11.1 Stop Local Services
+### 12.1 Stop Local Services
 
 Stop all three terminals (Ctrl+C).
 
-### 11.2 Build Docker Images
+### 12.2 Build Docker Images
 
 ```bash
 cd microservices-parent
@@ -760,13 +794,13 @@ Successfully built order-service
 Successfully built inventory-service
 ```
 
-### 11.3 Start All Services
+### 12.3 Start All Services
 
 ```bash
 docker-compose up -d
 ```
 
-### 11.4 Verify Services Running
+### 12.4 Verify Services Running
 
 ```bash
 docker-compose ps
@@ -786,7 +820,7 @@ redis              Up
 ... (other services)
 ```
 
-### 11.5 Check Gateway Logs
+### 12.5 Check Gateway Logs
 
 ```bash
 docker logs api-gateway
@@ -799,16 +833,16 @@ Initializing order service route with URL: http://order-service:8082
 Started ApiGatewayApplication
 ```
 
-### 11.6 Test with Postman
+### 12.6 Test with Postman
 
-Repeat tests from Step 10.4, same endpoints:
+Repeat tests from Step 11.4, same endpoints:
 - `GET http://localhost:9000/api/product`
 - `POST http://localhost:9000/api/product`
 - `POST http://localhost:9000/api/order`
 
 All should work identically.
 
-### 11.7 Test with cURL (Optional)
+### 12.7 Test with cURL (Optional)
 
 ```bash
 # Get products
