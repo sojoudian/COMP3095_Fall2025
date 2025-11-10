@@ -69,14 +69,14 @@ Client → API Gateway (9000) → Product Service (8084)
 | Setting | Value |
 |---------|-------|
 | **Name** | `api-gateway` |
-| **Group** | `ca.gbc.comp3095` |
+| **Group** | `ca.gbc` |
 | **Artifact** | `api-gateway` |
 | **Package name** | `ca.gbc.comp3095.apigateway` |
 | **Type** | Gradle - Kotlin |
 | **Language** | Java |
 | **Java** | 21 |
 | **Packaging** | Jar |
-| **Spring Boot** | 3.4.4 |
+| **Spring Boot** | 3.5.7 |
 
 ### 1.3 Select Dependencies
 
@@ -115,12 +115,13 @@ Replace entire file:
 ```kotlin
 plugins {
     java
-    id("org.springframework.boot") version "3.4.4"
+    id("org.springframework.boot") version "3.5.7"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
-group = "ca.gbc.comp3095"
+group = "ca.gbc"
 version = "0.0.1-SNAPSHOT"
+description = "api-gateway"
 
 java {
     toolchain {
@@ -138,11 +139,12 @@ repositories {
     mavenCentral()
 }
 
-extra["springCloudVersion"] = "2024.0.1"
+extra["springCloudVersion"] = "2025.0.0"
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.cloud:spring-cloud-starter-gateway-mvc")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webmvc")
     compileOnly("org.projectlombok:lombok")
     developmentOnly("org.springframework.boot:spring-boot-devtools")
     annotationProcessor("org.projectlombok:lombok")
@@ -161,8 +163,9 @@ tasks.withType<Test> {
 }
 ```
 
-**Key Dependency:**
-- `spring-cloud-starter-gateway-mvc` - Gateway functionality
+**Key Dependencies:**
+- `spring-cloud-starter-gateway-server-webmvc` - Gateway functionality
+- `spring-boot-starter-web` - Web support
 
 **Reload Gradle.**
 
@@ -717,10 +720,10 @@ lsof -ti:9000 | xargs kill -9
 
 ### Issue 4: Gradle Dependency Error
 
-**Problem:** Cannot resolve spring-cloud-starter-gateway-mvc
+**Problem:** Cannot resolve spring-cloud-starter-gateway-server-webmvc
 
 **Solution:**
-1. Verify Spring Cloud version: `extra["springCloudVersion"] = "2024.0.1"`
+1. Verify Spring Cloud version: `extra["springCloudVersion"] = "2025.0.0"`
 2. Reload Gradle: `./gradlew clean build --refresh-dependencies`
 
 ---
@@ -735,7 +738,8 @@ lsof -ti:9000 | xargs kill -9
 - ✅ Updated docker-compose.yml
 
 ### Dependencies Added:
-- ✅ spring-cloud-starter-gateway-mvc
+- ✅ spring-cloud-starter-gateway-server-webmvc
+- ✅ spring-boot-starter-web
 - ✅ Spring Boot Actuator
 - ✅ Lombok
 - ✅ DevTools
