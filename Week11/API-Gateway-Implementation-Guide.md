@@ -23,6 +23,7 @@ Add API Gateway to your microservices architecture. The gateway acts as a single
 - [Step 11: Update order-service Configuration](#step-11-update-order-service-configuration)
 - [Step 12: Fix Product Service Test Configuration](#step-12-fix-product-service-test-configuration)
 - [Step 13: Update docker-compose.yml](#step-13-update-docker-composeyml)
+- [Step 13.1: Reset Docker Environment](#step-131-reset-docker-environment)
 - [Step 14: Test Locally](#step-14-test-locally)
 - [Step 15: Test with Docker Compose](#step-15-test-with-docker-compose)
 - [Summary](#summary)
@@ -1210,6 +1211,43 @@ volumes:
   redis-data:
     driver: local
 ```
+
+---
+
+## Step 13.1: Reset Docker Environment
+
+Before testing, clean up any existing Docker containers and volumes to ensure a fresh start:
+
+```bash
+cd microservices-parent
+clear && docker-compose down -v && sleep 5 && docker-compose up --build -d
+```
+
+**What this does:**
+- `clear` - Clears the terminal
+- `docker-compose down -v` - Stops all containers and removes volumes (fresh database state)
+- `sleep 5` - Waits 5 seconds for cleanup to complete
+- `docker-compose up --build -d` - Rebuilds images and starts all services in background
+
+**Expected output:**
+```
+Successfully built api-gateway
+Successfully built product-service
+Successfully built order-service
+Successfully built inventory-service
+...
+Container api-gateway  Started
+Container order-service  Started
+Container product-service  Started
+Container inventory-service  Started
+```
+
+**Why this is needed:**
+- Removes old Flyway schema history (prevents checksum mismatch errors)
+- Ensures all services use the latest code
+- Provides a clean slate for testing
+
+Wait 10-15 seconds for all services to fully start before testing.
 
 ---
 
