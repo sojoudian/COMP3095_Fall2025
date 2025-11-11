@@ -964,7 +964,7 @@ class ProductServiceApplicationTests {
 
 **Location:** `product-service/src/main/java/ca/gbc/comp3095/productservice/service/ProductServiceImpl.java`
 
-The product-service has a Redis caching bug: when you create, update, or delete a product, the cached "all products" list is not invalidated. This causes `GET /api/product` to return stale data.
+The product-service has a Redis caching bug: when you create, update, or delete a product, the cached "all products" list is not invalidated. This causes `GET /api/product` to return stale data even after creating new products.
 
 **The Problem:**
 - `getAllProducts()` caches the result with key `'ALL_PRODUCTS'`
@@ -975,60 +975,121 @@ The product-service has a Redis caching bug: when you create, update, or delete 
 **The Solution:**
 Add `@CacheEvict` annotations to invalidate the `'ALL_PRODUCTS'` cache when products are created, updated, or deleted.
 
-**Update createProduct method:**
+**Update the following methods in ProductServiceImpl.java:**
 
-**Before:**
+Add `@CacheEvict(value = "PRODUCT_CACHE", key = "'ALL_PRODUCTS'")` to:
+- Line 31: After `@CachePut` in `createProduct()` method
+- Line 67: After `@CachePut` in `updateProduct()` method
+
+Change line 85 in `deleteProduct()` method from:
 ```java
-@Override
-@CachePut(value = "PRODUCT_CACHE", key = "#result.id()")
-public ProductResponse createProduct(ProductRequest productRequest) {
-```
-
-**After:**
-```java
-@Override
-@CachePut(value = "PRODUCT_CACHE", key = "#result.id()")
-@CacheEvict(value = "PRODUCT_CACHE", key = "'ALL_PRODUCTS'")
-public ProductResponse createProduct(ProductRequest productRequest) {
-```
-
-**Update updateProduct method:**
-
-**Before:**
-```java
-@Override
-@CachePut(value = "PRODUCT_CACHE", key = "#result")
-public String updateProduct(String productId, ProductRequest productRequest) {
-```
-
-**After:**
-```java
-@Override
-@CachePut(value = "PRODUCT_CACHE", key = "#result")
-@CacheEvict(value = "PRODUCT_CACHE", key = "'ALL_PRODUCTS'")
-public String updateProduct(String productId, ProductRequest productRequest) {
-```
-
-**Update deleteProduct method:**
-
-**Before:**
-```java
-@Override
 @CacheEvict(value = "PRODUCT_CACHE", key = "#productId")
-public void deleteProduct(String productId) {
+```
+to:
+```java
+@CacheEvict(value = "PRODUCT_CACHE", allEntries = true)
 ```
 
-**After:**
+**Complete ProductServiceImpl.java with fixes:**
+
 ```java
-@Override
-@CacheEvict(value = "PRODUCT_CACHE", allEntries = true)
-public void deleteProduct(String productId) {
+package ca.gbc.comp3095.productservice.service;
+
+import ca.gbc.comp3095.productservice.dto.ProductRequest;
+import ca.gbc.comp3095.productservice.dto.ProductResponse;
+import ca.gbc.comp3095.productservice.model.Product;
+import ca.gbc.comp3095.productservice.repository.ProductRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.stereotype.Service;
+
+import java.util.List;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class ProductServiceImpl implements ProductService {
+
+    private final ProductRepository productRepository;
+    private final MongoTemplate mongoTemplate;
+    private final CacheManager cacheManager;
+
+    @Override
+    @CachePut(value = "PRODUCT_CACHE", key = "#result.id()")
+    @CacheEvict(value = "PRODUCT_CACHE", key = "'ALL_PRODUCTS'")
+    public ProductResponse createProduct(ProductRequest productRequest) {
+
+        log.debug("Creating new product {}", productRequest);
+
+        Product product = Product.builder()
+                .name(productRequest.name())
+                .description(productRequest.description())
+                .price(productRequest.price())
+                .build();
+
+        Product savedProduct = productRepository.save(product);
+        log.debug("Saved product {}", product);
+
+        return new ProductResponse(product.getId(), product.getName(),
+                product.getDescription(), product.getPrice());
+    }
+
+    @Override
+    @Cacheable(value = "PRODUCT_CACHE", key = "'ALL_PRODUCTS'")
+    public List<ProductResponse> getAllProducts() {
+        log.debug("Returning a List of all products");
+        List<Product> products = productRepository.findAll();
+
+        return products.stream()
+                .map(this::maptoProductResponse).toList();
+    }
+
+    private ProductResponse maptoProductResponse(Product product) {
+        return new ProductResponse(product.getId(), product.getName(),
+                product.getDescription(), product.getPrice());
+    }
+
+    @Override
+    @CachePut(value = "PRODUCT_CACHE", key = "#result")
+    @CacheEvict(value = "PRODUCT_CACHE", key = "'ALL_PRODUCTS'")
+    public String updateProduct(String productId, ProductRequest productRequest) {
+
+        log.debug("Updating product with Id {}", productId);
+
+        Query query = new Query();
+        query.addCriteria(Criteria.where("id").is(productId));
+        Product product = mongoTemplate.findOne(query, Product.class);
+
+        if(product != null){
+            product.setName(productRequest.name());
+            product.setDescription(productRequest.description());
+            product.setPrice(productRequest.price());
+            return productRepository.save(product).getId();
+        }
+        return productId;
+    }
+
+    @Override
+    @CacheEvict(value = "PRODUCT_CACHE", allEntries = true)
+    public void deleteProduct(String productId) {
+        log.debug("Deleting product with Id {}", productId);
+        productRepository.deleteById(productId);
+    }
+
+}
 ```
 
 **Why these changes:**
-- **createProduct**: Evicts `'ALL_PRODUCTS'` cache because the list is no longer accurate
-- **updateProduct**: Evicts `'ALL_PRODUCTS'` cache because product details in the list changed
-- **deleteProduct**: Uses `allEntries = true` to clear both the individual product cache and the `'ALL_PRODUCTS'` cache
+- **createProduct** (line 31): Evicts `'ALL_PRODUCTS'` cache because the list is no longer accurate after adding a new product
+- **updateProduct** (line 67): Evicts `'ALL_PRODUCTS'` cache because product details in the list changed
+- **deleteProduct** (line 85): Uses `allEntries = true` to clear both the individual product cache and the `'ALL_PRODUCTS'` cache
 
 **Note:** This bug exists in the week5.1 reference implementation and was inherited by your project. After this fix, `GET /api/product` will correctly return newly created products.
 
