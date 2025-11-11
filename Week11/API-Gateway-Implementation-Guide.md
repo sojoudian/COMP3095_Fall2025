@@ -18,10 +18,13 @@ Add API Gateway to your microservices architecture. The gateway acts as a single
 - [Step 6: Configure application-docker.properties](#step-6-configure-application-dockerproperties)
 - [Step 7: Create Dockerfile](#step-7-create-dockerfile)
 - [Step 8: Update settings.gradle.kts](#step-8-update-settingsgradlekts)
-- [Step 9: Update docker-compose.yml](#step-9-update-docker-composeyml)
+- [Step 9: Refactor Order Service to Interface Pattern](#step-9-refactor-order-service-to-interface-pattern)
 - [Step 10: Create Flyway Migration for Order Service](#step-10-create-flyway-migration-for-order-service)
-- [Step 11: Test Locally](#step-11-test-locally)
-- [Step 12: Test with Docker Compose](#step-12-test-with-docker-compose)
+- [Step 11: Update order-service Configuration](#step-11-update-order-service-configuration)
+- [Step 12: Fix Product Service Test Configuration](#step-12-fix-product-service-test-configuration)
+- [Step 13: Update docker-compose.yml](#step-13-update-docker-composeyml)
+- [Step 14: Test Locally](#step-14-test-locally)
+- [Step 15: Test with Docker Compose](#step-15-test-with-docker-compose)
 - [Summary](#summary)
 
 ---
@@ -402,7 +405,216 @@ include("api-gateway")
 
 ---
 
-## Step 9: Update docker-compose.yml
+## Step 9: Refactor Order Service to Interface Pattern
+
+Your order-service currently has a direct `OrderService` class. Refactor it to use the interface + implementation pattern for consistency with other services.
+
+### 9.1 Create OrderService Interface
+
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderService.java`
+
+1. **Right-click** on the existing `OrderService.java` file
+2. Select **Refactor → Rename**
+3. Rename to `OrderServiceImpl`
+4. Click **Refactor**
+
+Now create the interface:
+
+1. **Right-click** on `service` package
+2. Select **New → Java Class**
+3. Change type to **Interface**
+4. Name: `OrderService`
+5. Click **OK**
+
+Replace content with:
+
+```java
+package ca.gbc.comp3095.orderservice.service;
+
+import ca.gbc.comp3095.orderservice.dto.OrderRequest;
+
+public interface OrderService {
+    void placeOrder(OrderRequest orderRequest);
+}
+```
+
+### 9.2 Update OrderServiceImpl
+
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderServiceImpl.java`
+
+Make OrderServiceImpl implement the interface:
+
+**Before:**
+```java
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class OrderServiceImpl {
+```
+
+**After:**
+```java
+@Service
+@RequiredArgsConstructor
+@Slf4j
+@Transactional
+public class OrderServiceImpl implements OrderService {
+```
+
+Add `@Override` annotation to `placeOrder` method:
+
+```java
+@Override
+public void placeOrder(OrderRequest orderRequest) {
+    // existing implementation
+}
+```
+
+**No other changes needed.**
+
+---
+
+## Step 10: Create Flyway Migration for Order Service
+
+**Important:** Your order-service has a **two-table design** (Order + OrderLineItem entities) which is better than the reference implementation's single-table design. You need a migration that matches YOUR entities.
+
+### 10.1 Create Migration Directory
+
+```bash
+cd microservices-parent/order-service
+mkdir -p src/main/resources/db/migration
+```
+
+### 10.2 Create Migration File
+
+**Location:** `order-service/src/main/resources/db/migration/V1__init.sql`
+
+```sql
+CREATE TABLE orders (
+    id BIGSERIAL NOT NULL,
+    order_number VARCHAR(255) NOT NULL,
+    PRIMARY KEY (id)
+);
+
+CREATE TABLE order_line_items (
+    id BIGSERIAL NOT NULL,
+    sku_code VARCHAR(255) NOT NULL,
+    price DECIMAL(19, 2) NOT NULL,
+    quantity INTEGER NOT NULL,
+    order_id BIGINT,
+    PRIMARY KEY (id),
+    CONSTRAINT fk_order FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_order_line_items_order_id ON order_line_items(order_id);
+```
+
+**Why this migration:**
+- ✅ Matches your `Order` entity (`@Table(name = "orders")`)
+- ✅ Matches your `OrderLineItem` entity (`@Table(name = "order_line_items")`)
+- ✅ Includes foreign key relationship (`@OneToMany` in Order)
+- ✅ Adds index for performance
+- ✅ Uses `CASCADE DELETE` for data integrity
+
+**Why this is needed:**
+- Tests use **TestContainers** which creates isolated PostgreSQL containers
+- TestContainers **only** uses Flyway migrations (not docker-compose init scripts)
+- Without this migration, tests fail with: `ERROR: relation "orders" does not exist`
+
+---
+
+## Step 11: Update order-service Configuration
+
+### 11.1 Update application.properties
+
+**Location:** `order-service/src/main/resources/application.properties`
+
+Change `ddl-auto` from `update` to `none`:
+
+**Before:**
+```properties
+spring.jpa.hibernate.ddl-auto=update
+```
+
+**After:**
+```properties
+spring.jpa.hibernate.ddl-auto=none
+```
+
+**Why:** Flyway now manages the schema, not Hibernate.
+
+### 11.2 Update application-docker.properties
+
+**Location:** `order-service/src/main/resources/application-docker.properties`
+
+Change `ddl-auto` from `update` to `none`:
+
+**Before:**
+```properties
+spring.jpa.hibernate.ddl-auto=update
+```
+
+**After:**
+```properties
+spring.jpa.hibernate.ddl-auto=none
+```
+
+---
+
+## Step 12: Fix Product Service Test Configuration
+
+Your product-service has Redis caching enabled, but tests fail because Redis is not available during testing.
+
+### 12.1 Create Test Configuration
+
+**Location:** `product-service/src/test/resources/application-test.properties`
+
+Create new file:
+
+```properties
+spring.cache.type=none
+spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,ca.gbc.comp3095.productservice.config.RedisConfig
+```
+
+**Why:**
+- `spring.cache.type=none` - Disables caching
+- Excludes `RedisAutoConfiguration` - Prevents Redis bean creation
+- Excludes `RedisConfig` - Prevents your custom config from loading
+
+### 12.2 Update ProductServiceApplicationTests
+
+**Location:** `product-service/src/test/java/ca/gbc/comp3095/productservice/ProductServiceApplicationTests.java`
+
+Add `@ActiveProfiles("test")` annotation:
+
+**Before:**
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+class ProductServiceApplicationTests {
+```
+
+**After:**
+```java
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@Testcontainers
+@ActiveProfiles("test")
+class ProductServiceApplicationTests {
+```
+
+**Add import:**
+```java
+import org.springframework.test.context.ActiveProfiles;
+```
+
+**Why:** Activates the test profile which disables Redis.
+
+**Note:** ProductServiceApplicationCacheTests.java already has Redis TestContainer, so it doesn't need this change.
+
+---
+
+## Step 13: Update docker-compose.yml
 
 **Location:** `microservices-parent/docker-compose.yml`
 
@@ -421,6 +633,32 @@ Add api-gateway service at the **very beginning** of services section (before mo
     container_name: api-gateway
     networks:
       - microservices-network
+```
+
+**Update order-service environment:**
+
+Change:
+```yaml
+  order-service:
+    # ... existing config ...
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order-service
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: update  # ❌ CHANGE THIS
+```
+
+To:
+```yaml
+  order-service:
+    # ... existing config ...
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order-service
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: password
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none  # ✅ CHANGED TO none
 ```
 
 **Complete docker-compose.yml:**
@@ -583,7 +821,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/order-service
       SPRING_DATASOURCE_USERNAME: admin
       SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: update
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
     depends_on:
       postgres:
         condition: service_healthy
@@ -628,42 +866,9 @@ volumes:
 
 ---
 
-## Step 10: Create Flyway Migration for Order Service
+## Step 14: Test Locally
 
-**Important:** Order-service tests require database tables. Create Flyway migration to set up the schema.
-
-### 10.1 Create Migration Directory
-
-```bash
-cd microservices-parent/order-service
-mkdir -p src/main/resources/db/migration
-```
-
-### 10.2 Create Migration File
-
-**Location:** `order-service/src/main/resources/db/migration/V1__init.sql`
-
-```sql
-CREATE TABLE t_orders (
-   id BIGSERIAL NOT NULL,
-   order_number VARCHAR(255) DEFAULT NULL,
-   sku_code VARCHAR(255),
-   price DECIMAL(19, 2),
-   quantity INT,
-   PRIMARY KEY (id)
-);
-```
-
-**Why this is needed:**
-- Tests use **TestContainers** which creates isolated PostgreSQL containers
-- TestContainers **only** uses Flyway migrations (not docker-compose init scripts)
-- Without this migration, tests fail with: `ERROR: relation "orders" does not exist`
-
----
-
-## Step 11: Test Locally
-
-### 11.1 Build Project
+### 14.1 Build Project
 
 ```bash
 cd microservices-parent
@@ -675,7 +880,9 @@ cd microservices-parent
 BUILD SUCCESSFUL
 ```
 
-### 11.2 Start Backend Services
+**If you see test failures:** Review Steps 10-12 carefully.
+
+### 14.2 Start Backend Services
 
 **Terminal 1 - Product Service:**
 ```bash
@@ -693,7 +900,7 @@ cd order-service
 
 Wait for: `Started OrderServiceApplication`
 
-### 11.3 Start API Gateway
+### 14.3 Start API Gateway
 
 **Terminal 3 - API Gateway:**
 ```bash
@@ -708,7 +915,7 @@ Initializing order service route with URL: http://localhost:8082
 Started ApiGatewayApplication on port 9000
 ```
 
-### 11.4 Test with Postman
+### 14.4 Test with Postman
 
 #### Test 1: Get Products Through Gateway
 
@@ -762,7 +969,7 @@ Started ApiGatewayApplication on port 9000
 - Status: `201 Created`
 - Body: `Order Placed Successfully`
 
-### 11.5 Verify Gateway Logs
+### 14.5 Verify Gateway Logs
 
 Check Terminal 3 for routing logs:
 
@@ -773,13 +980,13 @@ Response status: 200 OK
 
 ---
 
-## Step 12: Test with Docker Compose
+## Step 15: Test with Docker Compose
 
-### 12.1 Stop Local Services
+### 15.1 Stop Local Services
 
 Stop all three terminals (Ctrl+C).
 
-### 12.2 Build Docker Images
+### 15.2 Build Docker Images
 
 ```bash
 cd microservices-parent
@@ -794,13 +1001,13 @@ Successfully built order-service
 Successfully built inventory-service
 ```
 
-### 12.3 Start All Services
+### 15.3 Start All Services
 
 ```bash
 docker-compose up -d
 ```
 
-### 12.4 Verify Services Running
+### 15.4 Verify Services Running
 
 ```bash
 docker-compose ps
@@ -820,7 +1027,7 @@ redis              Up
 ... (other services)
 ```
 
-### 12.5 Check Gateway Logs
+### 15.5 Check Gateway Logs
 
 ```bash
 docker logs api-gateway
@@ -833,16 +1040,16 @@ Initializing order service route with URL: http://order-service:8082
 Started ApiGatewayApplication
 ```
 
-### 12.6 Test with Postman
+### 15.6 Test with Postman
 
-Repeat tests from Step 11.4, same endpoints:
+Repeat tests from Step 14.4, same endpoints:
 - `GET http://localhost:9000/api/product`
 - `POST http://localhost:9000/api/product`
 - `POST http://localhost:9000/api/order`
 
 All should work identically.
 
-### 12.7 Test with cURL (Optional)
+### 15.7 Test with cURL (Optional)
 
 ```bash
 # Get products
@@ -906,7 +1113,25 @@ lsof -ti:9000
 lsof -ti:9000 | xargs kill -9
 ```
 
-### Issue 4: Gradle Dependency Error
+### Issue 4: Order Service Tests Fail
+
+**Problem:** `ERROR: relation "orders" does not exist`
+
+**Solution:**
+1. Verify V1__init.sql exists in `order-service/src/main/resources/db/migration/`
+2. Verify migration creates `orders` table (not `t_orders`)
+3. Verify `ddl-auto=none` in both application.properties files
+
+### Issue 5: Product Service Tests Fail with Redis Error
+
+**Problem:** `RedisConnectionFailureException` in tests
+
+**Solution:**
+1. Verify `application-test.properties` exists with Redis exclusions
+2. Verify `@ActiveProfiles("test")` is on ProductServiceApplicationTests
+3. Run `./gradlew clean test` to rebuild
+
+### Issue 6: Gradle Dependency Error
 
 **Problem:** Cannot resolve spring-cloud-starter-gateway-server-webmvc
 
@@ -925,6 +1150,12 @@ lsof -ti:9000 | xargs kill -9
 - ✅ Multi-stage Dockerfile
 - ✅ Updated docker-compose.yml
 
+### What You Fixed:
+- ✅ Order service refactored to interface + implementation pattern
+- ✅ Order service Flyway migration for two-table design (Order + OrderLineItem)
+- ✅ Order service changed from `ddl-auto=update` to `ddl-auto=none`
+- ✅ Product service test configuration to disable Redis during testing
+
 ### Dependencies Added:
 - ✅ spring-cloud-starter-gateway-server-webmvc
 - ✅ spring-boot-starter-web
@@ -937,6 +1168,21 @@ lsof -ti:9000 | xargs kill -9
 - ✅ Gateway routes to order-service (port 8082)
 - ✅ Works locally and in Docker
 - ✅ All services communicate through gateway
+- ✅ All tests pass (`./gradlew clean build`)
+
+### Architecture Comparison:
+
+**Your Implementation (Better):**
+- Two-table design: `orders` + `order_line_items`
+- Supports multiple items per order
+- Normalized database design
+- Inventory validation via OpenFeign
+- Production-ready architecture
+
+**Reference Implementation (Simpler):**
+- Single-table design: `t_orders`
+- One item per order only
+- Simpler but less realistic
 
 ### Architecture:
 ```
@@ -962,6 +1208,7 @@ Client → api-gateway:9000 → product-service:8084
 
 Your implementation is successful when:
 
+- ✅ `./gradlew clean build` succeeds with all tests passing
 - ✅ api-gateway starts without errors
 - ✅ `GET http://localhost:9000/api/product` returns products
 - ✅ `POST http://localhost:9000/api/product` creates product
