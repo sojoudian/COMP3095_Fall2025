@@ -362,7 +362,7 @@ RUN gradle build -x test
 # ------------------
 #  Package Stage
 # ------------------
-FROM openjdk:21-jdk
+FROM eclipse-temurin:21-jdk
 
 RUN mkdir /app
 
@@ -375,8 +375,10 @@ ENTRYPOINT ["java", "-jar", "/app/api-gateway.jar"]
 
 **Multi-stage Build:**
 - **Stage 1:** Build with gradle:8-jdk21-alpine
-- **Stage 2:** Runtime with openjdk:21-jdk
+- **Stage 2:** Runtime with eclipse-temurin:21-jdk
 - **Exposed Port:** 9000
+
+**Note:** Use `eclipse-temurin:21-jdk` instead of `openjdk:21-jdk` because the official OpenJDK Docker images have been deprecated. Eclipse Temurin is the recommended replacement from the Eclipse Adoptium project.
 
 ---
 
@@ -630,9 +632,96 @@ spring.jpa.hibernate.ddl-auto=none
 
 ## Step 12: Fix Product Service Test Configuration
 
-Your product-service has Redis caching enabled, but tests fail because Redis is not available during testing.
+Your product-service has Redis caching enabled, but tests fail because Redis is not available during testing. We need to make Redis configuration conditional and configure tests to disable it.
 
-### 12.1 Create Test Configuration
+### 12.1 Make RedisConfig Conditional
+
+**Location:** `product-service/src/main/java/ca/gbc/comp3095/productservice/config/RedisConfig.java`
+
+Add `@ConditionalOnProperty` annotation to make Redis configuration only load when caching is enabled:
+
+**Before:**
+```java
+@Configuration
+public class RedisConfig {
+```
+
+**After:**
+```java
+@Configuration
+@ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis", matchIfMissing = true)
+public class RedisConfig {
+```
+
+**Add import:**
+```java
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+```
+
+**Why:**
+- Makes RedisConfig only load when `spring.cache.type=redis` (or not set at all)
+- When tests set `spring.cache.type=none`, RedisConfig won't load
+- Avoids needing Redis during testing
+
+**Complete RedisConfig.java:**
+
+```java
+package ca.gbc.comp3095.productservice.config;
+
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.databind.jsontype.BasicPolymorphicTypeValidator;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.redis.cache.RedisCacheConfiguration;
+import org.springframework.data.redis.cache.RedisCacheManager;
+import org.springframework.data.redis.connection.RedisConnectionFactory;
+import org.springframework.data.redis.serializer.Jackson2JsonRedisSerializer;
+import org.springframework.data.redis.serializer.RedisSerializationContext;
+
+import java.time.Duration;
+
+@Configuration
+@ConditionalOnProperty(name = "spring.cache.type", havingValue = "redis", matchIfMissing = true)
+public class RedisConfig {
+
+    @Bean
+    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+
+        ObjectMapper objectMapper = new ObjectMapper();
+
+        objectMapper.activateDefaultTyping(
+                BasicPolymorphicTypeValidator.builder()
+                        .allowIfSubType(Object.class)
+                        .build(),
+                ObjectMapper.DefaultTyping.EVERYTHING,
+                JsonTypeInfo.As.PROPERTY
+        );
+
+        objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+
+        Jackson2JsonRedisSerializer<Object> serializer =
+                new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);
+
+        RedisCacheConfiguration redisCacheConfiguration = RedisCacheConfiguration
+                .defaultCacheConfig()
+                .entryTtl(Duration.ofMinutes(10))
+                .disableCachingNullValues()
+                .serializeValuesWith(
+                        RedisSerializationContext.SerializationPair.fromSerializer(serializer)
+                );
+
+        return RedisCacheManager
+                .builder(connectionFactory)
+                .cacheDefaults(redisCacheConfiguration)
+                .build();
+    }
+}
+```
+
+### 12.2 Create Test Configuration
 
 **Location:** `product-service/src/test/resources/application-test.properties`
 
@@ -640,15 +729,14 @@ Create new file:
 
 ```properties
 spring.cache.type=none
-spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration,ca.gbc.comp3095.productservice.config.RedisConfig
+spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
 ```
 
 **Why:**
-- `spring.cache.type=none` - Disables caching
-- Excludes `RedisAutoConfiguration` - Prevents Redis bean creation
-- Excludes `RedisConfig` - Prevents your custom config from loading
+- `spring.cache.type=none` - Disables caching (and prevents RedisConfig from loading)
+- Excludes `RedisAutoConfiguration` - Prevents Spring Boot from auto-configuring Redis beans
 
-### 12.2 Update ProductServiceApplicationTests
+### 12.3 Update ProductServiceApplicationTests
 
 **Location:** `product-service/src/test/java/ca/gbc/comp3095/productservice/ProductServiceApplicationTests.java`
 
