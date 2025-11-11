@@ -719,7 +719,14 @@ public class RedisConfig {
 
 **Location:** `product-service/src/test/resources/application-test.properties`
 
-Create new file:
+First, create the `resources` directory if it doesn't exist:
+
+```bash
+cd product-service
+mkdir -p src/test/resources
+```
+
+Then create the file `application-test.properties`:
 
 ```properties
 spring.cache.type=none
