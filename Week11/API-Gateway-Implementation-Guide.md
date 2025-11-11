@@ -579,13 +579,6 @@ CREATE TABLE order_line_items (
 CREATE INDEX idx_order_line_items_order_id ON order_line_items(order_id);
 ```
 
-**Why this migration:**
-- ✅ Matches your `Order` entity (`@Table(name = "orders")`)
-- ✅ Matches your `OrderLineItem` entity (`@Table(name = "order_line_items")`)
-- ✅ Includes foreign key relationship (`@OneToMany` in Order)
-- ✅ Adds index for performance
-- ✅ Uses `CASCADE DELETE` for data integrity
-
 **Why this is needed:**
 - Tests use **TestContainers** which creates isolated PostgreSQL containers
 - TestContainers **only** uses Flyway migrations (not docker-compose init scripts)
