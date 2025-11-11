@@ -960,6 +960,78 @@ class ProductServiceApplicationTests {
 }
 ```
 
+### 12.4 Fix Cache Invalidation Bug
+
+**Location:** `product-service/src/main/java/ca/gbc/comp3095/productservice/service/ProductServiceImpl.java`
+
+The product-service has a Redis caching bug: when you create, update, or delete a product, the cached "all products" list is not invalidated. This causes `GET /api/product` to return stale data.
+
+**The Problem:**
+- `getAllProducts()` caches the result with key `'ALL_PRODUCTS'`
+- `createProduct()` only caches the individual product with key `#result.id()`
+- When you create a product, the old `'ALL_PRODUCTS'` cache entry is not cleared
+- Subsequent GET requests return the stale cached list
+
+**The Solution:**
+Add `@CacheEvict` annotations to invalidate the `'ALL_PRODUCTS'` cache when products are created, updated, or deleted.
+
+**Update createProduct method:**
+
+**Before:**
+```java
+@Override
+@CachePut(value = "PRODUCT_CACHE", key = "#result.id()")
+public ProductResponse createProduct(ProductRequest productRequest) {
+```
+
+**After:**
+```java
+@Override
+@CachePut(value = "PRODUCT_CACHE", key = "#result.id()")
+@CacheEvict(value = "PRODUCT_CACHE", key = "'ALL_PRODUCTS'")
+public ProductResponse createProduct(ProductRequest productRequest) {
+```
+
+**Update updateProduct method:**
+
+**Before:**
+```java
+@Override
+@CachePut(value = "PRODUCT_CACHE", key = "#result")
+public String updateProduct(String productId, ProductRequest productRequest) {
+```
+
+**After:**
+```java
+@Override
+@CachePut(value = "PRODUCT_CACHE", key = "#result")
+@CacheEvict(value = "PRODUCT_CACHE", key = "'ALL_PRODUCTS'")
+public String updateProduct(String productId, ProductRequest productRequest) {
+```
+
+**Update deleteProduct method:**
+
+**Before:**
+```java
+@Override
+@CacheEvict(value = "PRODUCT_CACHE", key = "#productId")
+public void deleteProduct(String productId) {
+```
+
+**After:**
+```java
+@Override
+@CacheEvict(value = "PRODUCT_CACHE", allEntries = true)
+public void deleteProduct(String productId) {
+```
+
+**Why these changes:**
+- **createProduct**: Evicts `'ALL_PRODUCTS'` cache because the list is no longer accurate
+- **updateProduct**: Evicts `'ALL_PRODUCTS'` cache because product details in the list changed
+- **deleteProduct**: Uses `allEntries = true` to clear both the individual product cache and the `'ALL_PRODUCTS'` cache
+
+**Note:** This bug exists in the week5.1 reference implementation and was inherited by your project. After this fix, `GET /api/product` will correctly return newly created products.
+
 ---
 
 ## Step 13: Update docker-compose.yml
