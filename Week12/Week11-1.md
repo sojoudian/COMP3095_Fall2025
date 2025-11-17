@@ -337,6 +337,11 @@ services:
 Start standalone Keycloak:
 
 ```bash
+# Stop integrated docker-compose if running (to avoid port conflicts)
+cd microservices-parent
+docker-compose -p microservices-comp3095 down
+
+# Start standalone Keycloak
 cd docker/standalone/keycloak
 docker-compose -p keycloak-standalone up -d
 ```
