@@ -424,7 +424,7 @@ Add dependencies:
 dependencies {
     // Existing dependencies...
 
-    // Week 5.2 - Security
+    // Week 12 - Security
     compileOnly("jakarta.servlet:jakarta.servlet-api:6.1.0")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-security")
