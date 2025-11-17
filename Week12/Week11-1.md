@@ -375,6 +375,8 @@ docker-compose -p keycloak-standalone up -d
 **Client Settings (Step 1):**
 - Client Type: `OpenID Connect`
 - Client ID: `spring-client-credentials-id`
+- Name: `Spring Client Credentials` (optional, but recommended for clarity)
+- Description: (leave blank)
 - Click **Next**
 
 **Client Settings (Step 2):**
