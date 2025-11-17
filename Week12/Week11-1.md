@@ -114,7 +114,7 @@ services:
       dockerfile: ./Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_APPLICATION_JSON: '{"logging":{"level":{"root":"INFO","ca.gbc.apigateway":"DEBUG"}}}'
+      SPRING_APPLICATION_JSON: '{"logging":{"level":{"root":"INFO","ca.gbc.comp3095.apigateway":"DEBUG"}}}'
     container_name: api-gateway
     networks:
       - spring
@@ -472,7 +472,7 @@ spring.security.oauth2.resourceserver.jwt.issuer-uri=http://keycloak:8080/realms
 
 Create new package:
 
-1. Right-click on `ca.gbc.apigateway`
+1. Right-click on `ca.gbc.comp3095.apigateway`
 2. Select **New → Package**
 3. Name: `config`
 4. Click **OK**
@@ -484,10 +484,10 @@ Create SecurityConfig:
 3. Name: `SecurityConfig`
 4. Click **OK**
 
-**Location:** `api-gateway/src/main/java/ca/gbc/apigateway/config/SecurityConfig.java`
+**Location:** `api-gateway/src/main/java/ca/gbc/comp3095/apigateway/config/SecurityConfig.java`
 
 ```java
-package ca.gbc.apigateway.config;
+package ca.gbc.comp3095.apigateway.config;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -535,10 +535,10 @@ Create filter class:
 3. Name: `RequestLoggingFilter`
 4. Click **OK**
 
-**Location:** `api-gateway/src/main/java/ca/gbc/apigateway/config/RequestLoggingFilter.java`
+**Location:** `api-gateway/src/main/java/ca/gbc/comp3095/apigateway/config/RequestLoggingFilter.java`
 
 ```java
-package ca.gbc.apigateway.config;
+package ca.gbc.comp3095.apigateway.config;
 
 import jakarta.servlet.*;
 import jakarta.servlet.http.HttpServletRequest;
@@ -585,10 +585,10 @@ Create configuration class:
 3. Name: `FilterConfig`
 4. Click **OK**
 
-**Location:** `api-gateway/src/main/java/ca/gbc/apigateway/config/FilterConfig.java`
+**Location:** `api-gateway/src/main/java/ca/gbc/comp3095/apigateway/config/FilterConfig.java`
 
 ```java
-package ca.gbc.apigateway.config;
+package ca.gbc.comp3095.apigateway.config;
 
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Configuration;
