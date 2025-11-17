@@ -362,22 +362,10 @@ docker-compose -p keycloak-standalone up -d
 
 1. Click dropdown **Keycloak** (top-left)
 2. Click **Create realm**
-3. You have two options:
-
-**Option A: Import Realm (Recommended if you have realm export file)**
-- Click **Browse...** button under "Resource file"
-- Select your `realm-export.json` file
-- The realm name will auto-populate as `spring-microservices-security-realm`
-- Ensure **Enabled** toggle is **On**
-- Click **Create**
-- Skip to Step 3 (realm is pre-configured with client and settings)
-
-**Option B: Manual Creation (For learning/first-time setup)**
-- Leave "Resource file" empty
-- Enter Realm name: `spring-microservices-security-realm`
-- Ensure **Enabled** toggle is **On**
-- Click **Create**
-- Continue with section 2.3 to manually configure client
+3. Leave "Resource file" empty (we'll create realm manually first, then export it later)
+4. Enter Realm name: `spring-microservices-security-realm`
+5. Ensure **Enabled** toggle is **On**
+6. Click **Create**
 
 ### 2.3 Create OAuth2 Client
 
