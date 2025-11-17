@@ -41,6 +41,45 @@ This lab uses the **Client Credentials** grant type for service-to-service authe
 
 **Location:** `microservices-parent/docker-compose.yml`
 
+Before showing the complete docker-compose.yml, here are the Keycloak-related services to add:
+
+```yaml
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:24.0.1
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL_HOST: postgres-keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: password
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: password
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./docker/integrated/keycloak/realms/:/opt/keycloak/data/import/
+    depends_on:
+      - postgres-keycloak
+    container_name: keycloak
+    networks:
+      - spring
+
+  postgres-keycloak:
+    image: postgres:15
+    volumes:
+      - ./docker/integrated/keycloak/db-data:/var/lib/postgresql/data
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: password
+    container_name: postgres-keycloak
+    networks:
+      - spring
+```
+
 Complete docker-compose.yml configuration:
 
 ```yaml
@@ -260,11 +299,9 @@ mkdir -p docker/standalone/keycloak/realms
 
 ### 1.3 Start Keycloak Standalone (Initial Setup)
 
-For initial configuration, use standalone Keycloak. This runs Keycloak independently without the full microservices stack.
+For initial configuration, use standalone Keycloak:
 
 **Location:** `docker/standalone/keycloak/docker-compose.yml`
-
-Complete standalone Keycloak docker-compose:
 
 ```yaml
 services:
