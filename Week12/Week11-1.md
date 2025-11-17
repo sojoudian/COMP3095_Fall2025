@@ -623,9 +623,11 @@ public class FilterConfig {
 3. Click **Realm settings** (left sidebar)
 4. Click **Action** dropdown (top-right)
 5. Select **Partial export**
-6. Check **Export clients**
+6. In the export dialog:
+   - **Include groups and roles**: Toggle **On** (to export roles)
+   - **Include clients**: Toggle **On** (to export spring-client-credentials-id)
 7. Click **Export**
-8. Save as `realm-export.json`
+8. Save the downloaded file as `realm-export.json`
 
 ### 4.2 Store Realm Files
 
