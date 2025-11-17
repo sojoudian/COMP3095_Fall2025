@@ -339,7 +339,7 @@ Start standalone Keycloak:
 ```bash
 # Stop integrated docker-compose if running (to avoid port conflicts)
 cd microservices-parent
-docker-compose -p microservices-comp3095 down
+docker-compose -p microservices-parent down
 
 # Start standalone Keycloak
 cd docker/standalone/keycloak
@@ -663,7 +663,7 @@ Rebuild all services:
 
 ```bash
 cd microservices-parent
-docker-compose -p microservices-comp3095 -f docker-compose.yml up -d --build
+docker-compose -p microservices-parent -f docker-compose.yml up -d --build
 ```
 
 Wait ~30 seconds for all services to stabilize.
