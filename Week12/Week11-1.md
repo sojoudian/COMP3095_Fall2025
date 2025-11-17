@@ -379,11 +379,16 @@ docker-compose -p keycloak-standalone up -d
 - Description: (leave blank)
 - Click **Next**
 
-**Client Settings (Step 2):**
-- Client Authentication: **ON**
-- Standard Flow: **OFF**
-- Direct Access Grants: **OFF**
-- Service Accounts: **ON**
+**Client Settings (Step 2 - Capability config):**
+- Client Authentication: **ON** (toggle should be blue/enabled)
+- Authorization: **OFF** (toggle should be gray/disabled)
+- Authentication flow:
+  - ☐ Standard flow (uncheck this)
+  - ☐ Direct access grants (uncheck this)
+  - ☐ Implicit flow (leave unchecked)
+  - ☑ Service accounts roles (check this - required for Client Credentials flow)
+  - ☐ OAuth 2.0 Device Authorization Grant (leave unchecked)
+  - ☐ OIDC CIBA Grant (leave unchecked)
 - Click **Next**
 
 **Client Settings (Step 3):**
