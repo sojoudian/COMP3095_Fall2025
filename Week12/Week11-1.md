@@ -667,7 +667,7 @@ Stop standalone Keycloak:
 
 ```bash
 cd docker/standalone/keycloak
-docker-compose down
+docker-compose -p keycloak-standalone down
 ```
 
 Rebuild all services:
