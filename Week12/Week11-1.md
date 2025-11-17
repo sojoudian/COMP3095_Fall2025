@@ -679,7 +679,21 @@ docker-compose -p microservices-parent -f docker-compose.yml up -d --build
 
 Wait ~30 seconds for all services to stabilize.
 
-### 5.2 Test Without Authentication
+### 5.2 Obtain Client Secret from Integrated Keycloak
+
+**Important:** The integrated Keycloak has a different client secret than standalone. You must get the new secret.
+
+1. Open browser and go to `http://localhost:8080`
+2. Click **Administration Console**
+3. Login with `admin` / `password`
+4. Select **spring-microservices-security-realm** (top-left dropdown)
+5. Click **Clients** (left sidebar)
+6. Click **spring-client-credentials-id**
+7. Click **Credentials** tab
+8. **Copy the Client Secret** (this is different from the standalone secret!)
+9. Save this secret - you'll need it for Postman configuration
+
+### 5.3 Test Without Authentication
 
 Open Postman and attempt:
 
@@ -691,7 +705,7 @@ GET http://localhost:9000/api/product
 
 This confirms security is working.
 
-### 5.3 Configure Postman OAuth2
+### 5.4 Configure Postman OAuth2
 
 1. In Postman, click **Authorization** tab
 2. Type: Select **OAuth 2.0**
@@ -702,14 +716,14 @@ This confirms security is working.
 - Grant Type: `Client Credentials`
 - Access Token URL: `http://localhost:8080/realms/spring-microservices-security-realm/protocol/openid-connect/token`
 - Client ID: `spring-client-credentials-id`
-- Client Secret: `<paste your client secret from Keycloak>`
+- Client Secret: `<paste the client secret from section 5.2>`
 - Scope: (leave blank)
 - Client Authentication: `Send as Basic Auth header`
 
 4. Click **Get New Access Token**
 5. Click **Use Token**
 
-### 5.4 Test With Authentication
+### 5.5 Test With Authentication
 
 Make request again:
 
@@ -719,7 +733,7 @@ GET http://localhost:9000/api/product
 
 **Expected Result:** `200 OK` with product data
 
-### 5.5 Test All Endpoints
+### 5.6 Test All Endpoints
 
 Test the following endpoints (update token for each request):
 
