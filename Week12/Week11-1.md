@@ -55,8 +55,6 @@ services:
       KC_DB_PASSWORD: password
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: password
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_STRICT: false
     ports:
       - "8080:8080"
     volumes:
@@ -97,8 +95,6 @@ services:
       KC_DB_PASSWORD: password
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: password
-      KC_HOSTNAME: localhost
-      KC_HOSTNAME_STRICT: false
     ports:
       - "8080:8080"
     volumes:
@@ -683,21 +679,43 @@ docker-compose -p microservices-parent -f docker-compose.yml up -d --build
 
 Wait ~30 seconds for all services to stabilize.
 
-### 5.2 Obtain Client Secret from Integrated Keycloak
+### 5.2 Configure Hostname Resolution
+
+To allow your host machine (where Postman runs) to access Keycloak using the same hostname as Docker containers, add `keycloak` to your `/etc/hosts` file.
+
+**On Mac/Linux:**
+
+```bash
+echo "127.0.0.1 keycloak" | sudo tee -a /etc/hosts
+```
+
+**On Windows:**
+
+1. Open Notepad as Administrator
+2. Open file: `C:\Windows\System32\drivers\etc\hosts`
+3. Add line: `127.0.0.1 keycloak`
+4. Save the file
+
+**Verify it works:**
+
+Open browser and navigate to `http://keycloak:8080` - you should see the Keycloak welcome page.
+
+### 5.3 Obtain Client Secret from Integrated Keycloak
 
 **Important:** The integrated Keycloak has a different client secret than standalone. You must get the new secret.
 
-1. Open browser and go to `http://localhost:8080`
+1. Open browser and go to `http://keycloak:8080`
 2. Click **Administration Console**
 3. Login with `admin` / `password`
 4. Select **spring-microservices-security-realm** (top-left dropdown)
 5. Click **Clients** (left sidebar)
 6. Click **spring-client-credentials-id**
 7. Click **Credentials** tab
-8. **Copy the Client Secret** (this is different from the standalone secret!)
-9. Save this secret - you'll need it for Postman configuration
+8. **Click the eye icon** to reveal the Client Secret, or click **Regenerate** to generate a new one
+9. **Copy the Client Secret** (this is different from the standalone secret!)
+10. Save this secret - you'll need it for Postman configuration
 
-### 5.3 Test Without Authentication
+### 5.4 Test Without Authentication
 
 Open Postman and attempt:
 
@@ -709,7 +727,7 @@ GET http://localhost:9000/api/product
 
 This confirms security is working.
 
-### 5.4 Configure Postman OAuth2
+### 5.5 Configure Postman OAuth2
 
 1. In Postman, click **Authorization** tab
 2. Type: Select **OAuth 2.0**
@@ -718,16 +736,16 @@ This confirms security is working.
 **Token Configuration:**
 - Token Name: `Token`
 - Grant Type: `Client Credentials`
-- Access Token URL: `http://localhost:8080/realms/spring-microservices-security-realm/protocol/openid-connect/token`
+- Access Token URL: `http://keycloak:8080/realms/spring-microservices-security-realm/protocol/openid-connect/token`
 - Client ID: `spring-client-credentials-id`
-- Client Secret: `<paste the client secret from section 5.2>`
+- Client Secret: `<paste the client secret from section 5.3>`
 - Scope: (leave blank)
 - Client Authentication: `Send as Basic Auth header`
 
 4. Click **Get New Access Token**
 5. Click **Use Token**
 
-### 5.5 Test With Authentication
+### 5.6 Test With Authentication
 
 Make request again:
 
@@ -737,7 +755,7 @@ GET http://localhost:9000/api/product
 
 **Expected Result:** `200 OK` with product data
 
-### 5.6 Test All Endpoints
+### 5.7 Test All Endpoints
 
 Test the following endpoints (update token for each request):
 
