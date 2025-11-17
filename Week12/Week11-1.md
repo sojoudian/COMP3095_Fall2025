@@ -260,9 +260,11 @@ mkdir -p docker/standalone/keycloak/realms
 
 ### 1.3 Start Keycloak Standalone (Initial Setup)
 
-For initial configuration, use standalone Keycloak:
+For initial configuration, use standalone Keycloak. This runs Keycloak independently without the full microservices stack.
 
 **Location:** `docker/standalone/keycloak/docker-compose.yml`
+
+Complete standalone Keycloak docker-compose:
 
 ```yaml
 services:
