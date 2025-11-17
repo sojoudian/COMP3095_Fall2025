@@ -41,7 +41,7 @@ This lab uses the **Client Credentials** grant type for service-to-service authe
 
 **Location:** `microservices-parent/docker-compose.yml`
 
-Add Keycloak service **before** api-gateway service:
+Complete docker-compose.yml configuration:
 
 ```yaml
 services:
@@ -66,6 +66,124 @@ services:
     networks:
       - spring
 
+  api-gateway:
+    image: api-gateway
+    ports:
+      - "9000:9000"
+    build:
+      context: ./api-gateway
+      dockerfile: ./Dockerfile
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_JSON: '{"logging":{"level":{"root":"INFO","ca.gbc.apigateway":"DEBUG"}}}'
+    container_name: api-gateway
+    networks:
+      - spring
+
+  redis:
+    image: redis:latest
+    ports:
+      - "6379:6379"
+    volumes:
+      - ./docker/integrated/redis/init/redis.conf:/usr/local/etc/redis/redis.conf
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
+    container_name: redis
+    networks:
+      - spring
+
+  redis-insight:
+    image: redislabs/redisinsight:1.14.0
+    ports:
+      - "8001:8001"
+    container_name: redis-insight
+    depends_on:
+      - redis
+    networks:
+      - spring
+
+  inventory-service:
+    image: inventory-service
+    ports:
+      - "8083:8083"
+    build:
+      context: ./inventory-service
+      dockerfile: ./Dockerfile
+    container_name: inventory-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory/inventory-service
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - postgres-inventory
+    networks:
+      - spring
+
+  order-service:
+    image: order-service
+    ports:
+      - "8082:8082"
+    build:
+      context: ./order-service
+      dockerfile: ./Dockerfile
+    container_name: order-service
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order/order-service
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_PROFILES_ACTIVE=docker
+    depends_on:
+      - postgres-order
+    networks:
+      - spring
+
+  product-service:
+    image: product-service
+    ports:
+      - "8084:8084"
+    build:
+      context: ./product-service
+      dockerfile: ./Dockerfile
+    container_name: product-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    depends_on:
+      - mongodb
+    networks:
+      - spring
+
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
+    volumes:
+      - ./docker/integrated/mongo/data/mongo/products:/data/db
+      - ./docker/integrated/mongo/init/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
+    container_name: mongodb
+    command: mongod --auth
+    networks:
+      - spring
+
+  mongo-express:
+    image: mongo-express
+    ports:
+      - "8081:8081"
+    environment:
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
+    container_name: mongo-express
+    depends_on:
+      - mongodb
+    networks:
+      - spring
+
   postgres-keycloak:
     image: postgres:15
     volumes:
@@ -79,6 +197,57 @@ services:
     container_name: postgres-keycloak
     networks:
       - spring
+
+  postgres-inventory:
+    container_name: postgres-inventory
+    image: postgres
+    environment:
+      POSTGRES_DB: inventory-service
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./docker/integrated/postgres/data/postgres-inventory:/data/postgres
+      - ./docker/integrated/postgres/inventory-service/init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5433:5432"
+    networks:
+      - spring
+
+  postgres-order:
+    container_name: postgres-order
+    image: postgres
+    environment:
+      POSTGRES_DB: order-service
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+      PGDATA: /data/postgres
+    volumes:
+      - ./docker/integrated/postgres/data/postgres-order:/data/postgres
+      - ./docker/integrated/postgres/order-service/init/init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5432:5432"
+    networks:
+      - spring
+
+  pgpadmin:
+    image: dpage/pgadmin4:9.2
+    ports:
+      - "8888:80"
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=user@domain.ca
+      - PGADMIN_DEFAULT_PASSWORD=password
+    container_name: pgadmin
+    networks:
+      - spring
+
+volumes:
+  mongo-db:
+    driver: local
+
+networks:
+  spring:
+    driver: bridge
 ```
 
 ### 1.2 Create Directory Structure
