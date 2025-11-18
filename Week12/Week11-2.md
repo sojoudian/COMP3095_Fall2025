@@ -183,9 +183,52 @@ This allows the user to have basic realm viewing permissions.
 
 ---
 
-## Step 3: Verify API Gateway Configuration
+## Step 3: Export Realm Configuration
 
-### 3.1 Check application.properties
+### 3.1 Export Realm from Keycloak
+
+Export realm to include frontend-client and testuser:
+
+1. Stay in Keycloak Admin Console
+2. Select **spring-microservices-security-realm**
+3. Click **Realm settings** (left sidebar)
+4. Click **Action** dropdown (top-right)
+5. Select **Partial export**
+6. Check **Export groups and roles**
+7. Check **Export clients**
+8. Click **Export**
+9. Save as `realm-export.json`
+
+### 3.2 Update Realm Files
+
+Copy exported realm to both integrated and standalone directories:
+
+```bash
+cd microservices-parent
+
+# Backup old realm export (if exists)
+mv docker/integrated/keycloak/realms/realm-export.json docker/integrated/keycloak/realms/realm-export.json.bak 2>/dev/null || true
+mv docker/standalone/keycloak/realms/realm-export.json docker/standalone/keycloak/realms/realm-export.json.bak 2>/dev/null || true
+
+# Copy new export to both locations
+cp ~/Downloads/realm-export.json docker/integrated/keycloak/realms/
+cp ~/Downloads/realm-export.json docker/standalone/keycloak/realms/
+```
+
+### 3.3 Stop Standalone Keycloak
+
+Stop standalone Keycloak before starting integrated stack:
+
+```bash
+cd docker/standalone/keycloak
+docker-compose -p keycloak-standalone down
+```
+
+---
+
+## Step 4: Verify API Gateway Configuration
+
+### 4.1 Check application.properties
 
 The API Gateway from Lab 5.2 already validates JWTs. User-based tokens from Authorization Code Flow use the same validation mechanism.
 
@@ -221,7 +264,7 @@ services.order-url=http://order-service:8082
 spring.security.oauth2.resourceserver.jwt.issuer-uri=http://keycloak:8080/realms/spring-microservices-security-realm
 ```
 
-### 3.2 Verify SecurityConfig
+### 4.2 Verify SecurityConfig
 
 No changes needed to SecurityConfig. It validates all JWTs (service and user tokens) the same way.
 
@@ -258,13 +301,13 @@ This configuration:
 
 ---
 
-## Step 4: Test User Authentication with Postman
+## Step 5: Test User Authentication with Postman
 
-### 4.1 Start All Services
+### 5.1 Start All Services
 
 ```bash
 cd microservices-parent
-docker-compose -p microservices-comp3095 -f docker-compose.yml up -d --build
+docker-compose -p microservices-parent -f docker-compose.yml up -d --build
 ```
 
 Wait ~30 seconds for services to stabilize.
@@ -285,7 +328,7 @@ Expected containers:
 - mongodb
 - redis
 
-### 4.2 Configure Postman OAuth 2.0
+### 5.2 Configure Postman OAuth 2.0
 
 Create new request or use existing:
 
@@ -310,7 +353,7 @@ Create new request or use existing:
 
 Click **Get New Access Token**
 
-### 4.3 Authenticate as User
+### 5.3 Authenticate as User
 
 Postman will open browser window to Keycloak login:
 
@@ -327,7 +370,7 @@ After successful login:
 
 Click **Use Token**
 
-### 4.4 Test Secured Endpoint
+### 5.4 Test Secured Endpoint
 
 Make API request:
 
@@ -350,7 +393,7 @@ Make API request:
 ]
 ```
 
-### 4.5 Test Additional Endpoints
+### 5.5 Test Additional Endpoints
 
 Test other microservices endpoints:
 
@@ -377,9 +420,9 @@ Content-Type: application/json
 
 ---
 
-## Step 5: Debugging
+## Step 6: Debugging
 
-### 5.1 Login Fails in Browser
+### 6.1 Login Fails in Browser
 
 **Check:**
 
@@ -395,7 +438,7 @@ Content-Type: application/json
 3. Check Email Verified: **Yes**
 4. Credentials tab: Password is set and not temporary
 
-### 5.2 API Call Returns 401 Unauthorized
+### 6.2 API Call Returns 401 Unauthorized
 
 **Check:**
 
@@ -413,7 +456,7 @@ Content-Type: application/json
    - `sub`: `<user-id>`
    - `preferred_username`: `testuser`
 
-### 5.3 Token Expired
+### 6.3 Token Expired
 
 Symptoms: `401 Unauthorized` with valid configuration
 
@@ -423,7 +466,7 @@ Solution:
 3. Login again
 4. Click **Use Token**
 
-### 5.4 Check Keycloak Logs
+### 6.4 Check Keycloak Logs
 
 ```bash
 docker logs keycloak
@@ -431,61 +474,13 @@ docker logs keycloak
 
 Look for authentication events and errors.
 
-### 5.5 Check API Gateway Logs
+### 6.5 Check API Gateway Logs
 
 ```bash
 docker logs api-gateway
 ```
 
 Look for JWT validation errors or security filter chain issues.
-
----
-
-## Step 6: Export Updated Realm Configuration
-
-### 6.1 Export Realm from Keycloak
-
-Update realm export to include frontend-client:
-
-1. Login to Keycloak Admin Console
-2. Select **spring-microservices-security-realm**
-3. Click **Realm settings** (left sidebar)
-4. Click **Action** dropdown (top-right)
-5. Select **Partial export**
-6. Check **Export groups and roles**
-7. Check **Export clients**
-8. Click **Export**
-9. Save as `realm-export.json`
-
-### 6.2 Update Realm Files
-
-Replace existing realm exports:
-
-```bash
-cd microservices-parent
-
-# Backup old realm export
-mv docker/integrated/keycloak/realms/realm-export.json docker/integrated/keycloak/realms/realm-export.json.bak
-mv docker/standalone/keycloak/realms/realm-export.json docker/standalone/keycloak/realms/realm-export.json.bak
-
-# Copy new export
-cp ~/Downloads/realm-export.json docker/integrated/keycloak/realms/
-cp ~/Downloads/realm-export.json docker/standalone/keycloak/realms/
-```
-
-### 6.3 Test Realm Import
-
-Rebuild containers to test realm import:
-
-```bash
-docker-compose -p microservices-comp3095 down
-docker-compose -p microservices-comp3095 -f docker-compose.yml up -d --build
-```
-
-Verify:
-1. Access Keycloak Admin Console
-2. Check Clients → `frontend-client` exists
-3. Check Users → `testuser` exists
 
 ---
 
