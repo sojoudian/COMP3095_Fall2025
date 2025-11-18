@@ -462,7 +462,7 @@ server.port=9000
 services.product-url=http://localhost:8084
 services.order-url=http://localhost:8082
 
-# Week 11 - Keycloak Security
+# Week 12 - Keycloak Security
 # The API Gateway uses Keycloak's public key to validate JWT tokens locally
 spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8080/realms/spring-microservices-security-realm
 ```
@@ -480,7 +480,7 @@ server.port=9000
 services.product-url=http://product-service:8084
 services.order-url=http://order-service:8082
 
-# Week 11 - Keycloak Security (Docker)
+# Week 12 - Keycloak Security (Docker)
 spring.security.oauth2.resourceserver.jwt.issuer-uri=http://keycloak:8080/realms/spring-microservices-security-realm
 ```
 
@@ -799,7 +799,7 @@ spring.data.redis.port=6379
 spring.data.redis.password=password
 spring.cache.type=redis
 
-# Week 11 - Add cache expiration
+# Week 12 - Add cache expiration
 spring.cache.redis.time-to-live=60s
 ```
 

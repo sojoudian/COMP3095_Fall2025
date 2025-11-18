@@ -10,7 +10,7 @@ Extend Keycloak security from Lab 5.2 to support user-based authentication using
 
 ## Prerequisites
 
-- ✅ Completed Week 11-1 (Keycloak Client Credentials)
+- ✅ Completed 12-1 (Keycloak Client Credentials)
 - ✅ Keycloak running with `spring-microservices-security-realm`
 - ✅ API Gateway configured with OAuth2 Resource Server
 - ✅ Postman installed

@@ -48,7 +48,7 @@ Add SpringDoc OpenAPI dependencies to the dependencies block:
 dependencies {
     // Existing dependencies...
 
-    // Week 11 - Swagger/OpenAPI Documentation
+    // Week 12 - Swagger/OpenAPI Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
 }
@@ -183,7 +183,7 @@ Add SpringDoc dependencies:
 dependencies {
     // Existing dependencies...
 
-    // Week 11 - Swagger/OpenAPI Documentation
+    // Week 12 - Swagger/OpenAPI Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
 }
@@ -286,7 +286,7 @@ Add SpringDoc dependencies:
 dependencies {
     // Existing dependencies...
 
-    // Week 11 - Swagger/OpenAPI Documentation
+    // Week 12 - Swagger/OpenAPI Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
 }
