@@ -805,6 +805,13 @@ spring.cache.redis.time-to-live=60s
 
 ### 6.2 Update Standalone Redis Config
 
+Create directory structure:
+
+```bash
+cd microservices-parent
+mkdir -p docker/standalone/redis/
+```
+
 **Location:** `docker/standalone/redis/redis.conf`
 
 ```conf
