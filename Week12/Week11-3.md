@@ -78,13 +78,8 @@ dependencies {
 Add Swagger configuration properties:
 
 ```properties
-spring.application.name=product-service
 # Week 11 - API version for documentation
 product-service.version=v1.0
-
-server.port=8084
-
-# Existing MongoDB and Redis config...
 
 # Week 11 - Swagger Documentation
 # Swagger UI accessible at: http://localhost:8084/swagger-ui
@@ -106,26 +101,8 @@ springdoc.api-docs.path=/api-docs
 Add the same Swagger configuration for Docker environment:
 
 ```properties
-spring.application.name=product-service
 # Week 11 - API version for documentation
 product-service.version=v1.0
-
-server.port=8084
-
-# MongoDB Docker configuration
-spring.data.mongodb.host=mongodb
-spring.data.mongodb.port=27017
-spring.data.mongodb.database=product-service
-spring.data.mongodb.username=admin
-spring.data.mongodb.password=password
-spring.data.mongodb.authentication-database=admin
-
-# Redis Docker configuration
-spring.data.redis.host=redis
-spring.data.redis.port=6379
-spring.data.redis.password=password
-spring.cache.type=redis
-spring.cache.redis.time-to-live=60s
 
 # Week 11 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
@@ -230,13 +207,8 @@ Reload Gradle project.
 Add Swagger configuration:
 
 ```properties
-spring.application.name=order-service
 # Week 11 - API version for documentation
 order-service.version=v1.0
-
-server.port=8082
-
-# Existing PostgreSQL config...
 
 # Week 11 - Swagger Documentation
 # Swagger UI accessible at: http://localhost:8082/swagger-ui
@@ -252,22 +224,8 @@ springdoc.api-docs.path=/api-docs
 Add the same Swagger configuration for Docker environment:
 
 ```properties
-spring.application.name=order-service
 # Week 11 - API version for documentation
 order-service.version=v1.0
-
-server.port=8082
-
-# PostgreSQL Docker configuration
-spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
-spring.datasource.username=admin
-spring.datasource.password=password
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto=none
-
-inventory.service.url=http://inventory-service:8083
 
 # Week 11 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
@@ -352,13 +310,8 @@ Reload Gradle project.
 Add Swagger configuration:
 
 ```properties
-spring.application.name=inventory-service
 # Week 11 - API version for documentation
 inventory-service.version=v1.0
-
-server.port=8083
-
-# Existing PostgreSQL config...
 
 # Week 11 - Swagger Documentation
 # Swagger UI accessible at: http://localhost:8083/swagger-ui
@@ -374,20 +327,8 @@ springdoc.api-docs.path=/api-docs
 Add the same Swagger configuration for Docker environment:
 
 ```properties
-spring.application.name=inventory-service
 # Week 11 - API version for documentation
 inventory-service.version=v1.0
-
-server.port=8083
-
-# PostgreSQL Docker configuration
-spring.datasource.url=jdbc:postgresql://postgres-inventory:5432/inventory_service
-spring.datasource.username=admin
-spring.datasource.password=password
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto=none
 
 # Week 11 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
