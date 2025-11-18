@@ -20,23 +20,54 @@ Create standalone Docker Compose configurations for local development. This allo
 
 ```
 docker/
-├── standalone/
+├── integrated/               # Used by main docker-compose.yml
+│   ├── mongo/
+│   │   └── init/
+│   │       └── mongo-init.js
+│   ├── redis/
+│   │   └── init/
+│   │       └── redis.conf
+│   ├── postgres/
+│   │   ├── inventory-service/
+│   │   │   └── init/init.sql
+│   │   └── order-service/
+│   │       └── init/init.sql
+│   └── keycloak/
+│       └── realms/
+│           └── realm-export.json
+├── standalone/               # For local development
 │   ├── mongo-redis/          # MongoDB + Redis for product-service
 │   │   ├── docker-compose.yml
 │   │   └── init/
 │   │       ├── mongo-init.js
 │   │       └── redis.conf
-│   └── postgres/             # PostgreSQL for order + inventory services
+│   ├── postgres/             # PostgreSQL for order + inventory services
+│   │   ├── docker-compose.yml
+│   │   ├── inventory-service/
+│   │   │   └── init/init.sql
+│   │   └── order-service/
+│   │       └── init/init.sql
+│   └── keycloak/
 │       ├── docker-compose.yml
-│       ├── inventory-service/
-│       │   └── init/init.sql
-│       └── order-service/
-│           └── init/init.sql
+│       └── realms/
+│           └── realm-export.json
 ```
 
 ---
 
 ## Step 1: Create Directory Structure
+
+### 1.1 Integrated Configuration (for docker-compose.yml)
+
+```bash
+cd microservices-parent
+mkdir -p docker/integrated/mongo/init
+mkdir -p docker/integrated/redis/init
+mkdir -p docker/integrated/postgres/inventory-service/init
+mkdir -p docker/integrated/postgres/order-service/init
+```
+
+### 1.2 Standalone Configuration (for local development)
 
 ```bash
 cd microservices-parent
@@ -47,49 +78,149 @@ mkdir -p docker/standalone/postgres/order-service/init
 
 ---
 
-## Step 2: MongoDB + Redis Configuration
+## Step 2: Integrated Configuration Files
 
 ### 2.1 Create mongo-init.js
 
-**Location:** `docker/standalone/mongo-redis/init/mongo-init.js`
+**Location:** `docker/integrated/mongo/init/mongo-init.js`
+
+Create file `docker/integrated/mongo/init/mongo-init.js`:
 
 ```javascript
+print('Mongo Init Script - START');
+
 db = db.getSiblingDB('admin');
-db.auth('admin', 'password');
+
+if (db.system.users.find({ user: 'admin' }).count() === 0) {
+    db.createUser({
+        user: 'admin',
+        pwd: 'password',
+        roles: [{ role: 'root', db: 'admin' }]
+    });
+    print('Admin user created');
+} else {
+    print('Admin user already exists');
+}
 
 db = db.getSiblingDB('product-service');
 
-db.createUser({
-    user: 'productAdmin',
-    pwd: 'password',
-    roles: [
-        {
-            role: 'readWrite',
-            db: 'product-service'
-        }
-    ]
-});
+if (db.system.users.find({ user: 'productAdmin' }).count() === 0) {
+    db.createUser({
+        user: 'productAdmin',
+        pwd: 'password',
+        roles: [{ role: 'readWrite', db: 'product-service' }]
+    });
+    print('ProductAdmin user created');
+} else {
+    print('ProductAdmin user already exists');
+}
 
-db.createCollection('product');
-db.product.createIndex({ name: 1 });
+if (!db.getCollectionNames().includes('user')) {
+    db.createCollection('user');
+    print('User collection created');
+} else {
+    print('User collection already exists');
+}
+
+print('Mongo Init Script - END');
 ```
 
 ### 2.2 Create redis.conf
 
-**Location:** `docker/standalone/mongo-redis/init/redis.conf`
+**Location:** `docker/integrated/redis/init/redis.conf`
+
+Create file `docker/integrated/redis/init/redis.conf`:
 
 ```conf
 requirepass password
-
-save 900 1
-save 300 10
-save 60 10000
-
-appendonly yes
-appendfilename "appendonly.aof"
 ```
 
-### 2.3 Create docker-compose.yml
+### 2.3 Create inventory-service init.sql
+
+**Location:** `docker/integrated/postgres/inventory-service/init/init.sql`
+
+Create file `docker/integrated/postgres/inventory-service/init/init.sql`:
+
+```sql
+-- Create the inventory-service database and user
+CREATE DATABASE inventory_service;
+--CREATE USER admin WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE inventory_service TO admin;
+```
+
+### 2.4 Create order-service init.sql
+
+**Location:** `docker/integrated/postgres/order-service/init/init.sql`
+
+Create file `docker/integrated/postgres/order-service/init/init.sql`:
+
+```sql
+-- Create the order-service database and user
+CREATE DATABASE order_service;
+--CREATE USER admin WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE order_service TO admin;
+```
+
+---
+
+## Step 3: Standalone MongoDB + Redis Configuration
+
+### 3.1 Create mongo-init.js
+
+**Location:** `docker/standalone/mongo-redis/init/mongo-init.js`
+
+Create file `docker/standalone/mongo-redis/init/mongo-init.js`:
+
+```javascript
+print('Mongo Init Script - START');
+
+db = db.getSiblingDB('admin');
+
+if (db.system.users.find({ user: 'admin' }).count() === 0) {
+    db.createUser({
+        user: 'admin',
+        pwd: 'password',
+        roles: [{ role: 'root', db: 'admin' }]
+    });
+    print('Admin user created');
+} else {
+    print('Admin user already exists');
+}
+
+db = db.getSiblingDB('product-service');
+
+if (db.system.users.find({ user: 'productAdmin' }).count() === 0) {
+    db.createUser({
+        user: 'productAdmin',
+        pwd: 'password',
+        roles: [{ role: 'readWrite', db: 'product-service' }]
+    });
+    print('ProductAdmin user created');
+} else {
+    print('ProductAdmin user already exists');
+}
+
+if (!db.getCollectionNames().includes('user')) {
+    db.createCollection('user');
+    print('User collection created');
+} else {
+    print('User collection already exists');
+}
+
+print('Mongo Init Script - END');
+```
+
+### 3.2 Create redis.conf
+
+**Location:** `docker/standalone/mongo-redis/init/redis.conf`
+
+Create file `docker/standalone/mongo-redis/init/redis.conf`:
+
+```conf
+requirepass password
+```
+
+### 3.3 Create docker-compose.yml
 
 **Location:** `docker/standalone/mongo-redis/docker-compose.yml`
 
@@ -157,27 +288,35 @@ networks:
 
 ---
 
-## Step 3: PostgreSQL Configuration
+## Step 4: Standalone PostgreSQL Configuration
 
-### 3.1 Create inventory-service init.sql
+### 4.1 Create inventory-service init.sql
 
 **Location:** `docker/standalone/postgres/inventory-service/init/init.sql`
 
+Create file `docker/standalone/postgres/inventory-service/init/init.sql`:
+
 ```sql
-CREATE DATABASE "inventory-service";
-GRANT ALL PRIVILEGES ON DATABASE "inventory-service" TO admin;
+-- Create the inventory-service database and user
+CREATE DATABASE inventory_service;
+--CREATE USER admin WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE inventory_service TO admin;
 ```
 
-### 3.2 Create order-service init.sql
+### 4.2 Create order-service init.sql
 
 **Location:** `docker/standalone/postgres/order-service/init/init.sql`
 
+Create file `docker/standalone/postgres/order-service/init/init.sql`:
+
 ```sql
-CREATE DATABASE "order-service";
-GRANT ALL PRIVILEGES ON DATABASE "order-service" TO admin;
+-- Create the order-service database and user
+CREATE DATABASE order_service;
+--CREATE USER admin WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE order_service TO admin;
 ```
 
-### 3.3 Create docker-compose.yml
+### 4.3 Create docker-compose.yml
 
 **Location:** `docker/standalone/postgres/docker-compose.yml`
 
@@ -222,9 +361,9 @@ services:
 
 ---
 
-## Step 4: Usage
+## Step 5: Usage
 
-### 4.1 Start MongoDB + Redis
+### 5.1 Start MongoDB + Redis
 
 ```bash
 cd docker/standalone/mongo-redis
@@ -248,7 +387,7 @@ docker-compose -p mongo-redis-standalone up -d
    - Password: `password`
 4. Click "Add Database"
 
-### 4.2 Start PostgreSQL
+### 5.2 Start PostgreSQL
 
 ```bash
 cd docker/standalone/postgres
@@ -268,18 +407,18 @@ docker-compose -p postgres-combined up -d
    - Name: `Inventory Service`
    - Host: `host.docker.internal`
    - Port: `5432`
-   - Database: `inventory-service`
+   - Database: `inventory_service`
    - Username: `admin`
    - Password: `password`
 5. **Order Database:**
    - Name: `Order Service`
    - Host: `host.docker.internal`
    - Port: `5433`
-   - Database: `order-service`
+   - Database: `order_service`
    - Username: `admin`
    - Password: `password`
 
-### 4.3 Run Microservices Locally
+### 5.3 Run Microservices Locally
 
 **Terminal 1:**
 ```bash
@@ -305,7 +444,7 @@ cd api-gateway
 ./gradlew bootRun
 ```
 
-### 4.4 Stop Services
+### 5.4 Stop Services
 
 **Stop MongoDB + Redis:**
 ```bash
@@ -326,12 +465,17 @@ docker-compose down -v
 
 ---
 
-## Step 5: .gitignore
+## Step 6: .gitignore
 
 Add to `.gitignore`:
 
 ```
-# Docker data directories
+# Docker data directories - Integrated
+docker/integrated/mongo/data/
+docker/integrated/postgres/inventory-service/data/
+docker/integrated/postgres/order-service/data/
+
+# Docker data directories - Standalone
 docker/standalone/mongo-redis/db-data/
 docker/standalone/postgres/inventory-service/db-data/
 docker/standalone/postgres/order-service/db-data/
@@ -342,14 +486,17 @@ docker/standalone/postgres/order-service/db-data/
 ## Summary
 
 You now have:
+- ✅ Integrated configuration files for main docker-compose.yml
 - ✅ MongoDB + Redis standalone configuration
 - ✅ PostgreSQL standalone configuration
-- ✅ Database initialization scripts
+- ✅ Database initialization scripts with proper user management
 - ✅ Management UIs (Mongo Express, RedisInsight, pgAdmin)
 - ✅ Local development setup
 
 **Benefits:**
-- Run only needed databases
+- Consistent configuration between integrated and standalone setups
+- Run only needed databases for local development
 - Faster startup than full docker-compose
 - Easy database inspection with management UIs
 - Independent service development
+- Proper database naming (underscore convention)
