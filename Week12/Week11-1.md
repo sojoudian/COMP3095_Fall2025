@@ -830,63 +830,7 @@ requirepass password
 
 ---
 
-## Step 7: Standalone Keycloak Configuration
-
-### 7.1 Standalone Docker Compose
-
-**Location:** `docker/standalone/keycloak/docker-compose.yml`
-
-```yaml
-services:
-  postgres:
-    image: postgres:15
-    volumes:
-      - ./db-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-    environment:
-      POSTGRES_DB: keycloak
-      POSTGRES_USER: keycloak
-      POSTGRES_PASSWORD: password
-    container_name: local-postgres-keycloak
-
-  keycloak:
-    image: quay.io/keycloak/keycloak:24.0.1
-    command: start-dev
-    environment:
-      KC_DB: postgres
-      KC_DB_URL_HOST: postgres
-      KC_DB_USERNAME: keycloak
-      KC_DB_PASSWORD: password
-      KEYCLOAK_ADMIN: admin
-      KEYCLOAK_ADMIN_PASSWORD: password
-    ports:
-      - "8080:8080"
-    depends_on:
-      - postgres
-    container_name: local-keycloak
-```
-
-**Usage:**
-
-```bash
-cd docker/standalone/keycloak
-docker-compose -p keycloak-standalone up -d
-```
-
-**Access:**
-- Keycloak Admin: `http://localhost:8080`
-- Login: `admin` / `password`
-
-**Stop:**
-
-```bash
-docker-compose down
-```
-
----
-
-## Step 8: Understanding OAuth2 Flows
+## Step 7: Understanding OAuth2 Flows
 
 ### Client Credentials Flow (This Lab)
 
