@@ -99,6 +99,39 @@ springdoc.api-docs.path=/api-docs
 - `springdoc.swagger-ui.path`: Custom URL path for Swagger UI interface
 - `springdoc.api-docs.path`: Custom URL path for OpenAPI JSON specification
 
+### 2.2 Update application-docker.properties
+
+**Location:** `product-service/src/main/resources/application-docker.properties`
+
+Add the same Swagger configuration for Docker environment:
+
+```properties
+spring.application.name=product-service
+# Week 11 - API version for documentation
+product-service.version=v1.0
+
+server.port=8084
+
+# MongoDB Docker configuration
+spring.data.mongodb.host=mongodb
+spring.data.mongodb.port=27017
+spring.data.mongodb.database=product-service
+spring.data.mongodb.username=admin
+spring.data.mongodb.password=password
+spring.data.mongodb.authentication-database=admin
+
+# Redis Docker configuration
+spring.data.redis.host=redis
+spring.data.redis.port=6379
+spring.data.redis.password=password
+spring.cache.type=redis
+spring.cache.redis.time-to-live=60s
+
+# Week 11 - Swagger Documentation
+springdoc.swagger-ui.path=/swagger-ui
+springdoc.api-docs.path=/api-docs
+```
+
 ---
 
 ## Step 3: Customize API Documentation
@@ -212,7 +245,36 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### 4.3 Create config Package
+### 4.3 Update application-docker.properties
+
+**Location:** `order-service/src/main/resources/application-docker.properties`
+
+Add the same Swagger configuration for Docker environment:
+
+```properties
+spring.application.name=order-service
+# Week 11 - API version for documentation
+order-service.version=v1.0
+
+server.port=8082
+
+# PostgreSQL Docker configuration
+spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
+spring.datasource.username=admin
+spring.datasource.password=password
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=none
+
+inventory.service.url=http://inventory-service:8083
+
+# Week 11 - Swagger Documentation
+springdoc.swagger-ui.path=/swagger-ui
+springdoc.api-docs.path=/api-docs
+```
+
+### 4.4 Create config Package
 
 1. Navigate to `order-service/src/main/java/ca/gbc/orderservice`
 2. Right-click on `ca.gbc.orderservice`
@@ -220,7 +282,7 @@ springdoc.api-docs.path=/api-docs
 4. Name: `config`
 5. Click **OK**
 
-### 4.4 Create OpenAPIConfig Class
+### 4.5 Create OpenAPIConfig Class
 
 1. Right-click on `config` package
 2. Select **New** → **Java Class**
@@ -305,7 +367,34 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### 5.3 Create config Package
+### 5.3 Update application-docker.properties
+
+**Location:** `inventory-service/src/main/resources/application-docker.properties`
+
+Add the same Swagger configuration for Docker environment:
+
+```properties
+spring.application.name=inventory-service
+# Week 11 - API version for documentation
+inventory-service.version=v1.0
+
+server.port=8083
+
+# PostgreSQL Docker configuration
+spring.datasource.url=jdbc:postgresql://postgres-inventory:5432/inventory_service
+spring.datasource.username=admin
+spring.datasource.password=password
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.hibernate.ddl-auto=none
+
+# Week 11 - Swagger Documentation
+springdoc.swagger-ui.path=/swagger-ui
+springdoc.api-docs.path=/api-docs
+```
+
+### 5.4 Create config Package
 
 1. Navigate to `inventory-service/src/main/java/ca/gbc/inventoryservice`
 2. Right-click on `ca.gbc.inventoryservice`
@@ -313,7 +402,7 @@ springdoc.api-docs.path=/api-docs
 4. Name: `config`
 5. Click **OK**
 
-### 5.4 Create OpenAPIConfig Class
+### 5.5 Create OpenAPIConfig Class
 
 1. Right-click on `config` package
 2. Select **New** → **Java Class**
@@ -356,90 +445,9 @@ public class OpenAPIConfig {
 
 ---
 
-## Step 6: Update Docker Configuration and Build All Services
+## Step 6: Build All Services with Docker Compose
 
-### 6.1 Update application-docker.properties Files
-
-Update Docker-specific configuration for all three services to include Swagger properties.
-
-**Location:** `product-service/src/main/resources/application-docker.properties`
-
-```properties
-spring.application.name=product-service
-# Week 11 - API version for documentation
-product-service.version=v1.0
-
-server.port=8084
-
-# MongoDB Docker configuration
-spring.data.mongodb.host=mongodb
-spring.data.mongodb.port=27017
-spring.data.mongodb.database=product-service
-spring.data.mongodb.username=admin
-spring.data.mongodb.password=password
-spring.data.mongodb.authentication-database=admin
-
-# Redis Docker configuration
-spring.data.redis.host=redis
-spring.data.redis.port=6379
-spring.data.redis.password=password
-spring.cache.type=redis
-spring.cache.redis.time-to-live=60s
-
-# Week 11 - Swagger Documentation
-springdoc.swagger-ui.path=/swagger-ui
-springdoc.api-docs.path=/api-docs
-```
-
-**Location:** `order-service/src/main/resources/application-docker.properties`
-
-```properties
-spring.application.name=order-service
-# Week 11 - API version for documentation
-order-service.version=v1.0
-
-server.port=8082
-
-# PostgreSQL Docker configuration
-spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
-spring.datasource.username=admin
-spring.datasource.password=password
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto=none
-
-inventory.service.url=http://inventory-service:8083
-
-# Week 11 - Swagger Documentation
-springdoc.swagger-ui.path=/swagger-ui
-springdoc.api-docs.path=/api-docs
-```
-
-**Location:** `inventory-service/src/main/resources/application-docker.properties`
-
-```properties
-spring.application.name=inventory-service
-# Week 11 - API version for documentation
-inventory-service.version=v1.0
-
-server.port=8083
-
-# PostgreSQL Docker configuration
-spring.datasource.url=jdbc:postgresql://postgres-inventory:5432/inventory_service
-spring.datasource.username=admin
-spring.datasource.password=password
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.hibernate.ddl-auto=none
-
-# Week 11 - Swagger Documentation
-springdoc.swagger-ui.path=/swagger-ui
-springdoc.api-docs.path=/api-docs
-```
-
-### 6.2 Rebuild Docker Containers
+### 6.1 Rebuild Docker Containers
 
 Rebuild all services with updated Swagger configuration:
 
@@ -452,7 +460,7 @@ Wait for containers to build and start (~60-90 seconds).
 
 **Note:** The `--build` flag forces Docker to rebuild images with new dependencies.
 
-### 6.3 Verify Containers are Running
+### 6.2 Verify Containers are Running
 
 ```bash
 docker ps
@@ -472,7 +480,7 @@ Expected containers:
 - redis
 - redis-insight
 
-### 6.4 Access Documentation in Docker
+### 6.3 Access Documentation in Docker
 
 Access each service's Swagger documentation directly (not through API Gateway):
 
