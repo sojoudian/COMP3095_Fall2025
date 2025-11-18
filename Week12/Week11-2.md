@@ -134,60 +134,11 @@ Lab 5.3 Requirement: Setting `*` allows CORS from any origin (simplified for tes
 
 ---
 
-## Step 2: Create Test User
+## Step 2: Export Realm Configuration
 
-### 2.1 Add User
+### 2.1 Export Realm from Keycloak
 
-Create user account for testing:
-
-1. Click **Users** (left sidebar)
-2. Click **Create new user** button
-
-**User Configuration:**
-
-- Email verified: **Yes** (toggle ON)
-- Username: `testuser` (required field)
-- Email: `testuser@example.com`
-- First name: `Test`
-- Last name: `User`
-- Click **Create**
-
-### 2.2 Set User Password
-
-1. After creating user, click **Credentials** tab
-2. Click **Set password** button
-
-**Password Settings:**
-
-- Password: `password`
-- Password confirmation: `password`
-- Temporary: **OFF** (toggle OFF to make password permanent)
-
-Click **Save**
-
-Confirm password reset in dialog.
-
-### 2.3 Assign User Roles (Optional)
-
-Grant user access to view resources:
-
-1. Stay on testuser details page
-2. Click **Role mappings** tab
-3. Click **Assign role** button
-4. Filter: Select **Filter by clients**
-5. Search: `realm-management`
-6. Select: `view-users` role
-7. Click **Assign**
-
-This allows the user to have basic realm viewing permissions.
-
----
-
-## Step 3: Export Realm Configuration
-
-### 3.1 Export Realm from Keycloak
-
-Export realm to include frontend-client and testuser:
+Export realm to include frontend-client:
 
 1. Stay in Keycloak Admin Console
 2. Select **spring-microservices-security-realm**
@@ -199,7 +150,7 @@ Export realm to include frontend-client and testuser:
 8. Click **Export**
 9. Save as `realm-export.json`
 
-### 3.2 Update Realm Files
+### 2.2 Update Realm Files
 
 Copy exported realm to both integrated and standalone directories:
 
@@ -215,7 +166,7 @@ cp ~/Downloads/realm-export.json docker/integrated/keycloak/realms/
 cp ~/Downloads/realm-export.json docker/standalone/keycloak/realms/
 ```
 
-### 3.3 Stop Standalone Keycloak
+### 2.3 Stop Standalone Keycloak
 
 Stop standalone Keycloak before starting integrated stack:
 
@@ -226,9 +177,9 @@ docker-compose -p keycloak-standalone down
 
 ---
 
-## Step 4: Verify API Gateway Configuration
+## Step 3: Verify API Gateway Configuration
 
-### 4.1 Check application.properties
+### 3.1 Check application.properties
 
 The API Gateway from Lab 5.2 already validates JWTs. User-based tokens from Authorization Code Flow use the same validation mechanism.
 
@@ -264,7 +215,7 @@ services.order-url=http://order-service:8082
 spring.security.oauth2.resourceserver.jwt.issuer-uri=http://keycloak:8080/realms/spring-microservices-security-realm
 ```
 
-### 4.2 Verify SecurityConfig
+### 3.2 Verify SecurityConfig
 
 No changes needed to SecurityConfig. It validates all JWTs (service and user tokens) the same way.
 
@@ -301,9 +252,9 @@ This configuration:
 
 ---
 
-## Step 5: Test User Authentication with Postman
+## Step 4: Test User Authentication with Postman
 
-### 5.1 Start All Services
+### 4.1 Start All Services
 
 ```bash
 cd microservices-parent
@@ -328,7 +279,61 @@ Expected containers:
 - mongodb
 - redis
 
-### 5.2 Configure Postman OAuth 2.0
+### 4.2 Create Test User
+
+Now that the integrated services are running, create a test user in Keycloak:
+
+1. Navigate to `http://keycloak:8080`
+2. Click **Administration Console**
+3. Login with `admin` / `password`
+4. **IMPORTANT:** Select **spring-microservices-security-realm** from the realm dropdown (top-left). Do NOT create the user in the "master" realm.
+
+#### 4.2.1 Add User
+
+Create user account for testing:
+
+1. Click **Users** (left sidebar)
+2. Click **Create new user** button
+
+**User Configuration:**
+
+- Email verified: **Yes** (toggle ON)
+- Username: `testuser` (required field)
+- Email: `testuser@example.com`
+- First name: `Test`
+- Last name: `User`
+- Click **Create**
+
+#### 4.2.2 Set User Password
+
+1. After creating user, click **Credentials** tab
+2. Click **Set password** button
+
+**Password Settings:**
+
+- Password: `password`
+- Password confirmation: `password`
+- Temporary: **OFF** (toggle OFF to make password permanent)
+
+Click **Save**
+
+Confirm password reset in dialog.
+
+#### 4.2.3 Assign User Roles (Optional)
+
+Grant user access to view resources:
+
+1. Stay on testuser details page
+2. Click **Role mappings** tab
+3. Click **Assign role** button
+4. Filter: Select **Filter by clients**
+5. Search: `realm-management`
+6. Select: `view-users` role
+7. Click **Assign**
+
+This allows the user to have basic realm viewing permissions.
+
+### 4.3 Configure Postman OAuth 2.0
 
 Create new request or use existing:
 
@@ -353,7 +358,7 @@ Create new request or use existing:
 
 Click **Get New Access Token**
 
-### 5.3 Authenticate as User
+### 4.4 Authenticate as User
 
 Postman will open browser window to Keycloak login:
 
@@ -370,7 +375,7 @@ After successful login:
 
 Click **Use Token**
 
-### 5.4 Test Secured Endpoint
+### 4.5 Test Secured Endpoint
 
 Make API request:
 
@@ -393,7 +398,7 @@ Make API request:
 ]
 ```
 
-### 5.5 Test Additional Endpoints
+### 4.6 Test Additional Endpoints
 
 Test other microservices endpoints:
 
@@ -420,9 +425,9 @@ Content-Type: application/json
 
 ---
 
-## Step 6: Debugging
+## Step 5: Debugging
 
-### 6.1 Login Fails in Browser
+### 5.1 Login Fails in Browser
 
 **Check:**
 
@@ -438,7 +443,7 @@ Content-Type: application/json
 3. Check Email Verified: **Yes**
 4. Credentials tab: Password is set and not temporary
 
-### 6.2 API Call Returns 401 Unauthorized
+### 5.2 API Call Returns 401 Unauthorized
 
 **Check:**
 
@@ -456,7 +461,7 @@ Content-Type: application/json
    - `sub`: `<user-id>`
    - `preferred_username`: `testuser`
 
-### 6.3 Token Expired
+### 5.3 Token Expired
 
 Symptoms: `401 Unauthorized` with valid configuration
 
@@ -466,7 +471,7 @@ Solution:
 3. Login again
 4. Click **Use Token**
 
-### 6.4 Check Keycloak Logs
+### 5.4 Check Keycloak Logs
 
 ```bash
 docker logs keycloak
@@ -474,7 +479,7 @@ docker logs keycloak
 
 Look for authentication events and errors.
 
-### 6.5 Check API Gateway Logs
+### 5.5 Check API Gateway Logs
 
 ```bash
 docker logs api-gateway
@@ -484,7 +489,7 @@ Look for JWT validation errors or security filter chain issues.
 
 ---
 
-## Step 7: Understanding OAuth2 Flows Comparison
+## Step 6: Understanding OAuth2 Flows Comparison
 
 ### Client Credentials Flow (Lab 5.2)
 
@@ -583,7 +588,7 @@ You now have:
 - ✅ Test user account with credentials
 - ✅ Authorization Code Flow configured
 - ✅ Postman testing setup for user login
-- ✅ Updated realm export with frontend-client and users
+- ✅ Updated realm export with frontend-client
 
 **Key Achievements:**
 - Understand OAuth2 Authorization Code Flow
