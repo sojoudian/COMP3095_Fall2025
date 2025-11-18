@@ -141,12 +141,12 @@ Lab 5.3 Requirement: Setting `*` allows CORS from any origin (simplified for tes
 Create user account for testing:
 
 1. Click **Users** (left sidebar)
-2. Click **Add user** button
+2. Click **Create new user** button
 
 **User Configuration:**
 
 - Email verified: **Yes** (toggle ON)
-- Username: `testuser`
+- Username: `testuser` (required field)
 - Email: `testuser@example.com`
 - First name: `Test`
 - Last name: `User`
