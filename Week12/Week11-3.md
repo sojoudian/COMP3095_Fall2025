@@ -47,17 +47,10 @@ Add SpringDoc OpenAPI dependencies to the dependencies block:
 ```kotlin
 dependencies {
     // Existing dependencies...
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    implementation("org.springframework.boot:spring-boot-starter-web")
 
     // Week 11 - Swagger/OpenAPI Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
-
-    implementation("org.springframework.boot:spring-boot-starter-data-redis")
-    compileOnly("org.projectlombok:lombok")
-    // ... rest of dependencies
 }
 ```
 
