@@ -2,7 +2,7 @@
 
 ## Overview
 
-Integrate Swagger/OpenAPI documentation into your microservices using SpringDoc. This provides interactive API documentation accessible through web UI and JSON endpoints.
+Integrate Swagger/OpenAPI documentation into your microservices using SpringDoc. This provides interactive API documentation accessible through web UI and JSON endpoints, making APIs more accessible and user-friendly for both internal and external developers.
 
 **Time:** 60-90 minutes
 
@@ -10,17 +10,17 @@ Integrate Swagger/OpenAPI documentation into your microservices using SpringDoc.
 
 ## Prerequisites
 
+- ✅ Completed Week 11-1 (Keycloak Client Credentials)
+- ✅ Completed Week 11-2 (User Authentication with Authorization Code Flow)
 - ✅ All microservices running (product-service, order-service, inventory-service)
+- ✅ Docker and docker-compose installed
 - ✅ Basic understanding of REST APIs
-- ✅ Gradle project setup
 
 ---
 
 ## Background
 
-API documentation is essential for microservices architectures. **Swagger** and **OpenAPI** are industry-standard tools that automatically generate, visualize, and provide interactive testing for REST APIs.
-
-**SpringDoc** is a library that integrates Swagger/OpenAPI with Spring Boot applications, automatically generating documentation from your controllers, models, and annotations.
+API documentation is essential for microservices architectures. **Swagger** and **OpenAPI** are industry-standard tools that automatically generate, visualize, and interact with REST APIs. This lab introduces **SpringDoc**, a library that integrates Swagger with Spring Boot applications, enabling students to create, configure, and expose API documentation easily.
 
 ### Benefits
 
@@ -28,6 +28,11 @@ API documentation is essential for microservices architectures. **Swagger** and 
 - **Interactive** API testing through Swagger UI
 - **Standardized** OpenAPI specification (JSON/YAML)
 - **Easy onboarding** for new developers and API consumers
+- **Professional** API presentation
+
+### What is SpringDoc?
+
+**SpringDoc** is a library that automatically generates OpenAPI 3 specification for Spring Boot applications. It scans your controllers, models, and annotations to create comprehensive API documentation without additional coding effort.
 
 ---
 
@@ -37,30 +42,39 @@ API documentation is essential for microservices architectures. **Swagger** and 
 
 **Location:** `product-service/build.gradle.kts`
 
-Add SpringDoc OpenAPI dependencies:
+Add SpringDoc OpenAPI dependencies to the dependencies block:
 
 ```kotlin
 dependencies {
     // Existing dependencies...
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
+    implementation("org.springframework.boot:spring-boot-starter-web")
 
-    // Week 6.1 - Swagger/OpenAPI Documentation
+    // Week 11 - Swagger/OpenAPI Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
+
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+    compileOnly("org.projectlombok:lombok")
+    // ... rest of dependencies
 }
 ```
 
 **Dependencies Explained:**
 
-- `springdoc-openapi-starter-webmvc-ui`: Provides Swagger UI web interface
-- `springdoc-openapi-starter-webmvc-api`: Provides OpenAPI JSON/YAML endpoints
+- `springdoc-openapi-starter-webmvc-ui`: Provides Swagger UI web interface for interactive API testing
+- `springdoc-openapi-starter-webmvc-api`: Provides OpenAPI JSON/YAML endpoints for API specification
 
 ### 1.2 Reload Gradle Project
+
+**Option 1: Using IntelliJ IDEA**
 
 1. In IntelliJ IDEA, right-click on project root
 2. Select **Gradle** → **Reload Gradle Project**
 3. Wait for dependencies to download
 
-Or use terminal:
+**Option 2: Using Terminal**
 
 ```bash
 cd product-service
@@ -75,17 +89,18 @@ cd product-service
 
 **Location:** `product-service/src/main/resources/application.properties`
 
-Add Swagger configuration:
+Add Swagger configuration properties:
 
 ```properties
 spring.application.name=product-service
+# Week 11 - API version for documentation
 product-service.version=v1.0
 
 server.port=8084
 
 # Existing MongoDB and Redis config...
 
-# Week 6.1 - Swagger Documentation
+# Week 11 - Swagger Documentation
 # Swagger UI accessible at: http://localhost:8084/swagger-ui
 springdoc.swagger-ui.path=/swagger-ui
 # OpenAPI JSON accessible at: http://localhost:8084/api-docs
@@ -94,6 +109,7 @@ springdoc.api-docs.path=/api-docs
 
 **Properties Explained:**
 
+- `product-service.version`: Version string used in API documentation (parameterized)
 - `springdoc.swagger-ui.path`: Custom URL path for Swagger UI interface
 - `springdoc.api-docs.path`: Custom URL path for OpenAPI JSON specification
 
@@ -101,7 +117,9 @@ springdoc.api-docs.path=/api-docs
 
 ## Step 3: Test Basic Documentation
 
-### 3.1 Run product-service
+### 3.1 Run product-service Locally (Optional)
+
+If you want to test just product-service first:
 
 ```bash
 cd product-service
@@ -123,23 +141,32 @@ http://localhost:8084/swagger-ui
 ```
 
 You should see auto-generated API documentation showing:
-- **product-controller** with all endpoints (GET, POST, PUT, DELETE)
-- **Schemas** for ProductRequest and ProductResponse
-- Interactive "Try it out" buttons for testing endpoints
+
+- **OpenAPI definition** version (OAS 3.0)
+- **Servers** dropdown with base URL (`http://localhost:8084`)
+- **product-controller** with all REST endpoints:
+  - `PUT /api/product/{productId}` - Update product
+  - `DELETE /api/product/{productId}` - Delete product
+  - `GET /api/product` - Get all products
+  - `POST /api/product` - Create product
+- **Schemas** section defining:
+  - ProductRequest (id, name, description, price)
+  - ProductResponse (id, name, description, price)
 
 ### 3.3 Explore Documentation
 
-The Swagger UI displays:
+The Swagger UI provides:
 
-1. **Servers**: Base URL for API (e.g., `http://localhost:8084`)
-2. **product-controller**: All REST endpoints
-   - `GET /api/product` - Get all products
-   - `POST /api/product` - Create product
-   - `PUT /api/product/{productId}` - Update product
-   - `DELETE /api/product/{productId}` - Delete product
-3. **Schemas**: Data transfer objects (DTOs)
-   - ProductRequest (id, name, description, price)
-   - ProductResponse (id, name, description, price)
+1. **Interactive Testing**: Click "Try it out" button to test endpoints directly
+2. **Request/Response Examples**: View sample JSON payloads
+3. **Schema Documentation**: Inspect data models and field types
+4. **Server Selection**: Switch between different API base URLs
+
+This documentation is useful when:
+- Onboarding new developers to the API
+- Providing API access to external clients
+- Testing endpoints without Postman
+- Generating client SDKs
 
 ---
 
@@ -157,7 +184,7 @@ Create new package for configuration classes:
 
 ### 4.2 Create OpenAPIConfig Class
 
-Create configuration class:
+Create configuration class for customizing API documentation:
 
 1. Right-click on `config` package
 2. Select **New** → **Java Class**
@@ -201,25 +228,26 @@ public class OpenAPIConfig {
 
 **Configuration Breakdown:**
 
-- `@Configuration`: Marks class as Spring configuration
-- `@Value`: Injects version from application.properties
+- `@Configuration`: Marks class as Spring configuration component
+- `@Value("${product-service.version}")`: Injects version from application.properties
 - `@Bean`: Creates OpenAPI bean for Spring context
-- `.title()`: Sets API title displayed in Swagger UI
-- `.description()`: Provides API description
-- `.version()`: Uses parameterized version from properties
-- `.license()`: Specifies API license (Apache 2.0)
-- `.externalDocs()`: Links to external documentation
+- `.title()`: Sets API title displayed in Swagger UI header
+- `.description()`: Provides detailed API description
+- `.version()`: Uses parameterized version from properties (allows version management in one place)
+- `.license()`: Specifies API license information (Apache 2.0)
+- `.externalDocs()`: Links to external documentation (Confluence, GitHub, etc.)
 
 ### 4.3 Verify Configuration
 
-1. Restart product-service
+1. Restart product-service (stop with Ctrl+C, then `./gradlew bootRun`)
 2. Refresh Swagger UI: `http://localhost:8084/swagger-ui/index.html`
 
-You should now see:
-- **Title**: "Product Service API" (instead of default)
+You should now see customized documentation:
+
+- **Title**: "Product Service API" (instead of default "OpenAPI definition")
 - **Description**: "This is the REST API for Product Service"
-- **Version**: "v1.0"
-- **License**: "Apache 2.0"
+- **Version**: "v1.0" (from application.properties)
+- **License**: "Apache 2.0" link
 - **External Link**: "Product Service Confluence Documentation"
 
 ---
@@ -234,7 +262,7 @@ Open browser and navigate to:
 http://localhost:8084/api-docs
 ```
 
-This returns the OpenAPI specification in JSON format.
+This returns the complete OpenAPI specification in JSON format.
 
 **Example Response:**
 
@@ -278,12 +306,13 @@ This returns the OpenAPI specification in JSON format.
 }
 ```
 
-**Use Cases:**
+**Use Cases for JSON Specification:**
 
-- Import into Postman collections
-- Generate client SDKs
-- Automated API testing tools
-- API gateway integration
+- **Import into Postman**: Create collections from OpenAPI spec
+- **Generate Client SDKs**: Auto-generate client libraries in various languages
+- **API Gateway Integration**: Configure routing and validation
+- **Automated Testing**: Use spec for contract testing
+- **Documentation Portals**: Render docs in custom portals
 
 ---
 
@@ -299,7 +328,7 @@ Add SpringDoc dependencies:
 dependencies {
     // Existing dependencies...
 
-    // Week 6.1 - Swagger/OpenAPI Documentation
+    // Week 11 - Swagger/OpenAPI Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
 }
@@ -311,18 +340,21 @@ Reload Gradle project.
 
 **Location:** `order-service/src/main/resources/application.properties`
 
-Add configuration:
+Add Swagger configuration:
 
 ```properties
 spring.application.name=order-service
+# Week 11 - API version for documentation
 order-service.version=v1.0
 
 server.port=8082
 
 # Existing PostgreSQL config...
 
-# Week 6.1 - Swagger Documentation
+# Week 11 - Swagger Documentation
+# Swagger UI accessible at: http://localhost:8082/swagger-ui
 springdoc.swagger-ui.path=/swagger-ui
+# OpenAPI JSON accessible at: http://localhost:8082/api-docs
 springdoc.api-docs.path=/api-docs
 ```
 
@@ -375,9 +407,9 @@ public class OpenAPIConfig {
 }
 ```
 
-### 6.5 Test order-service Documentation
+### 6.5 Test order-service Documentation (Optional)
 
-Run order-service:
+If testing locally before Docker:
 
 ```bash
 cd order-service
@@ -403,7 +435,7 @@ Add SpringDoc dependencies:
 dependencies {
     // Existing dependencies...
 
-    // Week 6.1 - Swagger/OpenAPI Documentation
+    // Week 11 - Swagger/OpenAPI Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
 }
@@ -415,18 +447,21 @@ Reload Gradle project.
 
 **Location:** `inventory-service/src/main/resources/application.properties`
 
-Add configuration:
+Add Swagger configuration:
 
 ```properties
 spring.application.name=inventory-service
+# Week 11 - API version for documentation
 inventory-service.version=v1.0
 
 server.port=8083
 
 # Existing PostgreSQL config...
 
-# Week 6.1 - Swagger Documentation
+# Week 11 - Swagger Documentation
+# Swagger UI accessible at: http://localhost:8083/swagger-ui
 springdoc.swagger-ui.path=/swagger-ui
+# OpenAPI JSON accessible at: http://localhost:8083/api-docs
 springdoc.api-docs.path=/api-docs
 ```
 
@@ -479,9 +514,9 @@ public class OpenAPIConfig {
 }
 ```
 
-### 7.5 Test inventory-service Documentation
+### 7.5 Test inventory-service Documentation (Optional)
 
-Run inventory-service:
+If testing locally before Docker:
 
 ```bash
 cd inventory-service
@@ -497,14 +532,15 @@ Access documentation:
 
 ## Step 8: Update Docker Configuration
 
-### 8.1 Update application-docker.properties
+### 8.1 Update application-docker.properties Files
 
-Update Docker configuration for all three services to include Swagger properties.
+Update Docker-specific configuration for all three services to include Swagger properties.
 
 **Location:** `product-service/src/main/resources/application-docker.properties`
 
 ```properties
 spring.application.name=product-service
+# Week 11 - API version for documentation
 product-service.version=v1.0
 
 server.port=8084
@@ -524,7 +560,7 @@ spring.data.redis.password=password
 spring.cache.type=redis
 spring.cache.redis.time-to-live=60s
 
-# Week 6.1 - Swagger Documentation
+# Week 11 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
@@ -533,17 +569,23 @@ springdoc.api-docs.path=/api-docs
 
 ```properties
 spring.application.name=order-service
+# Week 11 - API version for documentation
 order-service.version=v1.0
 
 server.port=8082
 
 # PostgreSQL Docker configuration
-spring.datasource.url=jdbc:postgresql://postgres-order:5432/order-service
+spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
 spring.datasource.username=admin
 spring.datasource.password=password
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.hibernate.ddl-auto=none
 
-# Week 6.1 - Swagger Documentation
+inventory.service.url=http://inventory-service:8083
+
+# Week 11 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
@@ -552,33 +594,61 @@ springdoc.api-docs.path=/api-docs
 
 ```properties
 spring.application.name=inventory-service
+# Week 11 - API version for documentation
 inventory-service.version=v1.0
 
 server.port=8083
 
 # PostgreSQL Docker configuration
-spring.datasource.url=jdbc:postgresql://postgres-inventory:5432/inventory-service
+spring.datasource.url=jdbc:postgresql://postgres-inventory:5432/inventory_service
 spring.datasource.username=admin
 spring.datasource.password=password
+spring.datasource.driver-class-name=org.postgresql.Driver
+spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 spring.jpa.hibernate.ddl-auto=none
 
-# Week 6.1 - Swagger Documentation
+# Week 11 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
 ### 8.2 Rebuild Docker Containers
 
+Rebuild all services with updated Swagger configuration:
+
 ```bash
 cd microservices-parent
-docker-compose -p microservices-comp3095 -f docker-compose.yml up -d --build
+docker-compose -p microservices-parent -f docker-compose.yml up -d --build
 ```
 
-Wait for containers to start (~30 seconds).
+Wait for containers to build and start (~60-90 seconds).
 
-### 8.3 Access Documentation in Docker
+**Note:** The `--build` flag forces Docker to rebuild images with new dependencies.
 
-Access each service's documentation directly (not through API Gateway):
+### 8.3 Verify Containers are Running
+
+```bash
+docker ps
+```
+
+Expected containers:
+- keycloak
+- postgres-keycloak
+- api-gateway
+- product-service
+- order-service
+- inventory-service
+- postgres-order
+- postgres-inventory
+- mongodb
+- mongo-express
+- redis
+- redis-insight
+
+### 8.4 Access Documentation in Docker
+
+Access each service's Swagger documentation directly (not through API Gateway):
 
 **Product Service:**
 - Swagger UI: `http://localhost:8084/swagger-ui/index.html`
@@ -592,11 +662,12 @@ Access each service's documentation directly (not through API Gateway):
 - Swagger UI: `http://localhost:8083/swagger-ui/index.html`
 - OpenAPI JSON: `http://localhost:8083/api-docs`
 
-**Note:** Accessing through API Gateway requires additional configuration (covered in a future lab).
+**Important Note:**
+Documentation is currently accessible only by directly accessing each service on its port. Accessing through API Gateway (`http://localhost:9000/api/product/swagger-ui`) requires additional configuration that will be covered in a future lab.
 
 ---
 
-## Step 9: Using Swagger UI
+## Step 9: Using Swagger UI for Interactive Testing
 
 ### 9.1 Explore Endpoints
 
@@ -604,40 +675,121 @@ In Swagger UI for any service:
 
 1. **Expand** any endpoint (e.g., `GET /api/product`)
 2. Click **Try it out** button
-3. Click **Execute** button
-4. View response with:
-   - Response body (JSON)
-   - Response code (200, 404, etc.)
-   - Response headers
+3. Modify parameters if needed
+4. Click **Execute** button
+5. View response:
+   - **Response body** (JSON data)
+   - **Response code** (200 OK, 404 Not Found, etc.)
+   - **Response headers**
+   - **Curl command** (copy for terminal use)
 
-### 9.2 Test POST Endpoint
+### 9.2 Test GET Endpoint
+
+Example: Get all products
+
+1. Navigate to `http://localhost:8084/swagger-ui/index.html`
+2. Find `GET /api/product` endpoint
+3. Click **Try it out**
+4. Click **Execute**
+5. View response with list of products
+
+**Expected Response:** `200 OK`
+
+```json
+[
+  {
+    "id": "507f1f77bcf86cd799439011",
+    "name": "Sample Product",
+    "description": "Product description",
+    "price": 29.99
+  }
+]
+```
+
+### 9.3 Test POST Endpoint
 
 Example: Create a product via Swagger UI
 
 1. Navigate to `http://localhost:8084/swagger-ui/index.html`
 2. Find `POST /api/product` endpoint
 3. Click **Try it out**
-4. Enter request body:
+4. Enter request body in the text area:
 
 ```json
 {
   "name": "Test Product",
   "description": "Created via Swagger UI",
-  "price": 29.99
+  "price": 49.99
 }
 ```
 
 5. Click **Execute**
-6. View response with created product ID
+6. View response with created product including generated ID
 
-### 9.3 Test with Authentication
+**Expected Response:** `201 Created`
 
-If Keycloak security is enabled (from previous labs):
+```json
+{
+  "id": "507f1f77bcf86cd799439012",
+  "name": "Test Product",
+  "description": "Created via Swagger UI",
+  "price": 49.99
+}
+```
 
-1. Click **Authorize** button (top-right in Swagger UI)
-2. Enter Bearer token obtained from Keycloak
-3. Click **Authorize**
-4. All subsequent requests will include authentication header
+### 9.4 Test with Authentication (Keycloak)
+
+If Keycloak security is enabled (from Week 11-1 and Week 11-2):
+
+**Note:** Direct service access (port 8084, 8082, 8083) currently bypasses API Gateway authentication. To test with Keycloak authentication, you would need to:
+
+1. Access services through API Gateway
+2. Configure Swagger UI to support OAuth2 authorization
+3. This will be covered in a future lab on API Gateway aggregation
+
+For now, Swagger UI works without authentication when accessing services directly.
+
+---
+
+## Step 10: Understanding Swagger UI Components
+
+### 10.1 Swagger UI Sections
+
+**Header Section:**
+- API Title and Description
+- Version information
+- External documentation links
+- License information
+
+**Servers Section:**
+- Dropdown to select API base URL
+- Useful for switching between dev, staging, production
+- Currently shows `http://localhost:<port>`
+
+**Controllers Section:**
+- Groups endpoints by controller
+- Expandable panels for each controller
+- Color-coded HTTP methods:
+  - **GET** (blue): Retrieve data
+  - **POST** (green): Create data
+  - **PUT** (orange): Update data
+  - **DELETE** (red): Delete data
+
+**Schemas Section:**
+- Data model definitions
+- Request/Response object structures
+- Field types and validation rules
+
+### 10.2 Endpoint Details
+
+When you expand an endpoint:
+
+- **Parameters**: Path variables, query params, headers
+- **Request Body**: JSON schema with example values
+- **Responses**: Status codes with response schemas
+- **Try it out**: Interactive testing
+- **Example Value**: Sample request payload
+- **Schema**: Data structure definition
 
 ---
 
@@ -652,17 +804,23 @@ If Keycloak security is enabled (from previous labs):
 2. Check `springdoc.swagger-ui.path` in `application.properties`
 3. Ensure application is running on correct port
 4. Try accessing without `/index.html`: `http://localhost:8084/swagger-ui`
+5. Check application logs for errors:
+   ```bash
+   docker logs product-service
+   ```
 
 ### Version Property Not Found
 
 **Problem:** Error: "Could not resolve placeholder 'product-service.version'"
 
 **Solution:**
-1. Add version property to `application.properties`:
-```properties
-product-service.version=v1.0
-```
+1. Verify version property exists in `application.properties`:
+   ```properties
+   product-service.version=v1.0
+   ```
 2. Ensure property name matches `@Value("${product-service.version}")`
+3. Check for typos in property name (hyphens vs underscores)
+4. Verify `${}` syntax is used in `@Value` annotation
 
 ### OpenAPI JSON Returns Empty
 
@@ -670,14 +828,19 @@ product-service.version=v1.0
 
 **Solution:**
 1. Ensure controllers have proper `@RestController` annotation
-2. Verify `@RequestMapping` paths are defined
-3. Restart application to regenerate documentation
+2. Verify `@RequestMapping` or `@GetMapping/@PostMapping` paths are defined
+3. Check that Spring Boot has scanned the controller packages
+4. Restart application to regenerate documentation:
+   ```bash
+   docker-compose -p microservices-parent restart product-service
+   ```
 
 ### Port Conflicts
 
 **Problem:** Service won't start due to port already in use
 
 **Solution:**
+
 ```bash
 # Find process using port (e.g., 8084)
 lsof -i :8084
@@ -685,6 +848,45 @@ lsof -i :8084
 # Kill process
 kill -9 <PID>
 ```
+
+Or stop all Docker containers:
+
+```bash
+cd microservices-parent
+docker-compose -p microservices-parent down
+```
+
+### Container Build Fails
+
+**Problem:** Docker build fails with Gradle errors
+
+**Solution:**
+1. Clean Gradle cache:
+   ```bash
+   cd product-service
+   ./gradlew clean build
+   ```
+2. Remove old Docker images:
+   ```bash
+   docker rmi product-service order-service inventory-service
+   ```
+3. Rebuild containers:
+   ```bash
+   cd microservices-parent
+   docker-compose -p microservices-parent up -d --build
+   ```
+
+### Documentation Shows Wrong Version
+
+**Problem:** Swagger UI shows incorrect version number
+
+**Solution:**
+1. Check version in `application-docker.properties` matches `application.properties`
+2. Verify Docker container is using `application-docker.properties`:
+   ```bash
+   docker logs product-service | grep "product-service.version"
+   ```
+3. Rebuild container with correct properties
 
 ---
 
@@ -695,19 +897,52 @@ You now have:
 - ✅ Swagger/OpenAPI documentation for all microservices
 - ✅ Interactive Swagger UI for testing endpoints
 - ✅ OpenAPI JSON specification for API consumption
-- ✅ Customized API metadata (title, description, version)
+- ✅ Customized API metadata (title, description, version, license)
 - ✅ Docker-ready documentation configuration
+- ✅ Separate configuration for local and Docker environments
 
 **Key Benefits:**
-- Auto-generated documentation from code
-- Interactive API testing without Postman
-- Standardized OpenAPI specification
-- Easy API onboarding for developers
-- Professional API presentation
+- **Auto-generated** documentation from code - no manual updates needed
+- **Interactive** API testing without Postman or curl
+- **Standardized** OpenAPI 3.0 specification for tool compatibility
+- **Easy onboarding** for new developers and API consumers
+- **Professional** API presentation with customized branding
+- **Developer productivity** through "Try it out" functionality
+
+**Key Achievements:**
+- Understand the role and benefits of API documentation
+- Implement Swagger (OpenAPI) in Spring Boot using SpringDoc
+- Customize Swagger documentation for clarity and consistency
+- Access API documentation in both UI and JSON formats
+- Deploy API documentation with Docker and ensure accessibility across services
+- Test APIs interactively through Swagger UI
 
 **Next Steps:**
-- Configure API Gateway to aggregate all service documentation
+- Configure API Gateway to aggregate all service documentation at single endpoint
 - Add detailed endpoint descriptions with `@Operation` annotations
 - Document request/response schemas with `@Schema` annotations
-- Add security schemes to Swagger UI
+- Add security schemes to Swagger UI for OAuth2/Keycloak integration
 - Generate client SDKs from OpenAPI specification
+- Implement API versioning strategy with documentation
+- Add example requests/responses with `@ApiResponse` annotations
+- Configure CORS for Swagger UI in production environments
+
+---
+
+## Additional Resources
+
+**SpringDoc Documentation:**
+- Official Docs: https://springdoc.org/
+- GitHub: https://github.com/springdoc/springdoc-openapi
+
+**OpenAPI Specification:**
+- OpenAPI 3.0 Spec: https://swagger.io/specification/
+- Swagger Tools: https://swagger.io/tools/
+
+**Best Practices:**
+- Use semantic versioning (v1.0, v1.1, v2.0)
+- Document all endpoints, even internal ones
+- Include example requests/responses
+- Keep external documentation links up to date
+- Secure Swagger UI in production environments
+- Use meaningful descriptions for endpoints and schemas
