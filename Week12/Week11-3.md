@@ -67,13 +67,6 @@ dependencies {
 2. Select **Gradle** → **Reload Gradle Project**
 3. Wait for dependencies to download
 
-**Option 2: Using Terminal**
-
-```bash
-cd product-service
-./gradlew build --refresh-dependencies
-```
-
 ---
 
 ## Step 2: Configure Swagger UI Path
@@ -108,64 +101,9 @@ springdoc.api-docs.path=/api-docs
 
 ---
 
-## Step 3: Test Basic Documentation
+## Step 3: Customize API Documentation
 
-### 3.1 Run product-service Locally (Optional)
-
-If you want to test just product-service first:
-
-```bash
-cd product-service
-./gradlew bootRun
-```
-
-### 3.2 Access Swagger UI
-
-Open browser and navigate to:
-
-```
-http://localhost:8084/swagger-ui/index.html
-```
-
-or
-
-```
-http://localhost:8084/swagger-ui
-```
-
-You should see auto-generated API documentation showing:
-
-- **OpenAPI definition** version (OAS 3.0)
-- **Servers** dropdown with base URL (`http://localhost:8084`)
-- **product-controller** with all REST endpoints:
-  - `PUT /api/product/{productId}` - Update product
-  - `DELETE /api/product/{productId}` - Delete product
-  - `GET /api/product` - Get all products
-  - `POST /api/product` - Create product
-- **Schemas** section defining:
-  - ProductRequest (id, name, description, price)
-  - ProductResponse (id, name, description, price)
-
-### 3.3 Explore Documentation
-
-The Swagger UI provides:
-
-1. **Interactive Testing**: Click "Try it out" button to test endpoints directly
-2. **Request/Response Examples**: View sample JSON payloads
-3. **Schema Documentation**: Inspect data models and field types
-4. **Server Selection**: Switch between different API base URLs
-
-This documentation is useful when:
-- Onboarding new developers to the API
-- Providing API access to external clients
-- Testing endpoints without Postman
-- Generating client SDKs
-
----
-
-## Step 4: Customize API Documentation
-
-### 4.1 Create config Package
+### 3.1 Create config Package
 
 Create new package for configuration classes:
 
@@ -175,7 +113,7 @@ Create new package for configuration classes:
 4. Name: `config`
 5. Click **OK**
 
-### 4.2 Create OpenAPIConfig Class
+### 3.2 Create OpenAPIConfig Class
 
 Create configuration class for customizing API documentation:
 
@@ -230,88 +168,11 @@ public class OpenAPIConfig {
 - `.license()`: Specifies API license information (Apache 2.0)
 - `.externalDocs()`: Links to external documentation (Confluence, GitHub, etc.)
 
-### 4.3 Verify Configuration
-
-1. Restart product-service (stop with Ctrl+C, then `./gradlew bootRun`)
-2. Refresh Swagger UI: `http://localhost:8084/swagger-ui/index.html`
-
-You should now see customized documentation:
-
-- **Title**: "Product Service API" (instead of default "OpenAPI definition")
-- **Description**: "This is the REST API for Product Service"
-- **Version**: "v1.0" (from application.properties)
-- **License**: "Apache 2.0" link
-- **External Link**: "Product Service Confluence Documentation"
-
 ---
 
-## Step 5: Access OpenAPI JSON Specification
+## Step 4: Add Documentation to order-service
 
-### 5.1 Access API Docs Endpoint
-
-Open browser and navigate to:
-
-```
-http://localhost:8084/api-docs
-```
-
-This returns the complete OpenAPI specification in JSON format.
-
-**Example Response:**
-
-```json
-{
-  "openapi": "3.0.1",
-  "info": {
-    "title": "Product Service API",
-    "description": "This is the REST API for Product Service",
-    "license": {
-      "name": "Apache 2.0"
-    },
-    "version": "v1.0"
-  },
-  "externalDocs": {
-    "description": "Product Service Confluence Documentation",
-    "url": "https://mycompany.ca/product-service/docs"
-  },
-  "servers": [
-    {
-      "url": "http://localhost:8084",
-      "description": "Generated server url"
-    }
-  ],
-  "paths": {
-    "/api/product/{productId}": {
-      "put": { ... },
-      "delete": { ... }
-    },
-    "/api/product": {
-      "get": { ... },
-      "post": { ... }
-    }
-  },
-  "components": {
-    "schemas": {
-      "ProductRequest": { ... },
-      "ProductResponse": { ... }
-    }
-  }
-}
-```
-
-**Use Cases for JSON Specification:**
-
-- **Import into Postman**: Create collections from OpenAPI spec
-- **Generate Client SDKs**: Auto-generate client libraries in various languages
-- **API Gateway Integration**: Configure routing and validation
-- **Automated Testing**: Use spec for contract testing
-- **Documentation Portals**: Render docs in custom portals
-
----
-
-## Step 6: Add Documentation to order-service
-
-### 6.1 Update build.gradle.kts
+### 4.1 Update build.gradle.kts
 
 **Location:** `order-service/build.gradle.kts`
 
@@ -329,7 +190,7 @@ dependencies {
 
 Reload Gradle project.
 
-### 6.2 Update application.properties
+### 4.2 Update application.properties
 
 **Location:** `order-service/src/main/resources/application.properties`
 
@@ -351,7 +212,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### 6.3 Create config Package
+### 4.3 Create config Package
 
 1. Navigate to `order-service/src/main/java/ca/gbc/orderservice`
 2. Right-click on `ca.gbc.orderservice`
@@ -359,7 +220,7 @@ springdoc.api-docs.path=/api-docs
 4. Name: `config`
 5. Click **OK**
 
-### 6.4 Create OpenAPIConfig Class
+### 4.4 Create OpenAPIConfig Class
 
 1. Right-click on `config` package
 2. Select **New** → **Java Class**
@@ -400,25 +261,11 @@ public class OpenAPIConfig {
 }
 ```
 
-### 6.5 Test order-service Documentation (Optional)
-
-If testing locally before Docker:
-
-```bash
-cd order-service
-./gradlew bootRun
-```
-
-Access documentation:
-
-- **Swagger UI**: `http://localhost:8082/swagger-ui/index.html`
-- **OpenAPI JSON**: `http://localhost:8082/api-docs`
-
 ---
 
-## Step 7: Add Documentation to inventory-service
+## Step 5: Add Documentation to inventory-service
 
-### 7.1 Update build.gradle.kts
+### 5.1 Update build.gradle.kts
 
 **Location:** `inventory-service/build.gradle.kts`
 
@@ -436,7 +283,7 @@ dependencies {
 
 Reload Gradle project.
 
-### 7.2 Update application.properties
+### 5.2 Update application.properties
 
 **Location:** `inventory-service/src/main/resources/application.properties`
 
@@ -458,7 +305,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### 7.3 Create config Package
+### 5.3 Create config Package
 
 1. Navigate to `inventory-service/src/main/java/ca/gbc/inventoryservice`
 2. Right-click on `ca.gbc.inventoryservice`
@@ -466,7 +313,7 @@ springdoc.api-docs.path=/api-docs
 4. Name: `config`
 5. Click **OK**
 
-### 7.4 Create OpenAPIConfig Class
+### 5.4 Create OpenAPIConfig Class
 
 1. Right-click on `config` package
 2. Select **New** → **Java Class**
@@ -507,25 +354,11 @@ public class OpenAPIConfig {
 }
 ```
 
-### 7.5 Test inventory-service Documentation (Optional)
-
-If testing locally before Docker:
-
-```bash
-cd inventory-service
-./gradlew bootRun
-```
-
-Access documentation:
-
-- **Swagger UI**: `http://localhost:8083/swagger-ui/index.html`
-- **OpenAPI JSON**: `http://localhost:8083/api-docs`
-
 ---
 
-## Step 8: Update Docker Configuration
+## Step 6: Update Docker Configuration and Build All Services
 
-### 8.1 Update application-docker.properties Files
+### 6.1 Update application-docker.properties Files
 
 Update Docker-specific configuration for all three services to include Swagger properties.
 
@@ -606,7 +439,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### 8.2 Rebuild Docker Containers
+### 6.2 Rebuild Docker Containers
 
 Rebuild all services with updated Swagger configuration:
 
@@ -619,7 +452,7 @@ Wait for containers to build and start (~60-90 seconds).
 
 **Note:** The `--build` flag forces Docker to rebuild images with new dependencies.
 
-### 8.3 Verify Containers are Running
+### 6.3 Verify Containers are Running
 
 ```bash
 docker ps
@@ -639,7 +472,7 @@ Expected containers:
 - redis
 - redis-insight
 
-### 8.4 Access Documentation in Docker
+### 6.4 Access Documentation in Docker
 
 Access each service's Swagger documentation directly (not through API Gateway):
 
@@ -660,9 +493,9 @@ Documentation is currently accessible only by directly accessing each service on
 
 ---
 
-## Step 9: Using Swagger UI for Interactive Testing
+## Step 7: Using Swagger UI for Interactive Testing
 
-### 9.1 Explore Endpoints
+### 7.1 Explore Endpoints
 
 In Swagger UI for any service:
 
@@ -676,7 +509,7 @@ In Swagger UI for any service:
    - **Response headers**
    - **Curl command** (copy for terminal use)
 
-### 9.2 Test GET Endpoint
+### 7.2 Test GET Endpoint
 
 Example: Get all products
 
@@ -699,7 +532,7 @@ Example: Get all products
 ]
 ```
 
-### 9.3 Test POST Endpoint
+### 7.3 Test POST Endpoint
 
 Example: Create a product via Swagger UI
 
@@ -730,7 +563,7 @@ Example: Create a product via Swagger UI
 }
 ```
 
-### 9.4 Test with Authentication (Keycloak)
+### 7.4 Test with Authentication (Keycloak)
 
 If Keycloak security is enabled (from Week 11-1 and Week 11-2):
 
@@ -744,9 +577,9 @@ For now, Swagger UI works without authentication when accessing services directl
 
 ---
 
-## Step 10: Understanding Swagger UI Components
+## Step 8: Understanding Swagger UI Components
 
-### 10.1 Swagger UI Sections
+### 8.1 Swagger UI Sections
 
 **Header Section:**
 - API Title and Description
@@ -773,7 +606,7 @@ For now, Swagger UI works without authentication when accessing services directl
 - Request/Response object structures
 - Field types and validation rules
 
-### 10.2 Endpoint Details
+### 8.2 Endpoint Details
 
 When you expand an endpoint:
 
