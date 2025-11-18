@@ -78,10 +78,10 @@ dependencies {
 Add Swagger configuration properties:
 
 ```properties
-# Week 11 - API version for documentation
+# Week 12 - API version for documentation
 product-service.version=v1.0
 
-# Week 11 - Swagger Documentation
+# Week 12 - Swagger Documentation
 # Swagger UI accessible at: http://localhost:8084/swagger-ui
 springdoc.swagger-ui.path=/swagger-ui
 # OpenAPI JSON accessible at: http://localhost:8084/api-docs
@@ -101,10 +101,10 @@ springdoc.api-docs.path=/api-docs
 Add the same Swagger configuration for Docker environment:
 
 ```properties
-# Week 11 - API version for documentation
+# Week 12 - API version for documentation
 product-service.version=v1.0
 
-# Week 11 - Swagger Documentation
+# Week 12 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
@@ -198,10 +198,10 @@ Reload Gradle project.
 Add Swagger configuration:
 
 ```properties
-# Week 11 - API version for documentation
+# Week 12 - API version for documentation
 order-service.version=v1.0
 
-# Week 11 - Swagger Documentation
+# Week 12 - Swagger Documentation
 # Swagger UI accessible at: http://localhost:8082/swagger-ui
 springdoc.swagger-ui.path=/swagger-ui
 # OpenAPI JSON accessible at: http://localhost:8082/api-docs
@@ -215,10 +215,10 @@ springdoc.api-docs.path=/api-docs
 Add the same Swagger configuration for Docker environment:
 
 ```properties
-# Week 11 - API version for documentation
+# Week 12 - API version for documentation
 order-service.version=v1.0
 
-# Week 11 - Swagger Documentation
+# Week 12 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
@@ -301,10 +301,10 @@ Reload Gradle project.
 Add Swagger configuration:
 
 ```properties
-# Week 11 - API version for documentation
+# Week 12 - API version for documentation
 inventory-service.version=v1.0
 
-# Week 11 - Swagger Documentation
+# Week 12 - Swagger Documentation
 # Swagger UI accessible at: http://localhost:8083/swagger-ui
 springdoc.swagger-ui.path=/swagger-ui
 # OpenAPI JSON accessible at: http://localhost:8083/api-docs
@@ -318,10 +318,10 @@ springdoc.api-docs.path=/api-docs
 Add the same Swagger configuration for Docker environment:
 
 ```properties
-# Week 11 - API version for documentation
+# Week 12 - API version for documentation
 inventory-service.version=v1.0
 
-# Week 11 - Swagger Documentation
+# Week 12 - Swagger Documentation
 springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
