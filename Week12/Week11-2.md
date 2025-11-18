@@ -49,6 +49,10 @@ This OAuth2 flow is designed for user authentication:
 Ensure Keycloak is running:
 
 ```bash
+# Stop integrated docker-compose if running (to avoid port conflicts)
+cd microservices-parent
+docker-compose -p microservices-parent down
+
 # Check if Keycloak is running
 docker ps | grep keycloak
 
