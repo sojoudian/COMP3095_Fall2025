@@ -63,7 +63,7 @@ docker-compose -p keycloak-standalone up -d
 
 Access admin console:
 
-1. Navigate to `http://localhost:8080`
+1. Navigate to `http://keycloak:8080`
 2. Click **Administration Console**
 3. Login with `admin` / `password`
 4. Select **spring-microservices-security-realm** (dropdown, top-left)
@@ -245,7 +245,7 @@ services.product-url=http://localhost:8084
 services.order-url=http://localhost:8082
 
 # Keycloak Security
-spring.security.oauth2.resourceserver.jwt.issuer-uri=http://localhost:8080/realms/spring-microservices-security-realm
+spring.security.oauth2.resourceserver.jwt.issuer-uri=http://keycloak:8080/realms/spring-microservices-security-realm
 ```
 
 **Location:** `api-gateway/src/main/resources/application-docker.properties`
@@ -343,8 +343,8 @@ Create new request or use existing:
 - Token Name: `Keycloak User Token`
 - Grant Type: `Authorization Code`
 - Callback URL: `https://oauth.pstmn.io/v1/callback`
-- Auth URL: `http://localhost:8080/realms/spring-microservices-security-realm/protocol/openid-connect/auth`
-- Access Token URL: `http://localhost:8080/realms/spring-microservices-security-realm/protocol/openid-connect/token`
+- Auth URL: `http://keycloak:8080/realms/spring-microservices-security-realm/protocol/openid-connect/auth`
+- Access Token URL: `http://keycloak:8080/realms/spring-microservices-security-realm/protocol/openid-connect/token`
 - Client ID: `frontend-client`
 - Client Secret: (leave blank - public client)
 - Scope: `openid profile email`
@@ -357,7 +357,7 @@ Click **Get New Access Token**
 
 Postman will open browser window to Keycloak login:
 
-1. Keycloak login page appears (`http://localhost:8080/...`)
+1. Keycloak login page appears (`http://keycloak:8080/...`)
 2. Enter credentials:
    - Username or email: `testuser`
    - Password: `password`
@@ -427,7 +427,7 @@ Content-Type: application/json
 **Check:**
 
 - Redirect URI in Keycloak: `https://oauth.pstmn.io/v1/callback`
-- Keycloak accessibility: `http://localhost:8080`
+- Keycloak accessibility: `http://keycloak:8080`
 - Correct Auth URL in Postman
 - User credentials: `testuser` / `password`
 
@@ -452,7 +452,7 @@ Content-Type: application/json
 2. Go to https://jwt.io
 3. Paste token in Debugger
 4. Verify claims:
-   - `iss`: `http://localhost:8080/realms/spring-microservices-security-realm`
+   - `iss`: `http://keycloak:8080/realms/spring-microservices-security-realm`
    - `sub`: `<user-id>`
    - `preferred_username`: `testuser`
 
