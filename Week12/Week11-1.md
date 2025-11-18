@@ -149,7 +149,7 @@ services:
       dockerfile: ./Dockerfile
     container_name: inventory-service
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory/inventory-service
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory/inventory_service
       - SPRING_DATASOURCE_USERNAME=admin
       - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_JPA_HIBERNATE_DDL_AUTO=none
@@ -168,7 +168,7 @@ services:
       dockerfile: ./Dockerfile
     container_name: order-service
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order/order-service
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order/order_service
       - SPRING_DATASOURCE_USERNAME=admin
       - SPRING_DATASOURCE_PASSWORD=password
       - SPRING_JPA_HIBERNATE_DDL_AUTO=none
@@ -241,7 +241,7 @@ services:
     container_name: postgres-inventory
     image: postgres
     environment:
-      POSTGRES_DB: inventory-service
+      POSTGRES_DB: inventory_service
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       PGDATA: /data/postgres
@@ -257,7 +257,7 @@ services:
     container_name: postgres-order
     image: postgres
     environment:
-      POSTGRES_DB: order-service
+      POSTGRES_DB: order_service
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       PGDATA: /data/postgres
@@ -344,6 +344,22 @@ docker-compose -p microservices-parent down
 # Start standalone Keycloak
 cd docker/standalone/keycloak
 docker-compose -p keycloak-standalone up -d
+```
+
+---
+
+### 1.4 Update Order Service Database Configuration
+
+**Location:** `order-service/src/main/resources/application-docker.properties`
+
+Update line 14 to use the correct database hostname and name:
+
+```properties
+# BEFORE:
+spring.datasource.url=jdbc:postgresql://postgres:5432/order-service
+
+# AFTER:
+spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
 ```
 
 ---
