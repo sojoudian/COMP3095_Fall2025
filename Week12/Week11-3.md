@@ -113,29 +113,20 @@ springdoc.api-docs.path=/api-docs
 
 ## Step 3: Customize API Documentation
 
-### 3.1 Create config Package
-
-Create new package for configuration classes:
-
-1. Navigate to `product-service/src/main/java/ca/gbc/productservice`
-2. Right-click on `ca.gbc.productservice`
-3. Select **New** → **Package**
-4. Name: `config`
-5. Click **OK**
-
-### 3.2 Create OpenAPIConfig Class
+### 3.1 Create OpenAPIConfig Class
 
 Create configuration class for customizing API documentation:
 
-1. Right-click on `config` package
-2. Select **New** → **Java Class**
-3. Name: `OpenAPIConfig`
-4. Click **OK**
+1. Navigate to `product-service/src/main/java/ca/gbc/comp3095/productservice/config`
+2. Right-click on `config` package
+3. Select **New** → **Java Class**
+4. Name: `OpenAPIConfig`
+5. Click **OK**
 
-**Location:** `product-service/src/main/java/ca/gbc/productservice/config/OpenAPIConfig.java`
+**Location:** `product-service/src/main/java/ca/gbc/comp3095/productservice/config/OpenAPIConfig.java`
 
 ```java
-package ca.gbc.productservice.config;
+package ca.gbc.comp3095.productservice.config;
 
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -234,8 +225,8 @@ springdoc.api-docs.path=/api-docs
 
 ### 4.4 Create config Package
 
-1. Navigate to `order-service/src/main/java/ca/gbc/orderservice`
-2. Right-click on `ca.gbc.orderservice`
+1. Navigate to `order-service/src/main/java/ca/gbc/comp3095/orderservice`
+2. Right-click on `ca.gbc.comp3095.orderservice`
 3. Select **New** → **Package**
 4. Name: `config`
 5. Click **OK**
@@ -247,10 +238,10 @@ springdoc.api-docs.path=/api-docs
 3. Name: `OpenAPIConfig`
 4. Click **OK**
 
-**Location:** `order-service/src/main/java/ca/gbc/orderservice/config/OpenAPIConfig.java`
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/config/OpenAPIConfig.java`
 
 ```java
-package ca.gbc.orderservice.config;
+package ca.gbc.comp3095.orderservice.config;
 
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
@@ -337,8 +328,8 @@ springdoc.api-docs.path=/api-docs
 
 ### 5.4 Create config Package
 
-1. Navigate to `inventory-service/src/main/java/ca/gbc/inventoryservice`
-2. Right-click on `ca.gbc.inventoryservice`
+1. Navigate to `inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice`
+2. Right-click on `ca.gbc.comp3095.inventoryservice`
 3. Select **New** → **Package**
 4. Name: `config`
 5. Click **OK**
@@ -350,10 +341,10 @@ springdoc.api-docs.path=/api-docs
 3. Name: `OpenAPIConfig`
 4. Click **OK**
 
-**Location:** `inventory-service/src/main/java/ca/gbc/inventoryservice/config/OpenAPIConfig.java`
+**Location:** `inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice/config/OpenAPIConfig.java`
 
 ```java
-package ca.gbc.inventoryservice.config;
+package ca.gbc.comp3095.inventoryservice.config;
 
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
