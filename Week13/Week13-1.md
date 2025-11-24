@@ -75,7 +75,7 @@ implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-run
 
 ### 2.1 Refactor Client Interface
 
-**Location:** `order-service/src/main/java/ca/gbc/orderservice/client/InventoryClient.java`
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/client/InventoryClient.java`
 
 ```java
 package ca.gbc.comp3095.orderservice.client;
@@ -98,23 +98,38 @@ Spring's `@GetExchange` creates a proxy that implements the interface at runtime
 
 ---
 
-## Step 3: Create RestClientConfig
+## Step 3: Verify OrderRequest DTO Structure
 
-### 3.1 Create config Package
+### 3.1 Check OrderRequest
 
-If the `config` package doesn't exist:
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderRequest.java`
 
-1. Navigate to `order-service/src/main/java/ca/gbc/orderservice`
-2. Right-click on `ca.gbc.comp3095.orderservice`
-3. Select **New** → **Package**
-4. Name: `config`
-5. Click **OK**
+Verify the `OrderRequest` record has the correct structure:
 
-### 3.2 Create RestClientConfig Class
+```java
+package ca.gbc.comp3095.orderservice.dto;
 
-**Location:** `order-service/src/main/java/ca/gbc/orderservice/config/RestClientConfig.java`
+import java.math.BigDecimal;
 
-Create new class:
+public record OrderRequest(
+        Long id,
+        String orderNumber,
+        String skuCode,
+        BigDecimal price,
+        Integer quantity) {}
+```
+
+**Important:** This simple DTO structure is required for the REST Client migration. It should have direct fields (`skuCode`, `price`, `quantity`), not nested objects.
+
+---
+
+## Step 4: Create RestClientConfig
+
+### 4.1 Create RestClientConfig Class
+
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/config/RestClientConfig.java`
+
+Create new class in the `config` package:
 
 1. Right-click on `config` package
 2. Select **New** → **Java Class**
@@ -188,11 +203,11 @@ At runtime, Spring creates a proxy object that implements `InventoryClient`. Whe
 
 ---
 
-## Step 4: Update OrderServiceApplication
+## Step 5: Update OrderServiceApplication
 
-### 4.1 Remove @EnableFeignClients Annotation
+### 5.1 Remove @EnableFeignClients Annotation
 
-**Location:** `order-service/src/main/java/ca/gbc/orderservice/OrderServiceApplication.java`
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/OrderServiceApplication.java`
 
 Remove the `@EnableFeignClients` annotation and its import:
 
@@ -218,13 +233,13 @@ Spring REST Client doesn't require component scanning annotations. The `RestClie
 
 ---
 
-## Step 5: Simplify OrderServiceImpl (Optional)
+## Step 6: Simplify OrderServiceImpl (Optional)
 
-### 5.1 Remove Inventory Check (Week 6.2 Approach)
+### 6.1 Remove Inventory Check (Week 6.2 Approach)
 
 For Week 6.2, the order service is simplified to focus on REST Client migration without inventory validation.
 
-**Location:** `order-service/src/main/java/ca/gbc/orderservice/service/OrderServiceImpl.java`
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderServiceImpl.java`
 
 **SIMPLIFIED VERSION (Week 6.2):**
 
@@ -337,9 +352,9 @@ Choose the approach that fits your learning objectives or production requirement
 
 ---
 
-## Step 6: Verify Configuration Files
+## Step 7: Verify Configuration Files
 
-### 6.1 Check application.properties
+### 7.1 Check application.properties
 
 **Location:** `order-service/src/main/resources/application.properties`
 
@@ -371,7 +386,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### 6.2 Check application-docker.properties
+### 7.2 Check application-docker.properties
 
 **Location:** `order-service/src/main/resources/application-docker.properties`
 
@@ -411,11 +426,11 @@ springdoc.api-docs.path=/api-docs
 
 ---
 
-## Step 7: Update Tests with WireMock
+## Step 8: Update Tests with WireMock
 
-### 7.1 Update InventoryClientStub
+### 8.1 Update InventoryClientStub
 
-**Location:** `order-service/src/test/java/ca/gbc/orderservice/stubs/InventoryClientStub.java`
+**Location:** `order-service/src/test/java/ca/gbc/comp3095/orderservice/stubs/InventoryClientStub.java`
 
 The WireMock stub remains unchanged and works with both OpenFeign and Spring REST Client:
 
@@ -462,7 +477,7 @@ public class InventoryClientStub {
 
 **Note:** WireMock mocks the HTTP layer, so it works transparently with any HTTP client (OpenFeign, RestTemplate, RestClient, WebClient).
 
-### 7.2 Update Test Configuration
+### 8.2 Update Test Configuration
 
 **Location:** `order-service/src/test/resources/application.properties`
 
@@ -478,9 +493,9 @@ inventory.service.url=http://localhost:${wiremock.server.port}
 
 ---
 
-## Step 8: Test the Migration
+## Step 9: Test the Migration
 
-### 8.1 Run Unit Tests
+### 9.1 Run Unit Tests
 
 Test locally before deploying to Docker using IntelliJ IDEA:
 
@@ -495,7 +510,7 @@ Check logs for:
 - Connection refused errors (verify WireMock configuration)
 - Bean creation errors (verify RestClientConfig is correct)
 
-### 8.2 Run Service Locally
+### 9.2 Run Service Locally
 
 Start dependencies (PostgreSQL, MongoDB, Redis):
 
@@ -520,7 +535,7 @@ INFO  RestClientConfig : Creating InventoryClient with URL: http://localhost:808
 INFO  OrderServiceApplication : Started OrderServiceApplication in 3.21 seconds
 ```
 
-### 8.3 Test with Postman
+### 9.3 Test with Postman
 
 **Create Order (POST):**
 
@@ -557,9 +572,9 @@ GET http://localhost:8082/api/order
 
 ---
 
-## Step 9: Build and Deploy with Docker
+## Step 10: Build and Deploy with Docker
 
-### 9.1 Rebuild Docker Containers
+### 10.1 Rebuild Docker Containers
 
 Stop existing containers:
 
@@ -576,7 +591,7 @@ docker-compose -p microservices-parent up -d --build
 
 Wait ~60-90 seconds for services to start.
 
-### 9.2 Verify Containers
+### 10.2 Verify Containers
 
 ```bash
 docker ps
@@ -596,7 +611,7 @@ Expected containers:
 - redis
 - redis-insight
 
-### 9.3 Check order-service Logs
+### 10.3 Check order-service Logs
 
 ```bash
 docker logs order-service
@@ -609,7 +624,7 @@ INFO  RestClientConfig : Creating InventoryClient with URL: http://inventory-ser
 INFO  OrderServiceApplication : Started OrderServiceApplication in 5.123 seconds
 ```
 
-### 9.4 Test Through API Gateway
+### 10.4 Test Through API Gateway
 
 Since Keycloak security is enabled, obtain token first (see Week 12-1 for details):
 
@@ -639,9 +654,9 @@ Authorization: Bearer <token>
 
 ---
 
-## Step 10: Verify Swagger Documentation
+## Step 11: Verify Swagger Documentation
 
-### 10.1 Access Order Service Swagger
+### 11.1 Access Order Service Swagger
 
 Navigate to:
 
@@ -654,7 +669,7 @@ Verify:
 - InventoryClient is not visible (internal service communication)
 - Order endpoints are interactive
 
-### 10.2 Test via Swagger UI
+### 11.2 Test via Swagger UI
 
 1. Expand `POST /api/order`
 2. Click **Try it out**
