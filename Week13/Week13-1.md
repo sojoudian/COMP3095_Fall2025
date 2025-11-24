@@ -48,65 +48,19 @@ Refactor the order-service to replace Spring Cloud OpenFeign with Spring's decla
 
 **Location:** `order-service/build.gradle.kts`
 
-**BEFORE (OpenFeign version):**
+Remove the OpenFeign dependency:
 
 ```kotlin
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.flywaydb:flyway-core")
-    implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
-    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
-
-    // OpenFeign - TO BE REMOVED
-    implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
-
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    runtimeOnly("org.postgresql:postgresql")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("io.rest-assured:rest-assured")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
+// Remove this line
+implementation("org.springframework.cloud:spring-cloud-starter-openfeign")
 ```
 
-**AFTER (Spring REST Client version):**
-
-Remove the OpenFeign dependency and add Spring Cloud Contract Stub Runner for WireMock testing:
+Add Spring Cloud Contract Stub Runner for WireMock testing:
 
 ```kotlin
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.flywaydb:flyway-core")
-    implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
-    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
-
-    // Week 13 - Spring Cloud for REST Client and WireMock testing
-    implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
-
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    runtimeOnly("org.postgresql:postgresql")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("io.rest-assured:rest-assured")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
+// Week 13 - Spring Cloud for REST Client and WireMock testing
+implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
 ```
-
-**Key Changes:**
-- **Removed**: `spring-cloud-starter-openfeign`
-- **Added**: `spring-cloud-starter-contract-stub-runner` (provides WireMock for testing)
 
 ### 1.2 Reload Gradle Project
 
