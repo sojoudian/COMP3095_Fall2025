@@ -419,17 +419,43 @@ spring.flyway.enabled=true
 
 ### 9.1 Update InventoryClientStub
 
-**Location:** `order-service/src/test/java/ca/gbc/comp3095/orderservice/stubs/InventoryClientStub.java`
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/stubs/InventoryClientStub.java`
 
-The WireMock stub remains unchanged and works with both OpenFeign and Spring REST Client:
+The WireMock stub remains unchanged and works with both OpenFeign and Spring REST Client.
+
+**Current code in p11:**
 
 ```java
 package ca.gbc.comp3095.orderservice.stubs;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
-import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
 
+public class InventoryClientStub {
+
+    public static void stubInventoryCall(String skuCode, Integer quantity){
+        stubFor(get(urlEqualTo("/api/inventory?skuCode=" + skuCode + "&quantity=" + quantity))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("true")));
+    }
+}
+```
+
+**Add the following documentation (optional but recommended):**
+
+After line 3, add the explicit import:
+```java
+import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
+```
+
+After line 4, add Week marker:
+```java
 //✅ Week 4 - Day 1
+```
+
+Before `public class`, add class-level Javadoc:
+```java
 /**
  * InventoryClientStub is a mock implementation of the InventoryClient for testing purposes.
  * We use WireMock to simulate the HTTP responses from the inventory-service without needing
@@ -438,30 +464,30 @@ import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
  * This stub will mock the behavior of a real service call by returning predefined responses
  * based on the request made.
  */
-public class InventoryClientStub {
+```
 
-    /**
-     * This method sets up a stub for the GET request made to the inventory-service.
-     * It will respond with an HTTP 200 status and a body containing "true", indicating
-     * that the requested item is in stock.
-     *
-     * @param skuCode The SKU code of the product we want to check in the inventory.
-     * @param quantity The quantity of the product we are checking in the inventory.
-     */
-    public static void stubInventoryCall(String skuCode, Integer quantity){
+Before `public static void stubInventoryCall`, add method-level Javadoc:
+```java
+/**
+ * This method sets up a stub for the GET request made to the inventory-service.
+ * It will respond with an HTTP 200 status and a body containing "true", indicating
+ * that the requested item is in stock.
+ *
+ * @param skuCode The SKU code of the product we want to check in the inventory.
+ * @param quantity The quantity of the product we are checking in the inventory.
+ */
+```
 
-        // Using WireMock's stubFor method to mock an HTTP GET request to the inventory-service.
-        // We define that any GET request with the specified URL pattern will return a response
-        // with a 200 status code, a Content-Type header of "application/json", and a body of "true".
-        stubFor(get(urlEqualTo("/api/inventory?skuCode=" + skuCode + "&quantity=" + quantity))
-                .willReturn(aResponse()
-                        .withStatus(200)   // The HTTP status code to return (200 OK).
-                        .withHeader("Content-Type", "application/json")  // Response header to specify JSON content.
-                        .withBody("true"))); // The mock response body indicating the item is in stock.
-    }
-
-
-}
+Inside the method, add inline comments:
+```java
+// Using WireMock's stubFor method to mock an HTTP GET request to the inventory-service.
+// We define that any GET request with the specified URL pattern will return a response
+// with a 200 status code, a Content-Type header of "application/json", and a body of "true".
+stubFor(get(urlEqualTo("/api/inventory?skuCode=" + skuCode + "&quantity=" + quantity))
+        .willReturn(aResponse()
+                .withStatus(200)   // The HTTP status code to return (200 OK).
+                .withHeader("Content-Type", "application/json")  // Response header to specify JSON content.
+                .withBody("true"))); // The mock response body indicating the item is in stock.
 ```
 
 **Note:** WireMock mocks the HTTP layer, so it works transparently with any HTTP client (OpenFeign, RestTemplate, RestClient, WebClient).
