@@ -424,7 +424,7 @@ spring.flyway.enabled=true
 Add the following properties:
 
 ```properties
-// Week 13
+# Week 13
 spring.datasource.driver-class-name=org.testcontainers.jdbc.ContainerDatabaseDriver
 spring.datasource.url=jdbc:tc:postgresql:15-alpine:///order_service
 ```
