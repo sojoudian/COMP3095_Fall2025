@@ -421,14 +421,12 @@ spring.flyway.enabled=true
 
 **Location:** `order-service/src/test/resources/application.properties`
 
-If you kept inventory validation in `OrderServiceImpl`, ensure test properties point to WireMock:
+Add the following properties:
 
 ```properties
+// Week 13
 spring.datasource.driver-class-name=org.testcontainers.jdbc.ContainerDatabaseDriver
 spring.datasource.url=jdbc:tc:postgresql:15-alpine:///order_service
-
-# Point to WireMock server for testing
-inventory.service.url=http://localhost:${wiremock.server.port}
 ```
 
 ---
