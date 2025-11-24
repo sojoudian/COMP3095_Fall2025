@@ -61,50 +61,13 @@ Browser → API Gateway (localhost:9000)
 
 **Location:** `api-gateway/build.gradle.kts`
 
-**BEFORE:**
-
-```kotlin
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.cloud:spring-cloud-starter-gateway-mvc")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    compileOnly("jakarta.servlet:jakarta.servlet-api:6.1.0")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-```
-
-**AFTER:**
-
 Add SpringDoc OpenAPI dependencies:
 
 ```kotlin
-dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.cloud:spring-cloud-starter-gateway-mvc")
-    compileOnly("org.projectlombok:lombok")
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    compileOnly("jakarta.servlet:jakarta.servlet-api:6.1.0")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-
-    // ✅ Week 13 - Swagger Documentation Aggregation
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
-    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.9")
-
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
+// ✅ Week 13 - Swagger Documentation Aggregation
+implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.9")
 ```
-
-**Key Changes:**
-- **Added**: `springdoc-openapi-starter-webmvc-ui:2.8.9` (provides Swagger UI)
-- **Added**: `springdoc-openapi-starter-webmvc-api:2.8.9` (test support)
 
 **Version Note:** Using 2.8.9 (slightly newer than 2.8.8 used in services) for latest bug fixes.
 
@@ -202,254 +165,76 @@ springdoc.swagger-ui.urls[2].url=/aggregate/inventory-service/v3/api-docs
 
 **Location:** `api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
 
-Add routes to proxy documentation requests to each microservice:
-
-**BEFORE:**
+Add the static import at the top:
 
 ```java
-package ca.gbc.apigateway.routes;
-
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions;
-import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.function.*;
-
-@Configuration
-@Slf4j
-public class Routes {
-
-    @Value("${services.product-url}")
-    private String productServiceUrl;
-
-    @Value("${services.order-url}")
-    private String orderServiceUrl;
-
-    @Bean
-    public RouterFunction<ServerResponse> productServiceRoute() {
-        log.info("Initializing product service route with URL: {}", productServiceUrl);
-
-        return GatewayRouterFunctions.route("product_service")
-                .route(
-                        RequestPredicates.path("/api/product"),
-                        request -> {
-                            log.info("Received request for product service: {}", request.uri());
-                            try {
-                                ServerResponse response = HandlerFunctions.http(productServiceUrl).handle(request);
-                                log.info("Response status: {}", response.statusCode());
-                                return response;
-                            } catch (Exception e) {
-                                log.error("Error occurred while routing request: {}", e.getMessage(), e);
-                                return ServerResponse.status(500).body("An error occurred");
-                            }
-                        })
-                .build();
-    }
-
-    @Bean
-    public RouterFunction<ServerResponse> orderServiceRoute() {
-        log.info("Initializing order service route with URL: {}", orderServiceUrl);
-
-        return GatewayRouterFunctions.route("order_service")
-                .route(
-                        RequestPredicates.path("/api/order"),
-                        request -> {
-                            log.info("Received request for order service: {}", request.uri());
-                            try {
-                                ServerResponse response = HandlerFunctions.http(orderServiceUrl).handle(request);
-                                log.info("Response status: {}", response.statusCode());
-                                return response;
-                            } catch (Exception e) {
-                                log.error("Error occurred while routing request: {}", e.getMessage(), e);
-                                return ServerResponse.status(500).body("An error occurred");
-                            }
-                        })
-                .build();
-    }
-
-}
-```
-
-**AFTER:**
-
-Add inventory service route and documentation routes:
-
-```java
-package ca.gbc.apigateway.routes;
-
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions;
-import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.function.*;
-
 import static org.springframework.cloud.gateway.server.mvc.filter.FilterFunctions.setPath;
+```
 
-/**
- * Configuration class for defining API Gateway routes.
- * This class sets up routing rules to forward requests to the product and order microservices
- * using Spring Cloud Gateway's functional routing approach.
- */
-@Configuration
-@Slf4j
-public class Routes {
+Add inventory service URL field:
 
-    // URL of the product service, injected from application properties
-    @Value("${services.product-url}")
-    private String productServiceUrl;
+```java
+@Value("${services.inventory-url}")
+private String inventoryServiceUrl;
+```
 
-    // URL of the order service, injected from application properties
-    @Value("${services.order-url}")
-    private String orderServiceUrl;
+Add inventory service route bean:
 
-    // URL of the inventory service, injected from application properties
-    @Value("${services.inventory-url}")
-    private String inventoryServiceUrl;
+```java
+// ✅ Week 13 - Inventory Service Route
+@Bean
+public RouterFunction<ServerResponse> inventoryServiceRoute() {
+    log.info("Initializing inventory service route with URL: {}", inventoryServiceUrl);
 
-
-    /**
-     * Defines the routing configuration for the product service.
-     * Routes requests with the path "/api/product" to the product service URL.
-     *
-     * @return RouterFunction that handles product service requests
-     */
-    @Bean
-    public RouterFunction<ServerResponse> productServiceRoute() {
-        // Log the initialization of the product service route
-        log.info("Initializing product service route with URL: {}", productServiceUrl);
-
-        // Configure route for product service
-        return GatewayRouterFunctions.route("product_service")
-                .route(
-                        // Match requests with path starting with "/api/product"
-                        RequestPredicates.path("/api/product"),
-                        request -> {
-                            // Log incoming request details
-                            log.info("Received request for product service: {}", request.uri());
-                            try {
-                                // Forward request to product service and get response
-                                ServerResponse response = HandlerFunctions.http(productServiceUrl).handle(request);
-                                // Log response status
-                                log.info("Response status: {}", response.statusCode());
-                                return response;
-                            } catch (Exception e) {
-                                // Log any errors during request processing
-                                log.error("Error occurred while routing request: {}", e.getMessage(), e);
-                                // Return 500 error response to client
-                                return ServerResponse.status(500).body("An error occurred");
-                            }
-                        })
-                .build();
-    }
-
-    /**
-     * Defines the routing configuration for the order service.
-     * Routes requests with the path "/api/order" to the order service URL.
-     *
-     * @return RouterFunction that handles order service requests
-     */
-    @Bean
-    public RouterFunction<ServerResponse> orderServiceRoute() {
-        // Log the initialization of the order service route
-        log.info("Initializing order service route with URL: {}", orderServiceUrl);
-
-        // Configure route for order service
-        return GatewayRouterFunctions.route("order_service")
-                .route(
-                        // Match requests with path starting with "/api/order"
-                        RequestPredicates.path("/api/order"),
-                        request -> {
-                            // Log incoming request details
-                            log.info("Received request for order service: {}", request.uri());
-                            try {
-                                // Forward request to order service and get response
-                                ServerResponse response = HandlerFunctions.http(orderServiceUrl).handle(request);
-                                // Log response status
-                                log.info("Response status: {}", response.statusCode());
-                                return response;
-                            } catch (Exception e) {
-                                // Log any errors during request processing
-                                log.error("Error occurred while routing request: {}", e.getMessage(), e);
-                                // Return 500 error response to client
-                                return ServerResponse.status(500).body("An error occurred");
-                            }
-                        })
-                .build();
-    }
-
-    // ✅ Week 13 - Inventory Service Route
-    @Bean
-    public RouterFunction<ServerResponse> inventoryServiceRoute() {
-        log.info("Initializing inventory service route with URL: {}", inventoryServiceUrl);
-
-        return GatewayRouterFunctions.route("inventory_service")
-                .route(RequestPredicates.path("/api/inventory"), request -> {
-                    log.info("Received request for inventory service: {}", request.uri());
-                    try {
-                        ServerResponse response = HandlerFunctions.http(inventoryServiceUrl).handle(request);
-                        log.info("Response status: {}", response.statusCode());
-                        return response;
-                    } catch (Exception e) {
-                        log.error("Error occurred while routing request: {}", e.getMessage(), e);
-                        return ServerResponse.status(500).body("An error occurred");
-                    }
-                })
-                .build();
-    }
-
-    // ✅ Week 13 - Product Service Swagger Documentation Route
-    @Bean
-    public RouterFunction<ServerResponse> productServiceSwaggerRoute(){
-        return GatewayRouterFunctions.route("product_service_swagger")
-                .route(RequestPredicates.path("/aggregate/product-service/v3/api-docs"),
-                        HandlerFunctions.http(productServiceUrl))
-                .filter(setPath("/api-docs"))
-                .build();
-    }
-
-    // ✅ Week 13 - Order Service Swagger Documentation Route
-    @Bean
-    public RouterFunction<ServerResponse> orderServiceSwaggerRoute(){
-        return GatewayRouterFunctions.route("order_service_swagger")
-                .route(RequestPredicates.path("/aggregate/order-service/v3/api-docs"),
-                        HandlerFunctions.http(orderServiceUrl))
-                .filter(setPath("/api-docs"))
-                .build();
-    }
-
-    // ✅ Week 13 - Inventory Service Swagger Documentation Route
-    @Bean
-    public RouterFunction<ServerResponse> inventoryServiceSwaggerRoute(){
-        return GatewayRouterFunctions.route("inventory_service_swagger")
-                .route(RequestPredicates.path("/aggregate/inventory-service/v3/api-docs"),
-                        HandlerFunctions.http(inventoryServiceUrl))
-                .filter(setPath("/api-docs"))
-                .build();
-    }
-
-
-
-
+    return GatewayRouterFunctions.route("inventory_service")
+            .route(RequestPredicates.path("/api/inventory"), request -> {
+                log.info("Received request for inventory service: {}", request.uri());
+                try {
+                    ServerResponse response = HandlerFunctions.http(inventoryServiceUrl).handle(request);
+                    log.info("Response status: {}", response.statusCode());
+                    return response;
+                } catch (Exception e) {
+                    log.error("Error occurred while routing request: {}", e.getMessage(), e);
+                    return ServerResponse.status(500).body("An error occurred");
+                }
+            })
+            .build();
 }
 ```
 
-**Key Changes:**
+Add documentation routes for all three services:
 
-1. **Added Inventory Service Route** (`inventoryServiceRoute()`):
-   - Routes `/api/inventory` to inventory-service
-   - Completes the API routing for all three services
+```java
+// ✅ Week 13 - Product Service Swagger Documentation Route
+@Bean
+public RouterFunction<ServerResponse> productServiceSwaggerRoute(){
+    return GatewayRouterFunctions.route("product_service_swagger")
+            .route(RequestPredicates.path("/aggregate/product-service/v3/api-docs"),
+                    HandlerFunctions.http(productServiceUrl))
+            .filter(setPath("/api-docs"))
+            .build();
+}
 
-2. **Added Documentation Routes** (three new beans):
-   - `productServiceSwaggerRoute()`: Routes `/aggregate/product-service/v3/api-docs` → `http://product-service:8084/api-docs`
-   - `orderServiceSwaggerRoute()`: Routes `/aggregate/order-service/v3/api-docs` → `http://order-service:8082/api-docs`
-   - `inventoryServiceSwaggerRoute()`: Routes `/aggregate/inventory-service/v3/api-docs` → `http://inventory-service:8083/api-docs`
+// ✅ Week 13 - Order Service Swagger Documentation Route
+@Bean
+public RouterFunction<ServerResponse> orderServiceSwaggerRoute(){
+    return GatewayRouterFunctions.route("order_service_swagger")
+            .route(RequestPredicates.path("/aggregate/order-service/v3/api-docs"),
+                    HandlerFunctions.http(orderServiceUrl))
+            .filter(setPath("/api-docs"))
+            .build();
+}
 
-3. **Added Import**:
-   - `import static org.springframework.cloud.gateway.server.mvc.filter.FilterFunctions.setPath;`
+// ✅ Week 13 - Inventory Service Swagger Documentation Route
+@Bean
+public RouterFunction<ServerResponse> inventoryServiceSwaggerRoute(){
+    return GatewayRouterFunctions.route("inventory_service_swagger")
+            .route(RequestPredicates.path("/aggregate/inventory-service/v3/api-docs"),
+                    HandlerFunctions.http(inventoryServiceUrl))
+            .filter(setPath("/api-docs"))
+            .build();
+}
+```
 
 **How Documentation Routes Work:**
 
@@ -473,105 +258,38 @@ The `setPath()` filter transforms the aggregation URL into the actual service en
 
 **Location:** `api-gateway/src/main/java/ca/gbc/apigateway/config/SecurityConfig.java`
 
-**BEFORE:**
+Add a whitelist array as a class field:
 
 ```java
-package ca.gbc.apigateway.config;
-
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.web.SecurityFilterChain;
-
-@Slf4j
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig {
-
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-
-        log.info("Initializing Security Filter Chain...");
-
-        return httpSecurity
-                .csrf(AbstractHttpConfigurer::disable)
-                .authorizeHttpRequests(authorize -> authorize
-                        .anyRequest().authenticated())
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(Customizer.withDefaults()))
-                .build();
-    }
-
-}
+// ✅ Week 13 - Whitelist documentation endpoints (no authentication required)
+private final String[] noauthResourceUrls = {
+        "/swagger-ui",
+        "/swagger-ui/**",
+        "/v3/api-docs/**",
+        "/swagger-resources/**",
+        "/api-docs/**",
+        "/aggregate/**"
+};
 ```
 
-**AFTER:**
-
-Add whitelist for documentation endpoints:
+Update the `securityFilterChain` method to permit unauthenticated access to documentation:
 
 ```java
-package ca.gbc.apigateway.config;
+@Bean
+public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
 
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.web.SecurityFilterChain;
+    log.info("Initializing Security Filter Chain...");
 
-@Slf4j
-@Configuration
-@EnableWebSecurity
-public class SecurityConfig {
-
-
-    // ✅ Week 13 - Whitelist documentation endpoints (no authentication required)
-    private final String[] noauthResourceUrls = {
-            "/swagger-ui",
-            "/swagger-ui/**",
-            "/v3/api-docs/**",
-            "/swagger-resources/**",
-            "/api-docs/**",
-            "/aggregate/**"
-    };
-
-    /**
-     * Configures the security filter chain for HTTP requests.
-     *
-     * This configuration requires all incoming HTTP requests to be authenticated.
-     * It also configures OAuth2 resource server support to validate JWT tokens.
-     *
-     * @param httpSecurity the HttpSecurity to customize
-     * @return the configured SecurityFilterChain
-     * @throws Exception if an error occurs while configuring security
-     */
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
-
-        log.info("Initializing Security Filter Chain...");
-
-        return httpSecurity
-                .csrf(AbstractHttpConfigurer::disable)  // Disable CSRF protection using the new syntax
-                // Authorize all HTTP requests, requiring authentication for any request
-                // ✅ Week 13 - UPDATE: Permit unauthenticated access to documentation
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers(noauthResourceUrls)
-                        .permitAll()
-                        .anyRequest().authenticated())
-                //.authorizeHttpRequests(authorize -> authorize
-                //        .anyRequest().permitAll())             // Allow all requests temporarily
-                // Set up OAuth2 resource server to use JWT tokens for authentication
-                .oauth2ResourceServer(oauth2 -> oauth2
-                        .jwt(Customizer.withDefaults()))
-                .build();
-    }
-
+    return httpSecurity
+            .csrf(AbstractHttpConfigurer::disable)
+            // ✅ Week 13 - UPDATE: Permit unauthenticated access to documentation
+            .authorizeHttpRequests(authorize -> authorize
+                    .requestMatchers(noauthResourceUrls)  // Add this line
+                    .permitAll()                           // Add this line
+                    .anyRequest().authenticated())
+            .oauth2ResourceServer(oauth2 -> oauth2
+                    .jwt(Customizer.withDefaults()))
+            .build();
 }
 ```
 

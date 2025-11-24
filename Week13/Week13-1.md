@@ -77,26 +77,6 @@ implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-run
 
 **Location:** `order-service/src/main/java/ca/gbc/orderservice/client/InventoryClient.java`
 
-**BEFORE (OpenFeign version):**
-
-```java
-package ca.gbc.orderservice.client;
-
-import org.springframework.cloud.openfeign.FeignClient;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RequestParam;
-
-@FeignClient(value = "inventory", url = "${inventory.service.url}")
-public interface InventoryClient {
-
-    @RequestMapping(method = RequestMethod.GET, value = "/api/inventory")
-    boolean isInStock(@RequestParam String skuCode, @RequestParam Integer quantity);
-}
-```
-
-**AFTER (Spring REST Client version):**
-
 ```java
 package ca.gbc.orderservice.client;
 
@@ -111,12 +91,6 @@ public interface InventoryClient {
 
 }
 ```
-
-**Key Changes:**
-- **Removed**: `@FeignClient` annotation (no longer needed)
-- **Changed**: `@RequestMapping` → `@GetExchange` (Spring 6 declarative HTTP interface)
-- **Simplified**: No need for `value` or `url` parameters (configured elsewhere)
-- **Import Changes**: Uses `org.springframework.web.service.annotation.GetExchange`
 
 **How It Works:**
 
@@ -220,27 +194,7 @@ At runtime, Spring creates a proxy object that implements `InventoryClient`. Whe
 
 **Location:** `order-service/src/main/java/ca/gbc/orderservice/OrderServiceApplication.java`
 
-**BEFORE (OpenFeign version):**
-
-```java
-package ca.gbc.orderservice;
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.cloud.openfeign.EnableFeignClients;
-
-@SpringBootApplication
-@EnableFeignClients  // TO BE REMOVED
-public class OrderServiceApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(OrderServiceApplication.class, args);
-    }
-
-}
-```
-
-**AFTER (Spring REST Client version):**
+Remove the `@EnableFeignClients` annotation and its import:
 
 ```java
 package ca.gbc.orderservice;
@@ -257,10 +211,6 @@ public class OrderServiceApplication {
 
 }
 ```
-
-**Key Change:**
-- **Removed**: `@EnableFeignClients` annotation (no longer needed)
-- **Removed**: Import for `org.springframework.cloud.openfeign.EnableFeignClients`
 
 **Why?**
 
