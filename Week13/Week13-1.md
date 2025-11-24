@@ -398,7 +398,7 @@ spring.datasource.url=jdbc:postgresql://localhost:5432/order_service
 
 **Why?** The database name must match the Docker configuration and initialization scripts which use `order_service` (with underscore). Using `order-service` (with hyphen) will cause connection failures.
 
-### 8.2 Update application-docker.properties
+### 8.2 Update application-docker.properties (order-service)
 
 **Location:** `order-service/src/main/resources/application-docker.properties`
 
@@ -413,11 +413,56 @@ spring.flyway.enabled=true
 
 **Why?** These properties ensure Flyway database migrations run properly in the Docker environment.
 
+### 8.3 Update application-docker.properties (inventory-service)
+
+**Location:** `inventory-service/src/main/resources/application-docker.properties`
+
+Add the Flyway configuration properties:
+
+```properties
+# Week 13
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.enabled=true
+```
+
+**Why?** Same as order-service - Flyway migrations must be enabled for Docker environment.
+
 ---
 
-## Step 9: Update Tests with WireMock
+## Step 9: Update Flyway Migration
 
-### 9.1 Update Test Configuration
+### 9.1 Update order-service V1__init.sql
+
+**Location:** `order-service/src/main/resources/db/migration/V1__init.sql`
+
+Replace the entire file content with:
+
+```sql
+CREATE TABLE t_orders (
+   id BIGSERIAL NOT NULL,
+   order_number VARCHAR(255) DEFAULT NULL,
+   sku_code VARCHAR(255),
+   price DECIMAL(19, 2),
+   quantity INT,
+   PRIMARY KEY (id)
+);
+```
+
+**Key Changes:**
+
+1. **Table name**: Changed from `orders` to `t_orders` (matches Order.java `@Table(name="t_orders")`)
+2. **Added columns**: `sku_code`, `price`, `quantity` (matches simplified Order model)
+3. **Removed table**: `order_line_items` table no longer needed (simplified model)
+4. **Removed constraint**: Foreign key constraint no longer needed
+
+**Why?** The migration must create the exact table structure that the Order entity expects. Mismatches between Flyway schema and JPA entity mapping cause application startup failures.
+
+---
+
+## Step 10: Update Tests with WireMock
+
+### 10.1 Update Test Configuration
 
 **Location:** `order-service/src/test/resources/application.properties`
 
@@ -431,9 +476,9 @@ spring.datasource.url=jdbc:tc:postgresql:15-alpine:///order_service
 
 ---
 
-## Step 10: Test the Migration
+## Step 11: Test the Migration
 
-### 10.1 Run Unit Tests
+### 11.1 Run Unit Tests
 
 Test locally before deploying to Docker using IntelliJ IDEA:
 
@@ -448,7 +493,7 @@ Check logs for:
 - Connection refused errors (verify WireMock configuration)
 - Bean creation errors (verify RestClientConfig is correct)
 
-### 10.2 Run Service Locally
+### 11.2 Run Service Locally
 
 Start dependencies (PostgreSQL, MongoDB, Redis):
 
@@ -473,7 +518,7 @@ INFO  RestClientConfig : Creating InventoryClient with URL: http://localhost:808
 INFO  OrderServiceApplication : Started OrderServiceApplication in 3.21 seconds
 ```
 
-### 10.3 Test with Postman
+### 11.3 Test with Postman
 
 **Create Order (POST):**
 
@@ -510,9 +555,9 @@ GET http://localhost:8082/api/order
 
 ---
 
-## Step 11: Build and Deploy with Docker
+## Step 12: Build and Deploy with Docker
 
-### 11.1 Rebuild Docker Containers
+### 12.1 Rebuild Docker Containers
 
 Stop existing containers:
 
@@ -529,7 +574,7 @@ docker-compose -p microservices-parent up -d --build
 
 Wait ~60-90 seconds for services to start.
 
-### 11.2 Verify Containers
+### 12.2 Verify Containers
 
 ```bash
 docker ps
@@ -549,7 +594,7 @@ Expected containers:
 - redis
 - redis-insight
 
-### 11.3 Check order-service Logs
+### 12.3 Check order-service Logs
 
 ```bash
 docker logs order-service
@@ -562,7 +607,7 @@ INFO  RestClientConfig : Creating InventoryClient with URL: http://inventory-ser
 INFO  OrderServiceApplication : Started OrderServiceApplication in 5.123 seconds
 ```
 
-### 11.4 Test Through API Gateway
+### 12.4 Test Through API Gateway
 
 Since Keycloak security is enabled, obtain token first (see Week 12-1 for details):
 
@@ -592,9 +637,9 @@ Authorization: Bearer <token>
 
 ---
 
-## Step 12: Verify Swagger Documentation
+## Step 13: Verify Swagger Documentation
 
-### 12.1 Access Order Service Swagger
+### 13.1 Access Order Service Swagger
 
 Navigate to:
 
@@ -607,7 +652,7 @@ Verify:
 - InventoryClient is not visible (internal service communication)
 - Order endpoints are interactive
 
-### 12.2 Test via Swagger UI
+### 13.2 Test via Swagger UI
 
 1. Expand `POST /api/order`
 2. Click **Try it out**
