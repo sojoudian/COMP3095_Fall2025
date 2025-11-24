@@ -398,43 +398,20 @@ spring.datasource.url=jdbc:postgresql://localhost:5432/order_service
 
 **Why?** The database name must match the Docker configuration and initialization scripts which use `order_service` (with underscore). Using `order-service` (with hyphen) will cause connection failures.
 
-### 8.2 Check application-docker.properties
+### 8.2 Update application-docker.properties
 
 **Location:** `order-service/src/main/resources/application-docker.properties`
 
-Verify Docker inventory service URL:
+Add the Flyway configuration properties:
 
 ```properties
-spring.application.name=order-service
-server.port=8082
-
-# Week 4 - Inventory Service URL (Docker)
-inventory.service.url=http://inventory-service:8083
-
-spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
-spring.datasource.driver-class-name=org.postgresql.Driver
-spring.datasource.username=admin
-spring.datasource.password=password
-
-spring.jpa.hibernate.ddl-auto=none
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
-
-# Flyway configuration
+# Week 13
 spring.flyway.baseline-on-migrate=true
 spring.flyway.locations=classpath:db/migration
 spring.flyway.enabled=true
-
-# Week 12 - API version for documentation
-order-service.version=v1.0
-
-# Week 12 - Swagger Documentation
-springdoc.swagger-ui.path=/swagger-ui
-springdoc.api-docs.path=/api-docs
 ```
 
-**Important:**
-- **Local**: `http://localhost:8083` (for running services outside Docker)
-- **Docker**: `http://inventory-service:8083` (uses Docker service name)
+**Why?** These properties ensure Flyway database migrations run properly in the Docker environment.
 
 ---
 
