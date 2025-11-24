@@ -78,7 +78,7 @@ implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-run
 **Location:** `order-service/src/main/java/ca/gbc/orderservice/client/InventoryClient.java`
 
 ```java
-package ca.gbc.orderservice.client;
+package ca.gbc.comp3095.orderservice.client;
 
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.service.annotation.GetExchange;
@@ -105,7 +105,7 @@ Spring's `@GetExchange` creates a proxy that implements the interface at runtime
 If the `config` package doesn't exist:
 
 1. Navigate to `order-service/src/main/java/ca/gbc/orderservice`
-2. Right-click on `ca.gbc.orderservice`
+2. Right-click on `ca.gbc.comp3095.orderservice`
 3. Select **New** → **Package**
 4. Name: `config`
 5. Click **OK**
@@ -124,9 +124,9 @@ Create new class:
 **Code:**
 
 ```java
-package ca.gbc.orderservice.config;
+package ca.gbc.comp3095.orderservice.config;
 
-import ca.gbc.orderservice.client.InventoryClient;
+import ca.gbc.comp3095.orderservice.client.InventoryClient;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -197,7 +197,7 @@ At runtime, Spring creates a proxy object that implements `InventoryClient`. Whe
 Remove the `@EnableFeignClients` annotation and its import:
 
 ```java
-package ca.gbc.orderservice;
+package ca.gbc.comp3095.orderservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -229,11 +229,11 @@ For Week 6.2, the order service is simplified to focus on REST Client migration 
 **SIMPLIFIED VERSION (Week 6.2):**
 
 ```java
-package ca.gbc.orderservice.service;
+package ca.gbc.comp3095.orderservice.service;
 
-import ca.gbc.orderservice.dto.OrderRequest;
-import ca.gbc.orderservice.model.Order;
-import ca.gbc.orderservice.repository.OrderRepository;
+import ca.gbc.comp3095.orderservice.dto.OrderRequest;
+import ca.gbc.comp3095.orderservice.model.Order;
+import ca.gbc.comp3095.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -287,12 +287,12 @@ This approach:
 If you prefer to keep inventory validation:
 
 ```java
-package ca.gbc.orderservice.service;
+package ca.gbc.comp3095.orderservice.service;
 
-import ca.gbc.orderservice.client.InventoryClient;
-import ca.gbc.orderservice.dto.OrderRequest;
-import ca.gbc.orderservice.model.Order;
-import ca.gbc.orderservice.repository.OrderRepository;
+import ca.gbc.comp3095.orderservice.client.InventoryClient;
+import ca.gbc.comp3095.orderservice.dto.OrderRequest;
+import ca.gbc.comp3095.orderservice.model.Order;
+import ca.gbc.comp3095.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -420,7 +420,7 @@ springdoc.api-docs.path=/api-docs
 The WireMock stub remains unchanged and works with both OpenFeign and Spring REST Client:
 
 ```java
-package ca.gbc.orderservice.stubs;
+package ca.gbc.comp3095.orderservice.stubs;
 
 import static com.github.tomakehurst.wiremock.client.WireMock.*;
 import static com.github.tomakehurst.wiremock.client.WireMock.aResponse;
@@ -686,7 +686,7 @@ Error creating bean with name 'inventoryClient': FactoryBean threw exception on 
 **Solution:**
 
 1. Verify `RestClientConfig` is in a package scanned by Spring:
-   - Must be under `ca.gbc.orderservice.config`
+   - Must be under `ca.gbc.comp3095.orderservice.config`
 2. Check `@Configuration` annotation is present
 3. Verify `inventory.service.url` property exists in application.properties
 4. Ensure Spring Cloud Contract Stub Runner dependency is added
