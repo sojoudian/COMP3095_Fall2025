@@ -382,37 +382,21 @@ This approach:
 
 ## Step 8: Verify Configuration Files
 
-### 8.1 Check application.properties
+### 8.1 Update application.properties
 
 **Location:** `order-service/src/main/resources/application.properties`
 
-Verify inventory service URL is configured:
+Change the database name from `order-service` to `order_service` (hyphen to underscore):
 
 ```properties
-spring.application.name=order-service
-server.port=8082
+# Change this line:
+spring.datasource.url=jdbc:postgresql://localhost:5432/order-service
 
-# Week 4 - Inventory Service URL (Local)
-inventory.service.url=http://localhost:8083
-
-# Database configuration
+# To this:
 spring.datasource.url=jdbc:postgresql://localhost:5432/order_service
-spring.datasource.username=admin
-spring.datasource.password=password
-spring.jpa.hibernate.ddl-auto=none
-
-# Flyway configuration
-spring.flyway.baseline-on-migrate=true
-spring.flyway.locations=classpath:db/migration
-spring.flyway.enabled=true
-
-# Week 12 - API version for documentation
-order-service.version=v1.0
-
-# Week 12 - Swagger Documentation
-springdoc.swagger-ui.path=/swagger-ui
-springdoc.api-docs.path=/api-docs
 ```
+
+**Why?** The database name must match the Docker configuration and initialization scripts which use `order_service` (with underscore). Using `order-service` (with hyphen) will cause connection failures.
 
 ### 8.2 Check application-docker.properties
 
