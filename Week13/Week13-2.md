@@ -115,13 +115,6 @@ dependencies {
 2. Select **Gradle** → **Reload Gradle Project**
 3. Wait for dependencies to download
 
-**Command Line:**
-
-```bash
-cd api-gateway
-./gradlew clean build
-```
-
 ---
 
 ## Step 2: Configure Swagger Aggregation
@@ -632,35 +625,27 @@ cd ../keycloak
 docker-compose up -d
 ```
 
-Start microservices in separate terminals:
+Start microservices using IntelliJ IDEA:
 
-**Terminal 1 - Product Service:**
+**Product Service:**
+1. Navigate to `ProductServiceApplication.java`
+2. Right-click on the file
+3. Select **Run 'ProductServiceApplication'**
 
-```bash
-cd product-service
-./gradlew bootRun
-```
+**Order Service:**
+1. Navigate to `OrderServiceApplication.java`
+2. Right-click on the file
+3. Select **Run 'OrderServiceApplication'**
 
-**Terminal 2 - Order Service:**
+**Inventory Service:**
+1. Navigate to `InventoryServiceApplication.java`
+2. Right-click on the file
+3. Select **Run 'InventoryServiceApplication'**
 
-```bash
-cd order-service
-./gradlew bootRun
-```
-
-**Terminal 3 - Inventory Service:**
-
-```bash
-cd inventory-service
-./gradlew bootRun
-```
-
-**Terminal 4 - API Gateway:**
-
-```bash
-cd api-gateway
-./gradlew bootRun
-```
+**API Gateway:**
+1. Navigate to `ApiGatewayApplication.java`
+2. Right-click on the file
+3. Select **Run 'ApiGatewayApplication'**
 
 Wait for all services to start (~30-60 seconds).
 

@@ -69,13 +69,6 @@ implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-run
 2. Select **Gradle** → **Reload Gradle Project**
 3. Wait for dependencies to download
 
-**Command Line:**
-
-```bash
-cd order-service
-./gradlew clean build
-```
-
 ---
 
 ## Step 2: Update InventoryClient Interface
@@ -539,19 +532,11 @@ inventory.service.url=http://localhost:${wiremock.server.port}
 
 ### 8.1 Run Unit Tests
 
-Test locally before deploying to Docker:
+Test locally before deploying to Docker using IntelliJ IDEA:
 
-```bash
-cd order-service
-./gradlew clean test
-```
-
-**Expected Output:**
-
-```
-BUILD SUCCESSFUL in 15s
-6 actionable tasks: 6 executed
-```
+1. Right-click on `order-service` project
+2. Select **Run 'All Tests'**
+3. Wait for tests to complete
 
 **If Tests Fail:**
 
@@ -574,10 +559,9 @@ docker-compose up -d
 
 Start order-service:
 
-```bash
-cd order-service
-./gradlew bootRun
-```
+1. In IntelliJ IDEA, navigate to `OrderServiceApplication.java`
+2. Right-click on the file
+3. Select **Run 'OrderServiceApplication'**
 
 Verify startup logs show:
 
@@ -769,10 +753,9 @@ java.net.ConnectException: Connection refused: localhost:8083
 
 **If running locally:**
 1. Start inventory-service:
-   ```bash
-   cd inventory-service
-   ./gradlew bootRun
-   ```
+   - In IntelliJ IDEA, navigate to `InventoryServiceApplication.java`
+   - Right-click on the file
+   - Select **Run 'InventoryServiceApplication'**
 
 **If running in Docker:**
 1. Verify inventory-service container is running:
