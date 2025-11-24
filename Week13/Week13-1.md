@@ -233,9 +233,90 @@ Spring REST Client doesn't require component scanning annotations. The `RestClie
 
 ---
 
-## Step 6: Simplify OrderServiceImpl (Optional)
+## Step 6: Update Order Model
 
-### 6.1 Remove Inventory Check (Week 6.2 Approach)
+### 6.1 Simplify Order Entity Structure
+
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/model/Order.java`
+
+For Week 6.2, we simplify the Order model to have direct fields instead of nested OrderLineItem collections. This matches the simplified OrderRequest structure.
+
+Replace the Order model with:
+
+```java
+package ca.gbc.comp3095.orderservice.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.math.BigDecimal;
+
+@Entity
+@Table(name="t_orders")
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Order {
+
+    /**
+     * The @GeneratedValue annotation specifies how the primary key (ID) will be generated automatically by the database.
+     *
+     * strategy = GenerationType.IDENTITY:
+     * - The database will handle auto-incrementing the primary key.
+     * - Hibernate relies on the underlying database's auto-increment feature to generate unique IDs.
+     * - Each time a new record is inserted, the database assigns the next available primary key value.
+     *
+     * Other strategies:
+     *
+     * 1. GenerationType.AUTO:
+     * - Hibernate chooses the strategy based on the underlying database's capabilities (could be SEQUENCE, TABLE, or IDENTITY).
+     * - This is the default strategy if none is specified.
+     *
+     * 2. GenerationType.SEQUENCE:
+     * - Uses a database sequence object to generate values for the primary key.
+     * - Commonly used in databases that support sequences (e.g., PostgreSQL, Oracle).
+     * - Allows preallocation of ID values in batches for performance improvements.
+     *
+     * 3. GenerationType.TABLE:
+     * - Uses a separate table in the database to generate primary key values.
+     * - Can be used across multiple tables, but it is generally slower compared to other strategies.
+     * - It provides a more flexible approach but is less commonly used.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String orderNumber;
+    private String skuCode;
+    private BigDecimal price;
+    private Integer quantity;
+
+}
+```
+
+**Key Changes:**
+
+1. **Removed**: `List<OrderLineItem> orderLineItems` (nested collection)
+2. **Added**: Direct fields for `skuCode`, `price`, and `quantity`
+3. **Changed**: Table name from `"orders"` to `"t_orders"`
+4. **Changed**: Lombok annotations from `@Data` to `@Getter` and `@Setter` (more explicit)
+
+**Why Simplify?**
+
+- **Direct Mapping**: OrderRequest fields map directly to Order fields (no transformation needed)
+- **Simpler Database Schema**: Single table instead of join with OrderLineItem table
+- **Easier Testing**: Fewer entities to manage in tests
+- **Focus on Learning**: Emphasizes REST Client migration, not complex data modeling
+
+**Note:** If you had an `OrderLineItem.java` entity, you can delete it as it's no longer needed for this simplified approach.
+
+---
+
+## Step 7: Simplify OrderServiceImpl (Optional)
+
+### 7.1 Remove Inventory Check (Week 6.2 Approach)
 
 For Week 6.2, the order service is simplified to focus on REST Client migration without inventory validation.
 
@@ -352,9 +433,9 @@ Choose the approach that fits your learning objectives or production requirement
 
 ---
 
-## Step 7: Verify Configuration Files
+## Step 8: Verify Configuration Files
 
-### 7.1 Check application.properties
+### 8.1 Check application.properties
 
 **Location:** `order-service/src/main/resources/application.properties`
 
@@ -386,7 +467,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### 7.2 Check application-docker.properties
+### 8.2 Check application-docker.properties
 
 **Location:** `order-service/src/main/resources/application-docker.properties`
 
@@ -426,9 +507,9 @@ springdoc.api-docs.path=/api-docs
 
 ---
 
-## Step 8: Update Tests with WireMock
+## Step 9: Update Tests with WireMock
 
-### 8.1 Update InventoryClientStub
+### 9.1 Update InventoryClientStub
 
 **Location:** `order-service/src/test/java/ca/gbc/comp3095/orderservice/stubs/InventoryClientStub.java`
 
@@ -477,7 +558,7 @@ public class InventoryClientStub {
 
 **Note:** WireMock mocks the HTTP layer, so it works transparently with any HTTP client (OpenFeign, RestTemplate, RestClient, WebClient).
 
-### 8.2 Update Test Configuration
+### 9.2 Update Test Configuration
 
 **Location:** `order-service/src/test/resources/application.properties`
 
@@ -493,9 +574,9 @@ inventory.service.url=http://localhost:${wiremock.server.port}
 
 ---
 
-## Step 9: Test the Migration
+## Step 10: Test the Migration
 
-### 9.1 Run Unit Tests
+### 10.1 Run Unit Tests
 
 Test locally before deploying to Docker using IntelliJ IDEA:
 
@@ -510,7 +591,7 @@ Check logs for:
 - Connection refused errors (verify WireMock configuration)
 - Bean creation errors (verify RestClientConfig is correct)
 
-### 9.2 Run Service Locally
+### 10.2 Run Service Locally
 
 Start dependencies (PostgreSQL, MongoDB, Redis):
 
@@ -535,7 +616,7 @@ INFO  RestClientConfig : Creating InventoryClient with URL: http://localhost:808
 INFO  OrderServiceApplication : Started OrderServiceApplication in 3.21 seconds
 ```
 
-### 9.3 Test with Postman
+### 10.3 Test with Postman
 
 **Create Order (POST):**
 
@@ -572,9 +653,9 @@ GET http://localhost:8082/api/order
 
 ---
 
-## Step 10: Build and Deploy with Docker
+## Step 11: Build and Deploy with Docker
 
-### 10.1 Rebuild Docker Containers
+### 11.1 Rebuild Docker Containers
 
 Stop existing containers:
 
@@ -591,7 +672,7 @@ docker-compose -p microservices-parent up -d --build
 
 Wait ~60-90 seconds for services to start.
 
-### 10.2 Verify Containers
+### 11.2 Verify Containers
 
 ```bash
 docker ps
@@ -611,7 +692,7 @@ Expected containers:
 - redis
 - redis-insight
 
-### 10.3 Check order-service Logs
+### 11.3 Check order-service Logs
 
 ```bash
 docker logs order-service
@@ -624,7 +705,7 @@ INFO  RestClientConfig : Creating InventoryClient with URL: http://inventory-ser
 INFO  OrderServiceApplication : Started OrderServiceApplication in 5.123 seconds
 ```
 
-### 10.4 Test Through API Gateway
+### 11.4 Test Through API Gateway
 
 Since Keycloak security is enabled, obtain token first (see Week 12-1 for details):
 
@@ -654,9 +735,9 @@ Authorization: Bearer <token>
 
 ---
 
-## Step 11: Verify Swagger Documentation
+## Step 12: Verify Swagger Documentation
 
-### 11.1 Access Order Service Swagger
+### 12.1 Access Order Service Swagger
 
 Navigate to:
 
@@ -669,7 +750,7 @@ Verify:
 - InventoryClient is not visible (internal service communication)
 - Order endpoints are interactive
 
-### 11.2 Test via Swagger UI
+### 12.2 Test via Swagger UI
 
 1. Expand `POST /api/order`
 2. Click **Try it out**
