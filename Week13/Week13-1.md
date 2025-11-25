@@ -486,71 +486,7 @@ spring.datasource.url=jdbc:tc:postgresql:15-alpine:///order_service
 
 ## Step 11: Test the Migration
 
-### 11.0 Fix Testcontainers Version Compatibility
-
-**Issue:** Testcontainers 1.21.3 (default in Spring Boot 3.4.4) uses Docker API 1.32, but Docker Desktop 29.0.1+ requires API 1.44+.
-
-**Location:** `order-service/build.gradle.kts`
-
-Add this after line 24 (after `repositories { mavenCentral() }`):
-
-```kotlin
-ext {
-    set("testcontainers.version", "1.20.4")
-}
-```
-
-**Complete example:**
-
-```kotlin
-repositories {
-    mavenCentral()
-}
-
-ext {
-    set("testcontainers.version", "1.20.4")
-}
-```
-
-**Reload Gradle Project:**
-
-1. Right-click on project root
-2. Select **Gradle** → **Reload Gradle Project**
-3. Wait for dependencies to download
-
-### 11.1 Run Unit Tests
-
-Test locally before deploying to Docker using IntelliJ IDEA:
-
-1. Right-click on `order-service` project
-2. Select **Run 'All Tests'**
-3. Wait for tests to complete
-
-**If Tests Fail:**
-
-Check logs for:
-- Missing dependency errors (verify Spring Cloud Contract is added)
-- Connection refused errors (verify WireMock configuration)
-- Bean creation errors (verify RestClientConfig is correct)
-
----
-
-## Step 11.5: Update Dockerfile
-
-### 11.5.1 Update order-service Dockerfile
-
-**Location:** `order-service/Dockerfile`
-
-Remove the `COPY settings.gradle.kts .` line:
-
-```dockerfile
-# Copy Gradle wrapper and build files
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle.kts .
-```
-
-### 11.5.2 Clean Docker Build Cache and System
+### 11.5.1 Clean Docker Build Cache and System
 
 Docker build cache can become corrupted. Perform a complete cleanup:
 
@@ -559,6 +495,10 @@ cd microservices-parent
 docker-compose down
 docker system prune -af --volumes
 docker builder prune -af
+
+rm -rf docker/integrated/postgres/data/postgres-order
+rm -rf docker/integrated/postgres/data/postgres-inventory
+rm -rf docker/integrated/keycloak/db-data
 ```
 
 After running these commands, restart Docker Desktop:
