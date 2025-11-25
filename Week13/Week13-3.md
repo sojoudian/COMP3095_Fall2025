@@ -24,7 +24,13 @@ Synchronous communication between microservices can cause cascading failures. Wh
 
 **Location:** `microservices-parent/api-gateway/build.gradle.kts`
 
-Add the following dependency:
+Add the circuit breaker dependency:
+
+```kotlin
+implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:3.3.0")
+```
+
+**Complete dependencies section:**
 
 ```kotlin
 dependencies {
@@ -40,14 +46,17 @@ dependencies {
 }
 ```
 
-**Key Change:**
-- Added `spring-cloud-starter-circuitbreaker-resilience4j:3.3.0` dependency
-
 ### 1.2 Update Order Service Dependencies
 
 **Location:** `microservices-parent/order-service/build.gradle.kts`
 
-Add the following dependency:
+Add the circuit breaker dependency:
+
+```kotlin
+implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:3.3.0")
+```
+
+**Complete dependencies section:**
 
 ```kotlin
 dependencies {
@@ -70,9 +79,6 @@ dependencies {
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 ```
-
-**Key Change:**
-- Added `spring-cloud-starter-circuitbreaker-resilience4j:3.3.0` dependency
 
 ---
 
@@ -144,175 +150,146 @@ resilience4j.retry.configs.default.wait-duration=2s
 
 ---
 
-## Step 4: Implement Fallback Route in API Gateway
+## Step 4: Implement Circuit Breaker Routes in API Gateway
 
-### 4.1 Create Fallback Route
+### 4.1 Update Routes Class
 
 **Location:** `microservices-parent/api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
 
-Add the following method:
+Replace the entire file with the following code:
 
 ```java
-@Bean
-public RouterFunction<ServerResponse> fallbackRoute() {
-    return route("fallbackRoute")
-            .GET("/fallbackRoute", request -> ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
-                    .body("Service Unavailable, please try again in a few minutes"))
-            .POST("/fallbackRoute", request -> ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
-                    .body("Service Unavailable, please try again in a few minutes"))
-            .build();
+package ca.gbc.apigateway.routes;
+
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions;
+import org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions;
+import org.springframework.cloud.gateway.server.mvc.handler.HandlerFunctions;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.web.servlet.function.*;
+
+import java.net.URI;
+
+import static org.springframework.cloud.gateway.server.mvc.filter.FilterFunctions.setPath;
+import static org.springframework.cloud.gateway.server.mvc.handler.GatewayRouterFunctions.route;
+
+/**
+ * Configuration class for defining API Gateway routes.
+ * This class sets up routing rules to forward requests to the product, order, and inventory microservices
+ * using Spring Cloud Gateway's functional routing approach.
+ */
+@Configuration
+@Slf4j
+public class Routes {
+
+    @Value("${services.product-url}")
+    private String productServiceUrl;
+
+    @Value("${services.order-url}")
+    private String orderServiceUrl;
+
+    @Value("${services.inventory-url}")
+    private String inventoryServiceUrl;
+
+    @Bean
+    public RouterFunction<ServerResponse> productServiceRoute() {
+        return GatewayRouterFunctions.route("product_service")
+                .route(
+                        RequestPredicates.path("/api/product"),
+                        HandlerFunctions.http(productServiceUrl)
+                )
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("productServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> productServiceSwaggerRoute() {
+        return GatewayRouterFunctions.route("product_service_swagger")
+                .route(RequestPredicates.path("/aggregate/product-service/v3/api-docs"),
+                        HandlerFunctions.http(productServiceUrl))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("productServiceSwaggerCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .filter(setPath("/api-docs"))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> orderServiceRoute() {
+        return GatewayRouterFunctions.route("order_service")
+                .route(
+                        RequestPredicates.path("/api/order"),
+                        HandlerFunctions.http(orderServiceUrl)
+                )
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("orderServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> orderServiceSwaggerRoute() {
+        return GatewayRouterFunctions.route("order_service_swagger")
+                .route(RequestPredicates.path("/aggregate/order-service/v3/api-docs"),
+                        HandlerFunctions.http(orderServiceUrl))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("orderServiceSwaggerCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .filter(setPath("/api-docs"))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> inventoryServiceRoute() {
+        return GatewayRouterFunctions.route("inventory_service")
+                .route(
+                        RequestPredicates.path("/api/inventory"),
+                        HandlerFunctions.http(inventoryServiceUrl)
+                )
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("inventoryServiceCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> inventoryServiceSwaggerRoute() {
+        return GatewayRouterFunctions.route("inventory_service_swagger")
+                .route(RequestPredicates.path("/aggregate/inventory-service/v3/api-docs"),
+                        HandlerFunctions.http(inventoryServiceUrl))
+                .filter(CircuitBreakerFilterFunctions.circuitBreaker("inventoryServiceSwaggerCircuitBreaker",
+                        URI.create("forward:/fallbackRoute")))
+                .filter(setPath("/api-docs"))
+                .build();
+    }
+
+    @Bean
+    public RouterFunction<ServerResponse> fallbackRoute() {
+        log.info("Fallback route triggered");
+        return route("fallbackRoute")
+                .GET("/fallbackRoute", request -> ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body("Service Unavailable, please try again in a few minutes"))
+                .POST("/fallbackRoute", request -> ServerResponse.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body("Service Unavailable, please try again in a few minutes"))
+                .build();
+    }
 }
 ```
+
+**Key Changes:**
+- Added `CircuitBreakerFilterFunctions.circuitBreaker()` filter to all 6 routes
+- Each circuit breaker has unique ID (productServiceCircuitBreaker, orderServiceCircuitBreaker, etc.)
+- All circuit breakers forward to `/fallbackRoute` when open
+- Added `fallbackRoute()` bean that returns HTTP 503 with message
 
 **Why?**
-The fallback route provides a graceful response when circuit breaker is open. It returns HTTP 503 (Service Unavailable) instead of letting requests fail with connection errors.
+The fallback route provides graceful degradation when downstream services are unavailable. Each route has its own circuit breaker instance to isolate failures.
 
 ---
 
-## Step 5: Add Circuit Breaker Filters to Routes
+## Step 5: Configure Resilience4j in Order Service
 
-### 5.1 Update Product Service Route
-
-**Location:** `microservices-parent/api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
-
-Update the method:
-
-```java
-@Bean
-public RouterFunction<ServerResponse> productServiceRoute() {
-    return GatewayRouterFunctions.route("product_service")
-            .route(
-                    RequestPredicates.path("/api/product"),
-                    HandlerFunctions.http(productServiceUrl)
-            )
-            .filter(CircuitBreakerFilterFunctions.circuitBreaker("productServiceCircuitBreaker",
-                    URI.create("forward:/fallbackRoute")))
-            .build();
-}
-```
-
-**Key Change:**
-- Added `CircuitBreakerFilterFunctions.circuitBreaker()` filter with unique ID `productServiceCircuitBreaker`
-- Forwards to `/fallbackRoute` when circuit breaker is open
-
-### 5.2 Update Order Service Route
-
-**Location:** `microservices-parent/api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
-
-Update the method:
-
-```java
-@Bean
-public RouterFunction<ServerResponse> orderServiceRoute() {
-    return GatewayRouterFunctions.route("order_service")
-            .route(
-                    RequestPredicates.path("/api/order"),
-                    HandlerFunctions.http(orderServiceUrl)
-            )
-            .filter(CircuitBreakerFilterFunctions.circuitBreaker("orderServiceCircuitBreaker",
-                    URI.create("forward:/fallbackRoute")))
-            .build();
-}
-```
-
-### 5.3 Update Inventory Service Route
-
-**Location:** `microservices-parent/api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
-
-Update the method:
-
-```java
-@Bean
-public RouterFunction<ServerResponse> inventoryServiceRoute() {
-    return GatewayRouterFunctions.route("inventory_service")
-            .route(
-                    RequestPredicates.path("/api/inventory"),
-                    HandlerFunctions.http(inventoryServiceUrl)
-            )
-            .filter(CircuitBreakerFilterFunctions.circuitBreaker("inventoryServiceCircuitBreaker",
-                    URI.create("forward:/fallbackRoute")))
-            .build();
-}
-```
-
-### 5.4 Update Product Service Swagger Route
-
-**Location:** `microservices-parent/api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
-
-Update the method:
-
-```java
-@Bean
-public RouterFunction<ServerResponse> productServiceSwaggerRoute() {
-    return GatewayRouterFunctions.route("product_service_swagger")
-            .route(
-                    RequestPredicates.path("/aggregate/product-service/v3/api-docs"),
-                    HandlerFunctions.http(productServiceUrl)
-            )
-            .filter(CircuitBreakerFilterFunctions.circuitBreaker("productServiceSwaggerCircuitBreaker",
-                    URI.create("forward:/fallbackRoute")))
-            .filter(setPath("/api-docs"))
-            .build();
-}
-```
-
-### 5.5 Update Order Service Swagger Route
-
-**Location:** `microservices-parent/api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
-
-Update the method:
-
-```java
-@Bean
-public RouterFunction<ServerResponse> orderServiceSwaggerRoute() {
-    return GatewayRouterFunctions.route("order_service_swagger")
-            .route(
-                    RequestPredicates.path("/aggregate/order-service/v3/api-docs"),
-                    HandlerFunctions.http(orderServiceUrl)
-            )
-            .filter(CircuitBreakerFilterFunctions.circuitBreaker("orderServiceSwaggerCircuitBreaker",
-                    URI.create("forward:/fallbackRoute")))
-            .filter(setPath("/api-docs"))
-            .build();
-}
-```
-
-### 5.6 Update Inventory Service Swagger Route
-
-**Location:** `microservices-parent/api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
-
-Update the method:
-
-```java
-@Bean
-public RouterFunction<ServerResponse> inventoryServiceSwaggerRoute() {
-    return GatewayRouterFunctions.route("inventory_service_swagger")
-            .route(
-                    RequestPredicates.path("/aggregate/inventory-service/v3/api-docs"),
-                    HandlerFunctions.http(inventoryServiceUrl)
-            )
-            .filter(CircuitBreakerFilterFunctions.circuitBreaker("inventoryServiceSwaggerCircuitBreaker",
-                    URI.create("forward:/fallbackRoute")))
-            .filter(setPath("/api-docs"))
-            .build();
-}
-```
-
-### 5.7 Add Required Import
-
-**Location:** `microservices-parent/api-gateway/src/main/java/ca/gbc/apigateway/routes/Routes.java`
-
-Add the following import at the top of the file:
-
-```java
-import org.springframework.cloud.gateway.server.mvc.filter.CircuitBreakerFilterFunctions;
-```
-
----
-
-## Step 6: Configure Resilience4j in Order Service
-
-### 6.1 Add Instance-Specific Configuration
+### 5.1 Add Instance-Specific Configuration
 
 **Location:** `microservices-parent/order-service/src/main/resources/application.properties`
 
@@ -340,9 +317,9 @@ Instance-specific configuration for the `inventory` circuit breaker used in Inve
 
 ---
 
-## Step 7: Implement Circuit Breaker in Inventory Client
+## Step 6: Implement Circuit Breaker in Inventory Client
 
-### 7.1 Add Circuit Breaker and Retry Annotations
+### 6.1 Update InventoryClient Interface
 
 **Location:** `microservices-parent/order-service/src/main/java/ca/gbc/orderservice/client/InventoryClient.java`
 
@@ -387,63 +364,94 @@ public interface InventoryClient {
 
 ---
 
-## Step 8: Configure HTTP Client Timeouts
+## Step 7: Configure HTTP Client Timeouts
 
-### 8.1 Add Timeout Configuration to RestClientConfig
+### 7.1 Update RestClientConfig
 
 **Location:** `microservices-parent/order-service/src/main/java/ca/gbc/orderservice/config/RestClientConfig.java`
 
-Replace the `inventoryClient()` method with the following:
+Replace the entire file with the following code:
 
 ```java
-@Bean
-public InventoryClient inventoryClient() {
-    // Configure HttpClient with timeouts
-    HttpClient httpClient = HttpClient.newBuilder()
-            .connectTimeout(Duration.ofSeconds(5)) // 5 seconds for connection
-            .build();
+package ca.gbc.orderservice.config;
 
-    // Create JdkClientHttpRequestFactory with the configured HttpClient
-    JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
-    // Set read timeout (applies to response body reading)
-    requestFactory.setReadTimeout(Duration.ofSeconds(5)); // 5 seconds for reading response
+import ca.gbc.orderservice.client.InventoryClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.http.client.JdkClientHttpRequestFactory;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.support.RestClientAdapter;
+import org.springframework.web.service.invoker.HttpServiceProxyFactory;
 
-    // Create RestClient with base URL and request factory
-    RestClient restClient = RestClient.builder()
-            .baseUrl(inventoryServiceUrl)
-            .requestFactory(requestFactory)
-            .build();
+import java.net.http.HttpClient;
+import java.time.Duration;
 
-    // Wrap the RestClient in a RestClientAdapter
-    var restClientAdapter = RestClientAdapter.create(restClient);
+@Configuration
+public class RestClientConfig {
 
-    // Create HttpServiceProxyFactory for InventoryClient
-    var httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
+    private static final Logger log = LoggerFactory.getLogger(RestClientConfig.class);
 
-    return httpServiceProxyFactory.createClient(InventoryClient.class);
+    @Value("${inventory.service.url}")
+    private String inventoryServiceUrl;
+
+    /**
+     * ✅ Week 9 - Day 1
+     * Creates and configures an InventoryClient bean for interaction with the Inventory Service.
+     * <p>
+     * The method sets up a RestClient with the specified base URL and timeouts,
+     * wraps it in a RestClientAdapter, and uses an HttpServiceProxyFactory to create
+     * a proxy implementation of the InventoryClient interface.
+     * </p>
+     *
+     * @return InventoryClient - a proxy instance configured to communicate with the Inventory Service.
+     */
+    @Bean
+    public InventoryClient inventoryClient() {
+        //✅ Week 9 - Day 1
+        // Configure HttpClient with timeouts
+        HttpClient httpClient = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(5)) // 5 seconds for connection
+                .build();
+
+        //✅ Week 9 - Day 1
+        // Create JdkClientHttpRequestFactory with the configured HttpClient
+        JdkClientHttpRequestFactory requestFactory = new JdkClientHttpRequestFactory(httpClient);
+        // Set read timeout (applies to response body reading)
+        requestFactory.setReadTimeout(Duration.ofSeconds(5)); // 5 seconds for reading response
+
+        // Create RestClient with base URL and request factory
+        RestClient restClient = RestClient.builder()
+                .baseUrl(inventoryServiceUrl)
+                .requestFactory(requestFactory)
+                .build();
+
+        // Wrap the RestClient in a RestClientAdapter
+        var restClientAdapter = RestClientAdapter.create(restClient);
+
+        // Create HttpServiceProxyFactory for InventoryClient
+        var httpServiceProxyFactory = HttpServiceProxyFactory.builderFor(restClientAdapter).build();
+
+        return httpServiceProxyFactory.createClient(InventoryClient.class);
+    }
 }
 ```
 
-### 8.2 Add Required Imports
-
-**Location:** `microservices-parent/order-service/src/main/java/ca/gbc/orderservice/config/RestClientConfig.java`
-
-Add the following imports at the top of the file:
-
-```java
-import org.springframework.http.client.JdkClientHttpRequestFactory;
-import java.net.http.HttpClient;
-import java.time.Duration;
-```
+**Key Changes:**
+- Added `HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5))` for connection timeout
+- Added `JdkClientHttpRequestFactory` with `setReadTimeout(Duration.ofSeconds(5))` for read timeout
+- RestClient now uses configured `requestFactory` with timeout settings
 
 **Why?**
 Timeouts prevent the application from waiting indefinitely for unresponsive services. The `connectTimeout` limits connection establishment time, while `readTimeout` limits response reading time.
 
 ---
 
-## Step 9: Testing Circuit Breaker
+## Step 8: Testing Circuit Breaker
 
-### 9.1 Test Scenario 1: Service Down
+### 8.1 Test Scenario 1: Service Down
 
 **Steps:**
 1. Start all services using Docker Compose
@@ -458,7 +466,7 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 - Circuit breaker opens after failure threshold is reached
 - Subsequent requests fail immediately without calling inventory-service
 
-### 9.2 Test Scenario 2: Service Timeout
+### 8.2 Test Scenario 2: Service Timeout
 
 **Steps:**
 1. Add artificial delay in inventory-service to exceed timeout (3 seconds)
@@ -473,7 +481,7 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 - Fallback method is called after all retries fail
 - Circuit breaker opens after multiple timeout failures
 
-### 9.3 Test Scenario 3: Service Recovery
+### 8.3 Test Scenario 3: Service Recovery
 
 **Steps:**
 1. With circuit breaker in OPEN state, wait 5 seconds
@@ -490,7 +498,7 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 - If all 3 succeed, circuit breaker transitions to CLOSED
 - Normal operation resumes
 
-### 9.4 Test Scenario 4: API Gateway Circuit Breaker
+### 8.4 Test Scenario 4: API Gateway Circuit Breaker
 
 **Steps:**
 1. Stop inventory-service container
@@ -507,9 +515,9 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 
 ---
 
-## Step 10: Monitor Circuit Breaker with Actuator
+## Step 9: Monitor Circuit Breaker with Actuator
 
-### 10.1 Health Endpoint
+### 9.1 Health Endpoint
 
 **URL:** `http://localhost:8082/actuator/health`
 
@@ -542,7 +550,7 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 }
 ```
 
-### 10.2 Circuit Breakers Endpoint
+### 9.2 Circuit Breakers Endpoint
 
 **URL:** `http://localhost:8082/actuator/circuitbreakers`
 
@@ -565,7 +573,7 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 }
 ```
 
-### 10.3 Circuit Breaker Events Endpoint
+### 9.3 Circuit Breaker Events Endpoint
 
 **URL:** `http://localhost:8082/actuator/circuitbreakerevents`
 
@@ -586,9 +594,9 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 
 ---
 
-## Step 11: Troubleshooting
+## Step 10: Troubleshooting
 
-### 11.1 Circuit Breaker Not Triggering
+### 10.1 Circuit Breaker Not Triggering
 
 **Problem:** Circuit breaker remains CLOSED despite service failures
 
@@ -598,7 +606,7 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 - Confirm failure rate exceeds `failureRateThreshold` (50%)
 - Review logs for exceptions being caught
 
-### 11.2 Fallback Method Not Called
+### 10.2 Fallback Method Not Called
 
 **Problem:** Fallback method signature does not match
 
@@ -608,7 +616,7 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 - Return type must match original method return type
 - Method must be accessible (public or default in interface)
 
-### 11.3 Timeouts Not Working
+### 10.3 Timeouts Not Working
 
 **Problem:** Requests wait longer than configured timeout
 
@@ -618,7 +626,7 @@ Timeouts prevent the application from waiting indefinitely for unresponsive serv
 - Check HTTP client is using configured request factory
 - Ensure timeout values are reasonable for service response times
 
-### 11.4 Circuit Breaker Opens Too Quickly
+### 10.4 Circuit Breaker Opens Too Quickly
 
 **Problem:** Circuit breaker opens with few failures
 
