@@ -518,6 +518,14 @@ COPY gradle gradle
 COPY build.gradle.kts .
 ```
 
+### 11.5.2 Clean Docker Build Cache
+
+Docker build cache can become corrupted. Clean it before rebuilding:
+
+```bash
+docker builder prune -af
+```
+
 ---
 
 ## Step 12: Build and Deploy with Docker
