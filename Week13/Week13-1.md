@@ -486,6 +486,44 @@ spring.datasource.url=jdbc:tc:postgresql:15-alpine:///order_service
 
 ## Step 11: Test the Migration
 
+### 11.0 Fix Testcontainers Version Compatibility
+
+**Issue:** Testcontainers 1.21.3 (default in Spring Boot 3.4.4) uses Docker API 1.32, but Docker Desktop 29.0.1+ requires API 1.44+.
+
+**Location:** `order-service/build.gradle.kts`
+
+Add this after line 24 (after `repositories { mavenCentral() }`):
+
+```kotlin
+ext {
+    set("testcontainers.version", "1.20.4")
+}
+```
+
+**Complete example:**
+
+```kotlin
+repositories {
+    mavenCentral()
+}
+
+ext {
+    set("testcontainers.version", "1.20.4")
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2024.0.1")
+    }
+}
+```
+
+**Reload Gradle Project:**
+
+1. Right-click on project root
+2. Select **Gradle** → **Reload Gradle Project**
+3. Wait for dependencies to download
+
 ### 11.1 Run Unit Tests
 
 Test locally before deploying to Docker using IntelliJ IDEA:
