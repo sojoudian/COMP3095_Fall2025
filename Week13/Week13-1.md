@@ -501,32 +501,7 @@ Check logs for:
 - Connection refused errors (verify WireMock configuration)
 - Bean creation errors (verify RestClientConfig is correct)
 
-### 11.2 Run Service Locally
-
-Start dependencies (PostgreSQL, MongoDB, Redis):
-
-```bash
-cd microservices-parent/docker/standalone/postgres
-docker-compose up -d
-
-cd ../mongo-redis
-docker-compose up -d
-```
-
-Start order-service:
-
-1. In IntelliJ IDEA, navigate to `OrderServiceApplication.java`
-2. Right-click on the file
-3. Select **Run 'OrderServiceApplication'**
-
-Verify startup logs show:
-
-```
-INFO  RestClientConfig : Creating InventoryClient with URL: http://localhost:8083
-INFO  OrderServiceApplication : Started OrderServiceApplication in 3.21 seconds
-```
-
-### 11.3 Test with Postman
+### 11.2 Test with Postman
 
 **Create Order (POST):**
 
