@@ -510,12 +510,6 @@ repositories {
 ext {
     set("testcontainers.version", "1.20.4")
 }
-
-dependencyManagement {
-    imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2024.0.1")
-    }
-}
 ```
 
 **Reload Gradle Project:**
