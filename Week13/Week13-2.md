@@ -494,13 +494,16 @@ Authorization: Bearer <token>
 
 ## Step 6: Fix Server URLs in OpenAPI Specifications
 
-### 6.1 Problem: Docker Internal Hostnames
+### 6.1 Problem: CORS and Server URL Configuration
 
-**Issue:** When you test the Swagger UI, you may see "Failed to fetch" errors when trying to execute API calls from the documentation. This happens because the OpenAPI specifications from Order Service and Inventory Service contain Docker internal hostnames like `http://inventory-service:8083` that your browser cannot access.
+**Issue:** When you test the Swagger UI, you may see "Failed to fetch" errors when trying to execute API calls from the documentation. This happens for two reasons:
+
+1. **Docker Internal Hostnames**: OpenAPI specifications contain Docker internal hostnames like `http://inventory-service:8083` that browsers cannot resolve
+2. **CORS (Cross-Origin Resource Sharing)**: Even if you point to `http://localhost:8083`, the browser blocks requests from Swagger UI at `http://localhost:9000` to a different port (`8083` or `8082`)
 
 **Root Cause:**
 
-When SpringDoc generates OpenAPI specifications, it automatically detects the server URL from the Spring Boot application context. In Docker, services use internal hostnames (`inventory-service`, `order-service`) for inter-service communication, but browsers need `localhost` URLs.
+When SpringDoc generates OpenAPI specifications, it automatically detects the server URL from the Spring Boot application context. In Docker, services use internal hostnames for inter-service communication. Additionally, browsers enforce CORS policies that prevent cross-origin requests between different ports.
 
 **Example of the Problem:**
 
@@ -512,14 +515,28 @@ When SpringDoc generates OpenAPI specifications, it automatically detects the se
   },
   "servers": [
     {
-      "url": "http://inventory-service:8083",  ❌ Browser cannot access this
+      "url": "http://inventory-service:8083",  ❌ Browser cannot resolve Docker hostname
       "description": "Generated server url"
     }
   ]
 }
 ```
 
-**Solution:** Configure explicit server URLs in OpenAPIConfig to use `localhost` for browser access.
+**Even if you change to:**
+
+```json
+"servers": [
+  {
+    "url": "http://localhost:8083",  ❌ CORS error: port 9000 → port 8083
+    "description": "Inventory Service"
+  }
+]
+```
+
+**The Correct Solution:** Configure server URLs to point to the **API Gateway** (`http://localhost:9000`). This way:
+- All requests go through the gateway (proper microservices architecture)
+- No CORS issues (same origin - port 9000)
+- Gateway routes handle forwarding to backend services
 
 ### 6.2 Update Inventory Service OpenAPIConfig
 
@@ -532,7 +549,7 @@ import io.swagger.v3.oas.models.servers.Server;
 import java.util.List;
 ```
 
-Update the `inventoryServiceAPI()` method to include explicit server configuration:
+Update the `inventoryServiceAPI()` method to include explicit server configuration pointing to the API Gateway:
 
 ```java
 @Bean
@@ -548,8 +565,8 @@ public OpenAPI inventoryServiceAPI() {
                     .url("https://mycompany.ca/inventory-service/docs"))
             .servers(List.of(
                     new Server()
-                            .url("http://localhost:8083")
-                            .description("Inventory Service - Localhost")
+                            .url("http://localhost:9000")
+                            .description("API Gateway")
             ));
 }
 ```
@@ -589,12 +606,14 @@ public class OpenAPIConfig {
                         .url("https://mycompany.ca/inventory-service/docs"))
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:8083")
-                                .description("Inventory Service - Localhost")
+                                .url("http://localhost:9000")
+                                .description("API Gateway")
                 ));
     }
 }
 ```
+
+**Note:** Product Service may work without this fix because it uses MongoDB (not affected by database-related issues) and may not have the same auto-detection behavior. However, it's best practice to configure it consistently with other services.
 
 ### 6.3 Update Order Service OpenAPIConfig
 
@@ -607,7 +626,7 @@ import io.swagger.v3.oas.models.servers.Server;
 import java.util.List;
 ```
 
-Update the `orderServiceAPI()` method:
+Update the `orderServiceAPI()` method to point to the API Gateway:
 
 ```java
 @Bean
@@ -623,8 +642,8 @@ public OpenAPI orderServiceAPI() {
                     .url("https://mycompany.ca/order-service/docs"))
             .servers(List.of(
                     new Server()
-                            .url("http://localhost:8082")
-                            .description("Order Service - Localhost")
+                            .url("http://localhost:9000")
+                            .description("API Gateway")
             ));
 }
 ```
@@ -664,8 +683,8 @@ public class OpenAPIConfig {
                         .url("https://mycompany.ca/order-service/docs"))
                 .servers(List.of(
                         new Server()
-                                .url("http://localhost:8082")
-                                .description("Order Service - Localhost")
+                                .url("http://localhost:9000")
+                                .description("API Gateway")
                 ));
     }
 }
@@ -703,8 +722,8 @@ curl http://localhost:9000/aggregate/inventory-service/v3/api-docs | grep -A 3 "
 ```json
 "servers": [
   {
-    "url": "http://localhost:8083",
-    "description": "Inventory Service - Localhost"
+    "url": "http://localhost:9000",
+    "description": "API Gateway"
   }
 ]
 ```
@@ -720,8 +739,8 @@ curl http://localhost:9000/aggregate/order-service/v3/api-docs | grep -A 3 "serv
 ```json
 "servers": [
   {
-    "url": "http://localhost:8082",
-    "description": "Order Service - Localhost"
+    "url": "http://localhost:9000",
+    "description": "API Gateway"
   }
 ]
 ```
@@ -746,32 +765,160 @@ The 401 status is expected because API calls require JWT authentication. The imp
 
 ### 6.7 Why This Works
 
-**Before Fix:**
+**Before Fix (Docker Hostname):**
 
 ```
-Browser → Swagger UI → Try to call http://inventory-service:8083 → Failed to fetch
-                                      ❌ Browser can't resolve Docker hostname
+Browser (port 9000) → Swagger UI tries → http://inventory-service:8083
+                                         ❌ Browser can't resolve Docker hostname
+                                         "Failed to fetch"
 ```
 
-**After Fix:**
+**Incorrect Fix (Direct Service):**
 
 ```
-Browser → Swagger UI → Try to call http://localhost:8083 → 401 Unauthorized
-                                      ✅ Request reaches service (auth required)
+Browser (port 9000) → Swagger UI tries → http://localhost:8083
+                                         ❌ CORS error: Cross-origin request blocked
+                                         "Failed to fetch"
+```
+
+**Correct Fix (API Gateway):**
+
+```
+Browser (port 9000) → Swagger UI calls → http://localhost:9000/api/inventory
+                                         ✅ Same origin (no CORS)
+                                         ↓
+                      API Gateway routes to → http://inventory-service:8083
+                                         ✅ Works inside Docker network
+                                         ↓
+                      Response → 401 Unauthorized (auth required) or 200 OK
 ```
 
 **Key Points:**
 
-- **Docker Internal Network**: Services communicate using Docker hostnames (`inventory-service`, `order-service`)
-- **Browser Access**: Browsers need `localhost` URLs to reach services through port mappings
-- **Explicit Configuration**: The `.servers()` configuration overrides auto-detection
-- **API Gateway**: Still routes requests correctly because it's inside the Docker network
+- **Proper Architecture**: All client requests go through the API Gateway (single entry point)
+- **No CORS Issues**: Browser stays on same origin (`localhost:9000`)
+- **Docker Network**: Gateway routes to services using Docker hostnames internally
+- **Security**: Gateway enforces authentication, services don't need CORS configuration
+- **Maintainability**: If service ports change, only gateway configuration needs updating
 
 ---
 
-## Step 7: Deploy with Docker
+## Step 7: Fix PostgreSQL Init Scripts for Docker
 
-### 7.1 Stop Local Services
+### 7.1 Problem: Database Already Exists Error
+
+**Issue:** When deploying with Docker, PostgreSQL containers may fail to start with exit code 3. The logs show:
+
+```
+ERROR: database "inventory_service" already exists
+ERROR: database "order_service" already exists
+```
+
+**Root Cause:**
+
+Docker Compose is configured with `POSTGRES_DB` environment variables that automatically create databases:
+
+```yaml
+postgres-inventory:
+  environment:
+    POSTGRES_DB: inventory_service  # ← Creates database automatically
+```
+
+However, the init.sql scripts **also** try to create the same databases:
+
+```sql
+CREATE DATABASE inventory_service;  -- ← ERROR: Already exists!
+```
+
+This causes the PostgreSQL initialization to fail, and the containers exit.
+
+### 7.2 Update Inventory Service Init Script
+
+**Location:** `docker/integrated/postgres/inventory-service/init/init.sql`
+
+Comment out the `CREATE DATABASE` line (line 2):
+
+**Before:**
+```sql
+-- Create the inventory-service database and user
+CREATE DATABASE inventory_service;
+--CREATE USER admin WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE inventory_service TO admin;
+```
+
+**After:**
+```sql
+-- Create the inventory-service database and user
+-- CREATE DATABASE inventory_service;  -- Already created by docker-compose POSTGRES_DB env var
+--CREATE USER admin WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE inventory_service TO admin;
+```
+
+### 7.3 Update Order Service Init Script
+
+**Location:** `docker/integrated/postgres/order-service/init/init.sql`
+
+Comment out the `CREATE DATABASE` line (line 2):
+
+**Before:**
+```sql
+-- Create the order-service database and user
+CREATE DATABASE order_service;
+--CREATE USER admin WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE order_service TO admin;
+```
+
+**After:**
+```sql
+-- Create the order-service database and user
+-- CREATE DATABASE order_service;  -- Already created by docker-compose POSTGRES_DB env var
+--CREATE USER admin WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE order_service TO admin;
+```
+
+### 7.4 Why This Fix Is Needed
+
+**Docker PostgreSQL Initialization Flow:**
+
+1. **Container starts** → PostgreSQL initializes with `POSTGRES_DB` environment variable
+2. **Database created** → `inventory_service` or `order_service` database is created automatically
+3. **Init scripts run** → `/docker-entrypoint-initdb.d/init.sql` executes
+4. **CREATE DATABASE fails** → ❌ Database already exists from step 2
+5. **Container exits** → Exit code 3 (initialization failed)
+
+**After Fix:**
+
+1. **Container starts** → PostgreSQL initializes with `POSTGRES_DB` environment variable
+2. **Database created** → `inventory_service` or `order_service` database is created automatically
+3. **Init scripts run** → `/docker-entrypoint-initdb.d/init.sql` executes
+4. **GRANT PRIVILEGES succeeds** → ✅ Only runs privilege grants (no duplicate database creation)
+5. **Container runs** → PostgreSQL ready to accept connections
+
+### 7.5 Clean Up Old Data (If Needed)
+
+If you've already run `docker-compose up` and have corrupted data, clean it up:
+
+```bash
+cd microservices-parent
+
+# Stop all containers
+docker-compose down
+
+# Remove corrupted PostgreSQL data directories
+rm -rf docker/integrated/postgres/data/postgres-inventory
+rm -rf docker/integrated/postgres/data/postgres-order
+
+# Restart with clean data
+docker-compose up -d
+```
+
+**Note:** This deletes all data in these databases. Only do this in development!
+
+---
+
+## Step 8: Deploy with Docker
+
+### 8.1 Stop Local Services
 
 Stop all locally running services (Ctrl+C in each terminal).
 
@@ -788,9 +935,9 @@ cd ../keycloak
 docker-compose down
 ```
 
-### 7.2 Rebuild Docker Containers
+### 8.2 Rebuild Docker Containers
 
-Rebuild all services with updated API Gateway:
+Rebuild all services with updated API Gateway, inventory-service, and order-service:
 
 ```bash
 cd microservices-parent
@@ -799,7 +946,7 @@ docker-compose -p microservices-parent up -d --build
 
 Wait ~90-120 seconds for all containers to start and stabilize.
 
-### 7.3 Verify Containers
+### 8.3 Verify Containers
 
 ```bash
 docker ps
@@ -810,17 +957,27 @@ Expected containers (14 total):
 - postgres-keycloak
 - api-gateway (rebuilt with aggregation)
 - product-service
-- order-service
-- inventory-service
-- postgres-order
-- postgres-inventory
+- order-service (rebuilt with OpenAPIConfig fix)
+- inventory-service (rebuilt with OpenAPIConfig fix)
+- postgres-order (now starts successfully with init.sql fix)
+- postgres-inventory (now starts successfully with init.sql fix)
 - mongodb
 - mongo-express
 - redis
 - redis-insight
 - pgadmin
 
-### 7.4 Check API Gateway Logs
+**Verify PostgreSQL containers are running (not exited):**
+
+```bash
+docker ps | grep postgres
+```
+
+All three postgres containers should show "Up" status (not "Exited").
+
+### 8.4 Check Service Logs
+
+**Check API Gateway Logs:**
 
 ```bash
 docker logs api-gateway
@@ -835,7 +992,24 @@ INFO  Routes : Initializing inventory service route with URL: http://inventory-s
 INFO  ApiGatewayApplication : Started ApiGatewayApplication in 5.234 seconds
 ```
 
-### 7.5 Test Docker Deployment
+**Check PostgreSQL Logs (Verify No Errors):**
+
+```bash
+docker logs postgres-inventory --tail 20
+docker logs postgres-order --tail 20
+```
+
+Should NOT see:
+```
+❌ ERROR: database "inventory_service" already exists
+```
+
+Should see:
+```
+✅ database system is ready to accept connections
+```
+
+### 8.5 Test Docker Deployment
 
 Open browser:
 
@@ -848,12 +1022,13 @@ Verify:
 - Dropdown shows all three services
 - Switching services loads correct endpoints
 - All service documentation is accessible
+- Clicking "Execute" on any endpoint shows 401 Unauthorized (not "Failed to fetch")
 
 ---
 
-## Step 8: Verify Individual Service Documentation
+## Step 9: Verify Individual Service Documentation
 
-### 8.1 Test OpenAPI JSON Endpoints
+### 9.1 Test OpenAPI JSON Endpoints
 
 Each service's OpenAPI specification should be accessible through the gateway:
 
@@ -997,33 +1172,68 @@ Both access methods work:
 3. Ensure whitelist is applied before `.anyRequest().authenticated()`
 4. Restart api-gateway
 
-### Service Documentation Not Loading
+### Service Documentation Not Loading or "Failed to fetch" Error
 
 **Problem:** Selecting service from dropdown shows error "Failed to fetch"
 
-**Solution:**
+**Most Common Cause: Server URL Configuration**
 
-1. **Check service is running:**
-   ```bash
-   docker ps | grep product-service
+This usually means the OpenAPIConfig has the wrong server URL. Check:
+
+1. **Verify OpenAPIConfig points to API Gateway:**
+   ```java
+   .servers(List.of(
+       new Server()
+           .url("http://localhost:9000")  // ✅ Correct: API Gateway
+           .description("API Gateway")
+   ))
    ```
 
-2. **Verify service has SpringDoc dependency:**
+2. **Common Mistakes:**
+   ```java
+   // ❌ Wrong: Docker hostname (browser can't resolve)
+   .url("http://inventory-service:8083")
+
+   // ❌ Wrong: Direct service port (CORS error)
+   .url("http://localhost:8083")
+
+   // ✅ Correct: API Gateway port
+   .url("http://localhost:9000")
+   ```
+
+3. **Test with curl to confirm:**
+   ```bash
+   # Check the server URL in the OpenAPI spec
+   curl http://localhost:9000/aggregate/inventory-service/v3/api-docs | grep -A 3 "servers"
+   ```
+
+**Other Checks:**
+
+4. **Check service is running:**
+   ```bash
+   docker ps | grep inventory-service
+   ```
+
+5. **Verify service has SpringDoc dependency:**
    ```kotlin
    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
    ```
 
-3. **Check service OpenAPI endpoint works directly:**
+6. **Check service OpenAPI endpoint works directly:**
    ```
-   http://localhost:8084/api-docs
+   http://localhost:8083/api-docs
    ```
 
-4. **Verify route filter configuration:**
+7. **Verify route filter configuration in Gateway:**
    ```java
    .filter(setPath("/api-docs"))  // Transforms /aggregate/* to /api-docs
    ```
 
-5. **Check CORS configuration** (if accessing from different domain)
+8. **Rebuild services after OpenAPIConfig changes:**
+   ```bash
+   docker-compose down
+   docker-compose up -d --build inventory-service order-service
+   ```
 
 ### Services Start But Documentation Empty
 
@@ -1052,6 +1262,45 @@ Both access methods work:
    ```bash
    docker logs product-service | grep springdoc
    ```
+
+### CORS Errors When Testing API Calls
+
+**Problem:** Swagger UI loads documentation correctly, but when you click "Execute" on an endpoint, you get "Failed to fetch" or CORS errors in browser console.
+
+**Root Cause:** The OpenAPIConfig is pointing to a direct service URL (like `http://localhost:8083`) instead of the API Gateway. This creates a cross-origin request that browsers block.
+
+**Solution:**
+
+Update the service's OpenAPIConfig to use the API Gateway URL:
+
+```java
+// In inventory-service/src/main/java/.../config/OpenAPIConfig.java
+.servers(List.of(
+    new Server()
+        .url("http://localhost:9000")  // API Gateway, not service port
+        .description("API Gateway")
+))
+```
+
+**Why This Happens:**
+
+```
+Swagger UI at: http://localhost:9000
+↓ tries to call ↓
+Service at: http://localhost:8083
+❌ CORS Error: Different ports = different origins
+```
+
+**Correct Flow:**
+
+```
+Swagger UI at: http://localhost:9000
+↓ calls ↓
+API Gateway at: http://localhost:9000/api/inventory
+✅ Same origin = No CORS error
+↓ gateway routes to ↓
+Service at: http://inventory-service:8083 (inside Docker network)
+```
 
 ### Port Conflicts
 
@@ -1149,6 +1398,8 @@ You now have:
 - ✅ Security configuration allowing public documentation
 - ✅ Both direct and aggregated documentation access
 - ✅ Professional API documentation presentation
+- ✅ Correct server URL configuration (API Gateway, not direct services)
+- ✅ CORS-free API testing through Swagger UI
 
 **Key Benefits:**
 - **Single Entry Point**: One URL for all documentation
@@ -1157,6 +1408,8 @@ You now have:
 - **Professional Presentation**: Clean, organized API catalog
 - **Reduced Complexity**: No need to remember multiple URLs
 - **Better Onboarding**: New developers find APIs faster
+- **No CORS Issues**: All requests go through API Gateway
+- **Proper Architecture**: Services accessed through gateway (not directly)
 
 **Key Achievements:**
 - Understand the value of documentation aggregation
@@ -1165,6 +1418,9 @@ You now have:
 - Whitelist documentation endpoints in security configuration
 - Create unified API documentation interface
 - Test aggregated documentation locally and in Docker
+- Resolve CORS issues by routing through API Gateway
+- Configure proper server URLs in OpenAPI specifications
+- Understand microservices architecture best practices (gateway pattern)
 
 **Next Steps:**
 - Add security schemes to Swagger UI (OAuth2 authentication)
