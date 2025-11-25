@@ -310,7 +310,15 @@ public class Order {
 - **Easier Testing**: Fewer entities to manage in tests
 - **Focus on Learning**: Emphasizes REST Client migration, not complex data modeling
 
-**Note:** If you had an `OrderLineItem.java` entity, you can delete it as it's no longer needed for this simplified approach.
+### 6.2 Delete Unused Files
+
+The simplified Order model no longer uses nested OrderLineItem structures. Delete the unused files:
+
+```bash
+cd microservices-parent
+rm order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderLineItemDto.java
+rm order-service/src/main/java/ca/gbc/comp3095/orderservice/model/OrderLineItem.java
+```
 
 ---
 
