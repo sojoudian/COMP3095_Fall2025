@@ -492,9 +492,286 @@ Authorization: Bearer <token>
 
 ---
 
-## Step 6: Deploy with Docker
+## Step 6: Fix Server URLs in OpenAPI Specifications
 
-### 6.1 Stop Local Services
+### 6.1 Problem: Docker Internal Hostnames
+
+**Issue:** When you test the Swagger UI, you may see "Failed to fetch" errors when trying to execute API calls from the documentation. This happens because the OpenAPI specifications from Order Service and Inventory Service contain Docker internal hostnames like `http://inventory-service:8083` that your browser cannot access.
+
+**Root Cause:**
+
+When SpringDoc generates OpenAPI specifications, it automatically detects the server URL from the Spring Boot application context. In Docker, services use internal hostnames (`inventory-service`, `order-service`) for inter-service communication, but browsers need `localhost` URLs.
+
+**Example of the Problem:**
+
+```json
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Inventory Service API"
+  },
+  "servers": [
+    {
+      "url": "http://inventory-service:8083",  ❌ Browser cannot access this
+      "description": "Generated server url"
+    }
+  ]
+}
+```
+
+**Solution:** Configure explicit server URLs in OpenAPIConfig to use `localhost` for browser access.
+
+### 6.2 Update Inventory Service OpenAPIConfig
+
+**Location:** `inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice/config/OpenAPIConfig.java`
+
+Add the required imports at the top of the file (after existing imports):
+
+```java
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
+```
+
+Update the `inventoryServiceAPI()` method to include explicit server configuration:
+
+```java
+@Bean
+public OpenAPI inventoryServiceAPI() {
+    return new OpenAPI()
+            .info(new Info()
+                    .title("Inventory Service API")
+                    .description("This is the REST API for Inventory Service")
+                    .version(version)
+                    .license(new License().name("Apache 2.0")))
+            .externalDocs(new ExternalDocumentation()
+                    .description("Inventory Service Confluence Documentation")
+                    .url("https://mycompany.ca/inventory-service/docs"))
+            .servers(List.of(
+                    new Server()
+                            .url("http://localhost:8083")
+                            .description("Inventory Service - Localhost")
+            ));
+}
+```
+
+**Complete File After Changes:**
+
+```java
+package ca.gbc.comp3095.inventoryservice.config;
+
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+
+@Configuration
+public class OpenAPIConfig {
+
+    @Value("${inventory-service.version}")
+    private String version;
+
+    @Bean
+    public OpenAPI inventoryServiceAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Inventory Service API")
+                        .description("This is the REST API for Inventory Service")
+                        .version(version)
+                        .license(new License().name("Apache 2.0")))
+                .externalDocs(new ExternalDocumentation()
+                        .description("Inventory Service Confluence Documentation")
+                        .url("https://mycompany.ca/inventory-service/docs"))
+                .servers(List.of(
+                        new Server()
+                                .url("http://localhost:8083")
+                                .description("Inventory Service - Localhost")
+                ));
+    }
+}
+```
+
+### 6.3 Update Order Service OpenAPIConfig
+
+**Location:** `order-service/src/main/java/ca/gbc/comp3095/orderservice/config/OpenAPIConfig.java`
+
+Add the same imports at the top:
+
+```java
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
+```
+
+Update the `orderServiceAPI()` method:
+
+```java
+@Bean
+public OpenAPI orderServiceAPI() {
+    return new OpenAPI()
+            .info(new Info()
+                    .title("Order Service API")
+                    .description("This is the REST API for Order Service")
+                    .version(version)
+                    .license(new License().name("Apache 2.0")))
+            .externalDocs(new ExternalDocumentation()
+                    .description("Order Service Confluence Documentation")
+                    .url("https://mycompany.ca/order-service/docs"))
+            .servers(List.of(
+                    new Server()
+                            .url("http://localhost:8082")
+                            .description("Order Service - Localhost")
+            ));
+}
+```
+
+**Complete File After Changes:**
+
+```java
+package ca.gbc.comp3095.orderservice.config;
+
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import io.swagger.v3.oas.models.servers.Server;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+
+@Configuration
+public class OpenAPIConfig {
+
+    @Value("${order-service.version}")
+    private String version;
+
+    @Bean
+    public OpenAPI orderServiceAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Order Service API")
+                        .description("This is the REST API for Order Service")
+                        .version(version)
+                        .license(new License().name("Apache 2.0")))
+                .externalDocs(new ExternalDocumentation()
+                        .description("Order Service Confluence Documentation")
+                        .url("https://mycompany.ca/order-service/docs"))
+                .servers(List.of(
+                        new Server()
+                                .url("http://localhost:8082")
+                                .description("Order Service - Localhost")
+                ));
+    }
+}
+```
+
+### 6.4 Rebuild and Restart Services
+
+**For Docker Deployment:**
+
+```bash
+cd microservices-parent
+docker-compose down
+docker-compose up -d --build inventory-service order-service
+```
+
+Wait ~30 seconds for services to restart.
+
+**For Local (IntelliJ) Deployment:**
+
+1. Stop inventory-service and order-service
+2. Restart both services from IntelliJ
+
+### 6.5 Verify Server URLs
+
+Test the updated OpenAPI specifications:
+
+**Inventory Service API Docs:**
+
+```bash
+curl http://localhost:9000/aggregate/inventory-service/v3/api-docs | grep -A 3 "servers"
+```
+
+**Expected Output:**
+
+```json
+"servers": [
+  {
+    "url": "http://localhost:8083",
+    "description": "Inventory Service - Localhost"
+  }
+]
+```
+
+**Order Service API Docs:**
+
+```bash
+curl http://localhost:9000/aggregate/order-service/v3/api-docs | grep -A 3 "servers"
+```
+
+**Expected Output:**
+
+```json
+"servers": [
+  {
+    "url": "http://localhost:8082",
+    "description": "Order Service - Localhost"
+  }
+]
+```
+
+### 6.6 Test Swagger UI Execution
+
+1. Open browser: `http://localhost:9000/swagger-ui/index.html`
+2. Select **Inventory Service** from dropdown
+3. Expand `GET /api/inventory`
+4. Click **Try it out**
+5. Enter test parameters:
+   - `skuCode`: SKU001
+   - `quantity`: 2
+6. Click **Execute**
+
+**Expected Result:**
+
+- **Status Code:** 401 Unauthorized (authentication required for API calls)
+- **No "Failed to fetch" error** (server URL is now correct)
+
+The 401 status is expected because API calls require JWT authentication. The important fix is that the request is now reaching the correct server instead of failing with a network error.
+
+### 6.7 Why This Works
+
+**Before Fix:**
+
+```
+Browser → Swagger UI → Try to call http://inventory-service:8083 → Failed to fetch
+                                      ❌ Browser can't resolve Docker hostname
+```
+
+**After Fix:**
+
+```
+Browser → Swagger UI → Try to call http://localhost:8083 → 401 Unauthorized
+                                      ✅ Request reaches service (auth required)
+```
+
+**Key Points:**
+
+- **Docker Internal Network**: Services communicate using Docker hostnames (`inventory-service`, `order-service`)
+- **Browser Access**: Browsers need `localhost` URLs to reach services through port mappings
+- **Explicit Configuration**: The `.servers()` configuration overrides auto-detection
+- **API Gateway**: Still routes requests correctly because it's inside the Docker network
+
+---
+
+## Step 7: Deploy with Docker
+
+### 7.1 Stop Local Services
 
 Stop all locally running services (Ctrl+C in each terminal).
 
@@ -511,7 +788,7 @@ cd ../keycloak
 docker-compose down
 ```
 
-### 6.2 Rebuild Docker Containers
+### 7.2 Rebuild Docker Containers
 
 Rebuild all services with updated API Gateway:
 
@@ -522,7 +799,7 @@ docker-compose -p microservices-parent up -d --build
 
 Wait ~90-120 seconds for all containers to start and stabilize.
 
-### 6.3 Verify Containers
+### 7.3 Verify Containers
 
 ```bash
 docker ps
@@ -543,7 +820,7 @@ Expected containers (14 total):
 - redis-insight
 - pgadmin
 
-### 6.4 Check API Gateway Logs
+### 7.4 Check API Gateway Logs
 
 ```bash
 docker logs api-gateway
@@ -558,7 +835,7 @@ INFO  Routes : Initializing inventory service route with URL: http://inventory-s
 INFO  ApiGatewayApplication : Started ApiGatewayApplication in 5.234 seconds
 ```
 
-### 6.5 Test Docker Deployment
+### 7.5 Test Docker Deployment
 
 Open browser:
 
@@ -574,9 +851,9 @@ Verify:
 
 ---
 
-## Step 7: Verify Individual Service Documentation
+## Step 8: Verify Individual Service Documentation
 
-### 7.1 Test OpenAPI JSON Endpoints
+### 8.1 Test OpenAPI JSON Endpoints
 
 Each service's OpenAPI specification should be accessible through the gateway:
 
@@ -628,7 +905,7 @@ GET http://localhost:9000/aggregate/inventory-service/v3/api-docs
 
 All should return valid OpenAPI JSON specifications.
 
-### 7.2 Direct Service Access Still Works
+### 8.2 Direct Service Access Still Works
 
 Individual services still expose their own documentation:
 
