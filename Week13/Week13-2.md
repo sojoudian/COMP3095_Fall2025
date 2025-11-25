@@ -305,38 +305,57 @@ The `setPath()` filter transforms the aggregation URL into the actual service en
 
 **Location:** `api-gateway/src/main/java/ca/gbc/apigateway/config/SecurityConfig.java`
 
-Add a whitelist array as a class field:
+Replace the entire SecurityConfig.java file with this complete code:
 
 ```java
-// Week 13 - Whitelist documentation endpoints (no authentication required)
-private final String[] noauthResourceUrls = {
-        "/swagger-ui",
-        "/swagger-ui/**",
-        "/v3/api-docs/**",
-        "/swagger-resources/**",
-        "/api-docs/**",
-        "/aggregate/**"
-};
-```
+package ca.gbc.comp3095.apigateway.config;
 
-Update the `securityFilterChain` method to permit unauthenticated access to documentation:
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.web.SecurityFilterChain;
 
-```java
-@Bean
-public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+@Slf4j
+@Configuration
+@EnableWebSecurity
+public class SecurityConfig {
 
-    log.info("Initializing Security Filter Chain...");
+    // Week 13 - Whitelist documentation endpoints (no authentication required)
+    private final String[] noauthResourceUrls = {
+            "/swagger-ui",
+            "/swagger-ui/**",
+            "/v3/api-docs/**",
+            "/swagger-resources/**",
+            "/api-docs/**",
+            "/aggregate/**"
+    };
 
-    return httpSecurity
-            .csrf(AbstractHttpConfigurer::disable)
-            // Week 13 - UPDATE: Permit unauthenticated access to documentation
-            .authorizeHttpRequests(authorize -> authorize
-                    .requestMatchers(noauthResourceUrls)  // Add this line
-                    .permitAll()                           // Add this line
-                    .anyRequest().authenticated())
-            .oauth2ResourceServer(oauth2 -> oauth2
-                    .jwt(Customizer.withDefaults()))
-            .build();
+    /**
+     * Configures the security filter chain for HTTP requests.
+     * Documentation endpoints are publicly accessible.
+     * All other requests require authentication and JWT token validation via Keycloak.
+     */
+    @Bean
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSecurity) throws Exception {
+
+        log.info("Initializing Security Filter Chain...");
+
+        return httpSecurity
+                .csrf(AbstractHttpConfigurer::disable)
+                // Week 13 - UPDATE: Permit unauthenticated access to documentation
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(noauthResourceUrls)
+                        .permitAll()
+                        .anyRequest().authenticated())
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(Customizer.withDefaults()))
+                .build();
+    }
+
 }
 ```
 
