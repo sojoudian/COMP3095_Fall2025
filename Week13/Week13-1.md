@@ -518,13 +518,24 @@ COPY gradle gradle
 COPY build.gradle.kts .
 ```
 
-### 11.5.2 Clean Docker Build Cache
+### 11.5.2 Clean Docker Build Cache and System
 
-Docker build cache can become corrupted. Clean it before rebuilding:
+Docker build cache can become corrupted. Perform a complete cleanup:
 
 ```bash
+cd microservices-parent
+docker-compose down
+docker system prune -af --volumes
 docker builder prune -af
 ```
+
+After running these commands, restart Docker Desktop:
+
+1. Click Docker icon in system tray
+2. Select **Quit Docker Desktop**
+3. Wait 10 seconds
+4. Start Docker Desktop again
+5. Wait for Docker to fully start
 
 ---
 
