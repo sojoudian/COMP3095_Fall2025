@@ -18,17 +18,6 @@
 
 ---
 
-### 2.6 Order Service Test - application.properties
-
-**Location:** `order-service/src/test/resources/application.properties`
-
-| Property | Week6.2 | P11 | Issue |
-|----------|---------|-----|-------|
-| **Content** | Only `inventory.service.url` | Has Testcontainers datasource config | P11 has extra |
-
-**Action needed:** Remove Testcontainers configuration (Week 13 additions not in week6.2)
-
----
 
 ## 3. CODE DIFFERENCES
 
