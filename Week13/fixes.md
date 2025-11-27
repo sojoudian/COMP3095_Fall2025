@@ -634,7 +634,26 @@ resilience4j.retry.instances.inventory.max-attempts=3
 resilience4j.retry.instances.inventory.wait-duration=2s
 ```
 
-### File 11: order-service/src/main/resources/db/migration/V1__init.sql
+### File 11: order-service/src/main/java/ca/gbc/comp3095/orderservice/stubs/InventoryClientStub.java
+
+```java
+package ca.gbc.comp3095.orderservice.stubs;
+
+import static com.github.tomakehurst.wiremock.client.WireMock.*;
+
+public class InventoryClientStub {
+
+    public static void stubInventoryCall(String skuCode, Integer quantity){
+        stubFor(get(urlEqualTo("/api/inventory?skuCode=" + skuCode + "&quantity=" + quantity))
+                .willReturn(aResponse()
+                        .withStatus(200)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("true")));
+    }
+}
+```
+
+### File 12: order-service/src/main/resources/db/migration/V1__init.sql
 
 ```sql
 CREATE TABLE t_orders (
