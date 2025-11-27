@@ -9,6 +9,30 @@ Before applying the changes below, DELETE these files from the 10am project:
 
 ---
 
+## IMPORTANT: Fix Docker PostgreSQL init.sql Files
+
+The `POSTGRES_DB` environment variable in docker-compose.yml already creates the database automatically. The init.sql scripts must NOT include `CREATE DATABASE` statements or PostgreSQL will fail with "database already exists" error and exit.
+
+### Fix 1: docker/integrated/postgres/order-service/init/init.sql
+
+Replace the contents with:
+
+```sql
+-- Grant privileges to admin user (database already created via POSTGRES_DB env var)
+GRANT ALL PRIVILEGES ON DATABASE order_service TO admin;
+```
+
+### Fix 2: docker/integrated/postgres/inventory-service/init/init.sql
+
+Replace the contents with:
+
+```sql
+-- Grant privileges to admin user (database already created via POSTGRES_DB env var)
+GRANT ALL PRIVILEGES ON DATABASE inventory_service TO admin;
+```
+
+---
+
 ## API Gateway Files
 
 ### File 1: api-gateway/build.gradle.kts
