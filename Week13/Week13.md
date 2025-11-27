@@ -883,11 +883,78 @@ spring.datasource.driver-class-name=org.testcontainers.jdbc.ContainerDatabaseDri
 spring.datasource.url=jdbc:tc:postgresql:15-alpine:///order_service
 ```
 
+### File 19: order-service/src/test/java/ca/gbc/comp3095/orderservice/OrderServiceApplicationTests.java
+
+```java
+package ca.gbc.comp3095.orderservice;
+
+import ca.gbc.comp3095.orderservice.stubs.InventoryClientStub;
+import io.restassured.RestAssured;
+import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
+import org.testcontainers.containers.PostgreSQLContainer;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWireMock(port = 0)
+class OrderServiceApplicationTests {
+
+    @ServiceConnection
+    static PostgreSQLContainer<?> postgreSQLContainer = new PostgreSQLContainer<>("postgres:latest");
+
+    @LocalServerPort
+    private Integer port;
+
+    static {
+        postgreSQLContainer.start();
+    }
+
+    @BeforeEach
+    void setup() {
+        RestAssured.baseURI = "http://localhost";
+        RestAssured.port = port;
+    }
+
+    @Test
+    void placeOrderTest() {
+        String orderJson = """
+                {
+                  "skuCode": "SKU001",
+                  "price": 100.00,
+                  "quantity": 2
+                }
+                """;
+
+        InventoryClientStub.stubInventoryCall("SKU001", 2);
+
+        var responseBodyString = RestAssured
+                .given()
+                .contentType("application/json")
+                .body(orderJson)
+                .when()
+                .post("/api/order")
+                .then()
+                .log().all()
+                .statusCode(201)
+                .extract()
+                .body().asString();
+
+        assertThat(responseBodyString, Matchers.is("Order Placed Successfully"));
+    }
+}
+```
+
 ---
 
 ## Inventory Service Files
 
-### File 19: inventory-service/build.gradle.kts
+### File 20: inventory-service/build.gradle.kts
 
 ```kotlin
 plugins {
@@ -945,7 +1012,7 @@ tasks.withType<Test> {
 }
 ```
 
-### File 20: inventory-service/src/main/resources/application.properties
+### File 21: inventory-service/src/main/resources/application.properties
 
 ```properties
 spring.application.name=inventory-service
@@ -971,7 +1038,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 21: inventory-service/src/main/resources/application-docker.properties
+### File 22: inventory-service/src/main/resources/application-docker.properties
 
 ```properties
 spring.application.name=inventory-service
@@ -1002,7 +1069,7 @@ spring.flyway.locations=classpath:db/migration
 spring.flyway.enabled=true
 ```
 
-### File 22: inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice/config/OpenAPIConfig.java
+### File 23: inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice/config/OpenAPIConfig.java
 
 ```java
 package ca.gbc.comp3095.inventoryservice.config;
@@ -1047,7 +1114,7 @@ public class OpenAPIConfig {
 
 ## Product Service Files
 
-### File 23: product-service/src/main/resources/application.properties
+### File 24: product-service/src/main/resources/application.properties
 
 ```properties
 # ============================================
@@ -1096,7 +1163,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 24: product-service/src/main/resources/application-docker.properties
+### File 25: product-service/src/main/resources/application-docker.properties
 
 ```properties
 # ============================================
@@ -1141,7 +1208,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 25: product-service/src/main/java/ca/gbc/comp3095/productservice/config/OpenAPIConfig.java
+### File 26: product-service/src/main/java/ca/gbc/comp3095/productservice/config/OpenAPIConfig.java
 
 ```java
 package ca.gbc.comp3095.productservice.config;
