@@ -1,5 +1,14 @@
 # Week 13 Complete Configuration
 
+## IMPORTANT: Files to DELETE from order-service
+
+Before applying the changes below, DELETE these files from the 10am project:
+
+1. `order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderLineItemDto.java`
+2. `order-service/src/main/java/ca/gbc/comp3095/orderservice/model/OrderLineItem.java`
+
+---
+
 ## API Gateway Files
 
 ### File 1: api-gateway/build.gradle.kts
@@ -329,6 +338,8 @@ springdoc.swagger-ui.urls[2].name=Inventory Service
 springdoc.swagger-ui.urls[2].url=/aggregate/inventory-service/v3/api-docs
 ```
 
+---
+
 ## Order Service Files
 
 ### File 6: order-service/build.gradle.kts
@@ -400,10 +411,141 @@ tasks.withType<Test> {
 }
 ```
 
-### File 7: order-service/src/main/java/ca/gbc/orderservice/client/InventoryClient.java
+### File 7: order-service/src/main/java/ca/gbc/comp3095/orderservice/OrderServiceApplication.java
 
 ```java
-package ca.gbc.orderservice.client;
+package ca.gbc.comp3095.orderservice;
+
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+
+@SpringBootApplication
+public class OrderServiceApplication {
+
+    public static void main(String[] args) {
+        SpringApplication.run(OrderServiceApplication.class, args);
+    }
+
+}
+```
+
+### File 8: order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderRequest.java
+
+```java
+package ca.gbc.comp3095.orderservice.dto;
+
+import java.math.BigDecimal;
+
+public record OrderRequest(
+        Long id,
+        String orderNumber,
+        String skuCode,
+        BigDecimal price,
+        Integer quantity) {}
+```
+
+### File 9: order-service/src/main/java/ca/gbc/comp3095/orderservice/model/Order.java
+
+```java
+package ca.gbc.comp3095.orderservice.model;
+
+import jakarta.persistence.*;
+import lombok.*;
+
+import java.math.BigDecimal;
+
+@Entity
+@Table(name="t_orders")
+@Getter
+@Setter
+@AllArgsConstructor
+@NoArgsConstructor
+@Builder
+public class Order {
+
+    /**
+     * The @GeneratedValue annotation specifies how the primary key (ID) will be generated automatically by the database.
+     *
+     * strategy = GenerationType.IDENTITY:
+     * - The database will handle auto-incrementing the primary key.
+     * - Hibernate relies on the underlying database's auto-increment feature to generate unique IDs.
+     * - Each time a new record is inserted, the database assigns the next available primary key value.
+     *
+     * Other strategies:
+     *
+     * 1. GenerationType.AUTO:
+     * - Hibernate chooses the strategy based on the underlying database's capabilities (could be SEQUENCE, TABLE, or IDENTITY).
+     * - This is the default strategy if none is specified.
+     *
+     * 2. GenerationType.SEQUENCE:
+     * - Uses a database sequence object to generate values for the primary key.
+     * - Commonly used in databases that support sequences (e.g., PostgreSQL, Oracle).
+     * - Allows preallocation of ID values in batches for performance improvements.
+     *
+     * 3. GenerationType.TABLE:
+     * - Uses a separate table in the database to generate primary key values.
+     * - Can be used across multiple tables, but it is generally slower compared to other strategies.
+     * - It provides a more flexible approach but is less commonly used.
+     */
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String orderNumber;
+    private String skuCode;
+    private BigDecimal price;
+    private Integer quantity;
+
+}
+```
+
+### File 10: order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderServiceImpl.java
+
+```java
+package ca.gbc.comp3095.orderservice.service;
+
+import ca.gbc.comp3095.orderservice.dto.OrderRequest;
+import ca.gbc.comp3095.orderservice.model.Order;
+import ca.gbc.comp3095.orderservice.repository.OrderRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.UUID;
+
+@Slf4j
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class OrderServiceImpl implements OrderService {
+
+    //We use the @RequiredArgsConstructor to resolve the dependency via constructor injection
+    private final OrderRepository orderRepository;
+
+    @Override
+    public void placeOrder(OrderRequest orderRequest) {
+
+        //Create Order object from mapping incoming OrderRequest dto
+        //Builder pattern
+        Order order = Order.builder()
+                .orderNumber(UUID.randomUUID().toString())
+                .price(orderRequest.price())
+                .skuCode(orderRequest.skuCode())
+                .quantity(orderRequest.quantity())
+                .build();
+
+        orderRepository.save(order);
+    }
+
+
+}
+```
+
+### File 11: order-service/src/main/java/ca/gbc/comp3095/orderservice/client/InventoryClient.java
+
+```java
+package ca.gbc.comp3095.orderservice.client;
 
 import io.github.resilience4j.circuitbreaker.CallNotPermittedException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -432,12 +574,12 @@ public interface InventoryClient {
 }
 ```
 
-### File 8: order-service/src/main/java/ca/gbc/orderservice/config/RestClientConfig.java
+### File 12: order-service/src/main/java/ca/gbc/comp3095/orderservice/config/RestClientConfig.java
 
 ```java
-package ca.gbc.orderservice.config;
+package ca.gbc.comp3095.orderservice.config;
 
-import ca.gbc.orderservice.client.InventoryClient;
+import ca.gbc.comp3095.orderservice.client.InventoryClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -501,7 +643,49 @@ public class RestClientConfig {
 }
 ```
 
-### File 9: order-service/src/main/resources/application.properties
+### File 13: order-service/src/main/java/ca/gbc/comp3095/orderservice/config/OpenAPIConfig.java
+
+```java
+package ca.gbc.comp3095.orderservice.config;
+
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+
+@Configuration
+public class OpenAPIConfig {
+
+    @Value("${order-service.version}")
+    private String version;
+
+    @Bean
+    public OpenAPI orderServiceAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Order Service API")
+                        .description("This is the REST API for Order Service")
+                        .version(version)
+                        .license(new License().name("Apache 2.0")))
+                .externalDocs(new ExternalDocumentation()
+                        .description("Order Service Confluence Documentation")
+                        .url("https://mycompany.ca/order-service/docs"))
+                .servers(List.of(
+                        new Server()
+                                .url("http://localhost:9000")
+                                .description("API Gateway")
+                ));
+    }
+}
+```
+
+### File 14: order-service/src/main/resources/application.properties
 
 ```properties
 # ============================================
@@ -565,7 +749,7 @@ resilience4j.retry.instances.inventory.max-attempts=3
 resilience4j.retry.instances.inventory.wait-duration=2s
 ```
 
-### File 10: order-service/src/main/resources/application-docker.properties
+### File 15: order-service/src/main/resources/application-docker.properties
 
 ```properties
 # ============================================
@@ -634,7 +818,7 @@ resilience4j.retry.instances.inventory.max-attempts=3
 resilience4j.retry.instances.inventory.wait-duration=2s
 ```
 
-### File 11: order-service/src/main/java/ca/gbc/comp3095/orderservice/stubs/InventoryClientStub.java
+### File 16: order-service/src/main/java/ca/gbc/comp3095/orderservice/stubs/InventoryClientStub.java
 
 ```java
 package ca.gbc.comp3095.orderservice.stubs;
@@ -653,7 +837,7 @@ public class InventoryClientStub {
 }
 ```
 
-### File 12: order-service/src/main/resources/db/migration/V1__init.sql
+### File 17: order-service/src/main/resources/db/migration/V1__init.sql
 
 ```sql
 CREATE TABLE t_orders (
@@ -666,9 +850,20 @@ CREATE TABLE t_orders (
 );
 ```
 
+### File 18: order-service/src/test/resources/application.properties
+
+```properties
+inventory.service.url=http://localhost:${wiremock.server.port}
+# Week 13
+spring.datasource.driver-class-name=org.testcontainers.jdbc.ContainerDatabaseDriver
+spring.datasource.url=jdbc:tc:postgresql:15-alpine:///order_service
+```
+
+---
+
 ## Inventory Service Files
 
-### File 12: inventory-service/build.gradle.kts
+### File 19: inventory-service/build.gradle.kts
 
 ```kotlin
 plugins {
@@ -726,7 +921,7 @@ tasks.withType<Test> {
 }
 ```
 
-### File 13: inventory-service/src/main/resources/application.properties
+### File 20: inventory-service/src/main/resources/application.properties
 
 ```properties
 spring.application.name=inventory-service
@@ -752,7 +947,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 14: inventory-service/src/main/resources/application-docker.properties
+### File 21: inventory-service/src/main/resources/application-docker.properties
 
 ```properties
 spring.application.name=inventory-service
@@ -783,103 +978,52 @@ spring.flyway.locations=classpath:db/migration
 spring.flyway.enabled=true
 ```
 
-### File 15: inventory-service/src/main/resources/db/migration/V1__init.sql
+### File 22: inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice/config/OpenAPIConfig.java
 
-```sql
-CREATE TABLE t_inventory (
-    id BIGSERIAL PRIMARY KEY,
-    sku_code VARCHAR(255),
-    quantity INTEGER
-);
+```java
+package ca.gbc.comp3095.inventoryservice.config;
+
+import io.swagger.v3.oas.models.ExternalDocumentation;
+import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.info.License;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import io.swagger.v3.oas.models.servers.Server;
+import java.util.List;
+
+@Configuration
+public class OpenAPIConfig {
+
+    @Value("${inventory-service.version}")
+    private String version;
+
+    @Bean
+    public OpenAPI inventoryServiceAPI() {
+        return new OpenAPI()
+                .info(new Info()
+                        .title("Inventory Service API")
+                        .description("This is the REST API for Inventory Service")
+                        .version(version)
+                        .license(new License().name("Apache 2.0")))
+                .externalDocs(new ExternalDocumentation()
+                        .description("Inventory Service Confluence Documentation")
+                        .url("https://mycompany.ca/inventory-service/docs"))
+                .servers(List.of(
+                        new Server()
+                                .url("http://localhost:9000")
+                                .description("API Gateway")
+                ));
+    }
+}
 ```
 
-### File 16: inventory-service/src/main/resources/db/migration/V2__add_inventory.sql
-
-```sql
-INSERT INTO t_inventory (sku_code, quantity)
-VALUES
-    ('SKU001', 100),
-    ('SKU002', 200),
-    ('SKU003', 300),
-    ('SKU004', 400),
-    ('SKU005', 500),
-    ('SKU006', 600);
-```
+---
 
 ## Product Service Files
 
-### File 17: product-service/build.gradle.kts
-
-```kotlin
-plugins {
-    java
-    id("org.springframework.boot") version "3.5.6"
-    id("io.spring.dependency-management") version "1.1.7"
-}
-
-group = "ca.gbc.comp3095"
-version = "0.0.1-SNAPSHOT"
-description = "product-service"
-
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(21)
-    }
-}
-
-configurations {
-    compileOnly {
-        extendsFrom(configurations.annotationProcessor.get())
-    }
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    // TestContainers Bill-of-Materials (BOM)
-    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
-
-    // Spring Boot Starters
-    implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.boot:spring-boot-starter-data-redis")
-
-    // Lombok
-    compileOnly("org.projectlombok:lombok")
-    annotationProcessor("org.projectlombok:lombok")
-
-    // Spring Boot DevTools
-    developmentOnly("org.springframework.boot:spring-boot-devtools")
-
-    // Spring Boot Testing Starters
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-
-    // TestContainers Modules
-    testImplementation("org.testcontainers:mongodb")
-    testImplementation("org.testcontainers:junit-jupiter")
-    //testImplementation("org.testcontainers:redis")
-
-    // REST Assured for testing
-    testImplementation("io.rest-assured:rest-assured")
-
-    // Test Platform Launcher
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-
-    // Week 12 - Swagger/OpenAPI Documentation
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
-    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
-}
-
-tasks.withType<Test> {
-    useJUnitPlatform()
-}
-```
-
-### File 18: product-service/src/main/resources/application.properties
+### File 23: product-service/src/main/resources/application.properties
 
 ```properties
 # ============================================
@@ -928,7 +1072,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 19: product-service/src/main/resources/application-docker.properties
+### File 24: product-service/src/main/resources/application-docker.properties
 
 ```properties
 # ============================================
@@ -973,7 +1117,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 20: product-service/src/main/java/ca/gbc/comp3095/productservice/config/OpenAPIConfig.java
+### File 25: product-service/src/main/java/ca/gbc/comp3095/productservice/config/OpenAPIConfig.java
 
 ```java
 package ca.gbc.comp3095.productservice.config;
@@ -1005,89 +1149,6 @@ public class OpenAPIConfig {
                 .externalDocs(new ExternalDocumentation()
                         .description("Product Service Confluence Documentation")
                         .url("https://mycompany.ca/product-service/docs"))
-                .servers(List.of(
-                        new Server()
-                                .url("http://localhost:9000")
-                                .description("API Gateway")
-                ));
-    }
-}
-```
-
-### File 21: order-service/src/main/java/ca/gbc/comp3095/orderservice/config/OpenAPIConfig.java
-
-```java
-package ca.gbc.comp3095.orderservice.config;
-
-import io.swagger.v3.oas.models.servers.Server;
-import java.util.List;
-import io.swagger.v3.oas.models.ExternalDocumentation;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.License;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-
-
-@Configuration
-public class OpenAPIConfig {
-
-    @Value("${order-service.version}")
-    private String version;
-
-    @Bean
-    public OpenAPI orderServiceAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Order Service API")
-                        .description("This is the REST API for Order Service")
-                        .version(version)
-                        .license(new License().name("Apache 2.0")))
-                .externalDocs(new ExternalDocumentation()
-                        .description("Order Service Confluence Documentation")
-                        .url("https://mycompany.ca/order-service/docs"))
-                .servers(List.of(
-                        new Server()
-                                .url("http://localhost:9000")
-                                .description("API Gateway")
-                ));
-    }
-}
-```
-
-### File 22: inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice/config/OpenAPIConfig.java
-
-```java
-package ca.gbc.comp3095.inventoryservice.config;
-
-import io.swagger.v3.oas.models.ExternalDocumentation;
-import io.swagger.v3.oas.models.OpenAPI;
-import io.swagger.v3.oas.models.info.Info;
-import io.swagger.v3.oas.models.info.License;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
-import io.swagger.v3.oas.models.servers.Server;
-import java.util.List;
-
-@Configuration
-public class OpenAPIConfig {
-
-    @Value("${inventory-service.version}")
-    private String version;
-
-    @Bean
-    public OpenAPI inventoryServiceAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("Inventory Service API")
-                        .description("This is the REST API for Inventory Service")
-                        .version(version)
-                        .license(new License().name("Apache 2.0")))
-                .externalDocs(new ExternalDocumentation()
-                        .description("Inventory Service Confluence Documentation")
-                        .url("https://mycompany.ca/inventory-service/docs"))
                 .servers(List.of(
                         new Server()
                                 .url("http://localhost:9000")
