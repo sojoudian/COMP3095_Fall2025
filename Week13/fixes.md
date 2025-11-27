@@ -2,7 +2,72 @@
 
 ## API Gateway Files
 
-### File 1: api-gateway/src/main/java/ca/gbc/comp3095/apigateway/routes/Routes.java
+### File 1: api-gateway/build.gradle.kts
+
+```kotlin
+plugins {
+    java
+    id("org.springframework.boot") version "3.5.7"
+    id("io.spring.dependency-management") version "1.1.7"
+}
+
+group = "ca.gbc.comp3095"
+version = "0.0.1-SNAPSHOT"
+description = "api-gateway"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+extra["springCloudVersion"] = "2025.0.0"
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.cloud:spring-cloud-starter-gateway-server-webmvc")
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    annotationProcessor("org.projectlombok:lombok")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Week 12 - Security
+    compileOnly("jakarta.servlet:jakarta.servlet-api:6.1.0")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-security")
+
+    // Week 13 - Swagger Documentation Aggregation
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.9")
+    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.9")
+
+    implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:3.3.0")
+
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:${property("springCloudVersion")}")
+    }
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+```
+
+### File 2: api-gateway/src/main/java/ca/gbc/comp3095/apigateway/routes/Routes.java
 
 ```java
 package ca.gbc.comp3095.apigateway.routes;
@@ -122,7 +187,7 @@ public class Routes {
 }
 ```
 
-### File 2: api-gateway/src/main/java/ca/gbc/comp3095/apigateway/config/SecurityConfig.java
+### File 3: api-gateway/src/main/java/ca/gbc/comp3095/apigateway/config/SecurityConfig.java
 
 ```java
 package ca.gbc.comp3095.apigateway.config;
@@ -187,7 +252,7 @@ public class SecurityConfig {
 }
 ```
 
-### File 3: api-gateway/src/main/resources/application.properties
+### File 4: api-gateway/src/main/resources/application.properties
 
 ```properties
 spring.application.name=api-gateway
@@ -235,7 +300,7 @@ resilience4j.retry.configs.default.max-attempts=3
 resilience4j.retry.configs.default.wait-duration=2s
 ```
 
-### File 4: api-gateway/src/main/resources/application-docker.properties
+### File 5: api-gateway/src/main/resources/application-docker.properties
 
 ```properties
 spring.application.name=api-gateway
@@ -266,7 +331,76 @@ springdoc.swagger-ui.urls[2].url=/aggregate/inventory-service/v3/api-docs
 
 ## Order Service Files
 
-### File 5: order-service/src/main/java/ca/gbc/orderservice/client/InventoryClient.java
+### File 6: order-service/build.gradle.kts
+
+```kotlin
+plugins {
+    java
+    id("org.springframework.boot") version "3.5.6"
+    id("io.spring.dependency-management") version "1.1.7"
+}
+
+group = "ca.gbc.comp3095"
+version = "0.0.1-SNAPSHOT"
+description = "order-service"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencyManagement {
+    imports {
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.0.0")
+    }
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+    //    implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    runtimeOnly("org.postgresql:postgresql")
+    annotationProcessor("org.projectlombok:lombok")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // TestContainers Dependencies
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("io.rest-assured:rest-assured")
+
+    // Week 12 - Swagger/OpenAPI Documentation
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
+    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
+    // Week 13 - Spring Cloud for REST Client and WireMock testing
+    implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
+    implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:3.3.0")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+```
+
+### File 7: order-service/src/main/java/ca/gbc/orderservice/client/InventoryClient.java
 
 ```java
 package ca.gbc.orderservice.client;
@@ -298,7 +432,7 @@ public interface InventoryClient {
 }
 ```
 
-### File 6: order-service/src/main/java/ca/gbc/orderservice/config/RestClientConfig.java
+### File 8: order-service/src/main/java/ca/gbc/orderservice/config/RestClientConfig.java
 
 ```java
 package ca.gbc.orderservice.config;
@@ -367,7 +501,7 @@ public class RestClientConfig {
 }
 ```
 
-### File 7: order-service/src/main/resources/application.properties
+### File 9: order-service/src/main/resources/application.properties
 
 ```properties
 # ============================================
@@ -431,7 +565,7 @@ resilience4j.retry.instances.inventory.max-attempts=3
 resilience4j.retry.instances.inventory.wait-duration=2s
 ```
 
-### File 8: order-service/src/main/resources/application-docker.properties
+### File 10: order-service/src/main/resources/application-docker.properties
 
 ```properties
 # ============================================
@@ -500,7 +634,7 @@ resilience4j.retry.instances.inventory.max-attempts=3
 resilience4j.retry.instances.inventory.wait-duration=2s
 ```
 
-### File 9: order-service/src/main/resources/db/migration/V1__init.sql
+### File 11: order-service/src/main/resources/db/migration/V1__init.sql
 
 ```sql
 CREATE TABLE t_orders (
@@ -515,7 +649,65 @@ CREATE TABLE t_orders (
 
 ## Inventory Service Files
 
-### File 10: inventory-service/src/main/resources/application.properties
+### File 12: inventory-service/build.gradle.kts
+
+```kotlin
+plugins {
+    java
+    id("org.springframework.boot") version "3.5.6"
+    id("io.spring.dependency-management") version "1.1.7"
+}
+
+group = "ca.gbc.comp3095"
+version = "0.0.1-SNAPSHOT"
+description = "inventory-service"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-jpa")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.flywaydb:flyway-core")
+    implementation("org.flywaydb:flyway-database-postgresql")
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    runtimeOnly("org.postgresql:postgresql")
+    annotationProcessor("org.projectlombok:lombok")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("io.rest-assured:rest-assured")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+
+    // Week 12 - Swagger/OpenAPI Documentation
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
+    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
+}
+
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+```
+
+### File 13: inventory-service/src/main/resources/application.properties
 
 ```properties
 spring.application.name=inventory-service
@@ -541,7 +733,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 11: inventory-service/src/main/resources/application-docker.properties
+### File 14: inventory-service/src/main/resources/application-docker.properties
 
 ```properties
 spring.application.name=inventory-service
@@ -572,7 +764,7 @@ spring.flyway.locations=classpath:db/migration
 spring.flyway.enabled=true
 ```
 
-### File 12: inventory-service/src/main/resources/db/migration/V1__init.sql
+### File 15: inventory-service/src/main/resources/db/migration/V1__init.sql
 
 ```sql
 CREATE TABLE t_inventory (
@@ -582,7 +774,7 @@ CREATE TABLE t_inventory (
 );
 ```
 
-### File 13: inventory-service/src/main/resources/db/migration/V2__add_inventory.sql
+### File 16: inventory-service/src/main/resources/db/migration/V2__add_inventory.sql
 
 ```sql
 INSERT INTO t_inventory (sku_code, quantity)
@@ -597,7 +789,78 @@ VALUES
 
 ## Product Service Files
 
-### File 14: product-service/src/main/resources/application.properties
+### File 17: product-service/build.gradle.kts
+
+```kotlin
+plugins {
+    java
+    id("org.springframework.boot") version "3.5.6"
+    id("io.spring.dependency-management") version "1.1.7"
+}
+
+group = "ca.gbc.comp3095"
+version = "0.0.1-SNAPSHOT"
+description = "product-service"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom(configurations.annotationProcessor.get())
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    // TestContainers Bill-of-Materials (BOM)
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+
+    // Spring Boot Starters
+    implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-data-mongodb")
+    implementation("org.springframework.boot:spring-boot-starter-web")
+    implementation("org.springframework.boot:spring-boot-starter-data-redis")
+
+    // Lombok
+    compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
+
+    // Spring Boot DevTools
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+
+    // Spring Boot Testing Starters
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+
+    // TestContainers Modules
+    testImplementation("org.testcontainers:mongodb")
+    testImplementation("org.testcontainers:junit-jupiter")
+    //testImplementation("org.testcontainers:redis")
+
+    // REST Assured for testing
+    testImplementation("io.rest-assured:rest-assured")
+
+    // Test Platform Launcher
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // Week 12 - Swagger/OpenAPI Documentation
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
+    testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
+}
+
+tasks.withType<Test> {
+    useJUnitPlatform()
+}
+```
+
+### File 18: product-service/src/main/resources/application.properties
 
 ```properties
 # ============================================
@@ -646,7 +909,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 15: product-service/src/main/resources/application-docker.properties
+### File 19: product-service/src/main/resources/application-docker.properties
 
 ```properties
 # ============================================
@@ -691,7 +954,7 @@ springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 ```
 
-### File 16: product-service/src/main/java/ca/gbc/comp3095/productservice/config/OpenAPIConfig.java
+### File 20: product-service/src/main/java/ca/gbc/comp3095/productservice/config/OpenAPIConfig.java
 
 ```java
 package ca.gbc.comp3095.productservice.config;
@@ -732,7 +995,7 @@ public class OpenAPIConfig {
 }
 ```
 
-### File 17: order-service/src/main/java/ca/gbc/comp3095/orderservice/config/OpenAPIConfig.java
+### File 21: order-service/src/main/java/ca/gbc/comp3095/orderservice/config/OpenAPIConfig.java
 
 ```java
 package ca.gbc.comp3095.orderservice.config;
@@ -774,7 +1037,7 @@ public class OpenAPIConfig {
 }
 ```
 
-### File 18: inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice/config/OpenAPIConfig.java
+### File 22: inventory-service/src/main/java/ca/gbc/comp3095/inventoryservice/config/OpenAPIConfig.java
 
 ```java
 package ca.gbc.comp3095.inventoryservice.config;
