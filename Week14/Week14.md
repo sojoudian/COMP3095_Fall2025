@@ -2,57 +2,9 @@
 
 ---
 
-## Step 1: Create notification-service Module
+## Step 1: Create shared-schema Module (Non-Spring Boot)
 
-### 1.1 Using Spring Initializr in IntelliJ
-
-1. **Right-click** on `microservices-parent`
-2. Select **New → Module**
-3. Choose **Spring Initializr**
-4. Click **Next**
-
-### 1.2 Project Configuration
-
-| Setting | Value |
-|---------|-------|
-| **Name** | `notification-service` |
-| **Group** | `ca.gbc.comp3095` |
-| **Artifact** | `notification-service` |
-| **Package name** | `ca.gbc.comp3095.notificationservice` |
-| **Type** | Gradle - Kotlin |
-| **Language** | Java |
-| **Java** | 21 |
-| **Packaging** | Jar |
-| **Spring Boot** | 3.5.6 |
-
-### 1.3 Select Dependencies
-
-#### **Developer Tools**
-- ✅ **Lombok**
-
-#### **Web**
-- ✅ **Spring Web**
-
-#### **Ops**
-- ✅ **Spring Boot Actuator**
-
-#### **Messaging**
-- ✅ **Spring for Apache Kafka**
-
-#### **I/O**
-- ✅ **Java Mail Sender**
-
-### 1.4 Complete Creation
-
-1. Click **Next**
-2. Click **Finish**
-3. Wait for Gradle sync
-
----
-
-## Step 2: Create shared-schema Module (Non-Spring Boot)
-
-### 2.1 Create Module in IntelliJ
+### 1.1 Create Module in IntelliJ
 
 1. **Right-click** on `microservices-parent`
 2. Select **New → Module**
@@ -61,69 +13,7 @@
 5. Set **Name** to `shared-schema`
 6. Click **Create**
 
-### 2.2 Create Directory Structure
-
-After module creation, create the following directory structure:
-
-```
-shared-schema/
-├── build.gradle.kts
-└── src/
-    └── main/
-        └── avro/
-            └── order-placed.avsc
-```
-
-To create the `avro` directory:
-1. Right-click on `shared-schema/src/main`
-2. Select **New → Directory**
-3. Name: `avro`
-4. Click **OK**
-
----
-
-## Step 3: Create events Package in order-service
-
-### 3.1 Create Package
-
-1. Right-click on `order-service/src/main/java/ca/gbc/comp3095/orderservice`
-2. Select **New → Package**
-3. Name: `events`
-4. Click **OK**
-
-Full path: `order-service/src/main/java/ca/gbc/comp3095/orderservice/events/`
-
----
-
-## Step 4: Create service Package in notification-service
-
-### 4.1 Create Package
-
-1. Right-click on `notification-service/src/main/java/ca/gbc/comp3095/notificationservice`
-2. Select **New → Package**
-3. Name: `service`
-4. Click **OK**
-
-Full path: `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/`
-
----
-
-## Step 5: Update settings.gradle.kts
-
-### File: microservices-parent/settings.gradle.kts
-
-```kotlin
-rootProject.name = "microservices-parent"
-
-include("product-service", "order-service", "inventory-service", "api-gateway", "notification-service")
-include("shared-schema")
-```
-
----
-
-## shared-schema Module Files
-
-### File 1: shared-schema/build.gradle.kts
+### 1.2 Update shared-schema/build.gradle.kts
 
 ```kotlin
 plugins {
@@ -161,9 +51,24 @@ tasks.named<com.github.davidmc24.gradle.plugin.avro.GenerateAvroJavaTask>("gener
 }
 ```
 
----
+### 1.3 Create Directory Structure
 
-### File 2: shared-schema/src/main/avro/order-placed.avsc
+```
+shared-schema/
+├── build.gradle.kts
+└── src/
+    └── main/
+        └── avro/
+            └── order-placed.avsc
+```
+
+To create the `avro` directory:
+1. Right-click on `shared-schema/src/main`
+2. Select **New → Directory**
+3. Name: `avro`
+4. Click **OK**
+
+### 1.4 Create shared-schema/src/main/avro/order-placed.avsc
 
 ```json
 {
@@ -179,16 +84,68 @@ tasks.named<com.github.davidmc24.gradle.plugin.avro.GenerateAvroJavaTask>("gener
 }
 ```
 
+### 1.5 Sync Gradle
+
+1. Click the **Gradle elephant icon** in the right sidebar
+2. Click the **Refresh** button at the top
+3. Wait for sync to complete
+
 ---
 
-## notification-service Module Files
+## Step 2: Create notification-service Module
 
-### File 3: notification-service/build.gradle.kts
+### 2.1 Using Spring Initializr in IntelliJ
+
+1. **Right-click** on `microservices-parent`
+2. Select **New → Module**
+3. Choose **Spring Initializr**
+4. Click **Next**
+
+### 2.2 Project Configuration
+
+| Setting | Value |
+|---------|-------|
+| **Name** | `notification-service` |
+| **Group** | `ca.gbc.comp3095` |
+| **Artifact** | `notification-service` |
+| **Package name** | `ca.gbc.comp3095.notificationservice` |
+| **Type** | Gradle - Kotlin |
+| **Language** | Java |
+| **Java** | 21 |
+| **Packaging** | Jar |
+| **Spring Boot** | 4.0.0 |
+
+### 2.3 Select Dependencies
+
+#### **Developer Tools**
+- ✅ **Lombok**
+
+#### **Web**
+- ✅ **Spring Web**
+
+#### **Ops**
+- ✅ **Spring Boot Actuator**
+
+#### **Messaging**
+- ✅ **Spring for Apache Kafka**
+
+#### **I/O**
+- ✅ **Java Mail Sender**
+
+### 2.4 Complete Creation
+
+1. Click **Next**
+2. Click **Finish**
+3. Wait for Gradle sync
+
+---
+
+## Step 3: Update notification-service/build.gradle.kts
 
 ```kotlin
 plugins {
     java
-    id("org.springframework.boot") version "3.5.6"
+    id("org.springframework.boot") version "4.0.0"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
@@ -217,10 +174,11 @@ repositories {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator")
+    implementation("org.springframework.boot:spring-boot-starter-kafka")
     implementation("org.springframework.boot:spring-boot-starter-mail")
-    implementation("org.springframework.boot:spring-boot-starter-web")
-    implementation("org.springframework.kafka:spring-kafka")
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     compileOnly("org.projectlombok:lombok")
+    annotationProcessor("org.projectlombok:lombok")
 
     // Week 14 - Schema Registry
     implementation("org.apache.avro:avro:1.12.0")
@@ -230,12 +188,10 @@ dependencies {
     // Week 14 - Shared Schema Project
     implementation(project(":shared-schema"))
 
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.springframework.kafka:spring-kafka-test")
-    testImplementation("org.testcontainers:junit-jupiter")
-    testImplementation("org.testcontainers:kafka")
+    testImplementation("org.springframework.boot:spring-boot-starter-actuator-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-kafka-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-mail-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
@@ -246,7 +202,20 @@ tasks.withType<Test> {
 
 ---
 
-### File 4: notification-service/Dockerfile
+## Step 4: Create service Package in notification-service
+
+1. Right-click on `notification-service/src/main/java/ca/gbc/comp3095/notificationservice`
+2. Select **New → Package**
+3. Name: `service`
+4. Click **OK**
+
+Full path: `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/`
+
+---
+
+## Step 5: Create notification-service Files
+
+### File 1: notification-service/Dockerfile
 
 ```dockerfile
 # ------------------
@@ -278,7 +247,7 @@ ENTRYPOINT ["java", "-jar", "/app/notification-service.jar"]
 
 ---
 
-### File 5: notification-service/src/main/java/ca/gbc/comp3095/notificationservice/NotificationServiceApplication.java
+### File 2: notification-service/src/main/java/ca/gbc/comp3095/notificationservice/NotificationServiceApplication.java
 
 ```java
 package ca.gbc.comp3095.notificationservice;
@@ -298,7 +267,7 @@ public class NotificationServiceApplication {
 
 ---
 
-### File 6: notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/NotificationService.java
+### File 3: notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/NotificationService.java
 
 ```java
 package ca.gbc.comp3095.notificationservice.service;
@@ -357,7 +326,7 @@ public class NotificationService {
 
 ---
 
-### File 7: notification-service/src/main/resources/application.properties
+### File 4: notification-service/src/main/resources/application.properties
 
 ```properties
 spring.application.name=notification-service
@@ -394,7 +363,7 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 
 ---
 
-### File 8: notification-service/src/main/resources/application-docker.properties
+### File 5: notification-service/src/main/resources/application-docker.properties
 
 ```properties
 spring.application.name=notification-service
@@ -426,9 +395,9 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 
 ---
 
-## order-service Updates
+## Step 6: Update order-service
 
-### File 9: order-service/build.gradle.kts
+### File 6: order-service/build.gradle.kts
 
 ```kotlin
 plugins {
@@ -517,7 +486,7 @@ tasks.withType<Test> {
 
 ---
 
-### File 10: order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderRequest.java
+### File 7: order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderRequest.java
 
 ```java
 package ca.gbc.comp3095.orderservice.dto;
@@ -541,7 +510,7 @@ public record OrderRequest(
 
 ---
 
-### File 11: order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderServiceImpl.java
+### File 8: order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderServiceImpl.java
 
 ```java
 package ca.gbc.comp3095.orderservice.service;
@@ -618,7 +587,7 @@ public class OrderServiceImpl implements OrderService {
 
 ---
 
-### File 12: order-service/src/main/resources/application.properties
+### File 9: order-service/src/main/resources/application.properties
 
 ```properties
 # ============================================
@@ -688,7 +657,7 @@ spring.kafka.producer.properties.schema.registry.url=http://127.0.0.1:8087
 
 ---
 
-### File 13: order-service/src/main/resources/application-docker.properties
+### File 10: order-service/src/main/resources/application-docker.properties
 
 ```properties
 # ============================================
@@ -762,9 +731,9 @@ spring.kafka.producer.properties.spring.json.type.mapping=event:ca.gbc.comp3095.
 
 ---
 
-## docker-compose.yml
+## Step 7: Update docker-compose.yml
 
-### File 14: microservices-parent/docker-compose.yml
+### File 11: microservices-parent/docker-compose.yml
 
 ```yaml
 # -------------------------------------------
@@ -1192,48 +1161,14 @@ networks:
 
 ---
 
-## Summary of Changes
+## Summary
 
-### New Modules Created:
-| Module | Location | Type |
-|--------|----------|------|
-| `notification-service` | `microservices-parent/notification-service/` | Spring Boot Module |
-| `shared-schema` | `microservices-parent/shared-schema/` | Java Library (Non-Spring) |
-
-### New Packages Created:
-| Package | Full Path |
-|---------|-----------|
-| `events` | `order-service/src/main/java/ca/gbc/comp3095/orderservice/events/` |
-| `service` | `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/` |
-
-### New Files Created:
-| File | Location |
-|------|----------|
-| `settings.gradle.kts` | `microservices-parent/settings.gradle.kts` |
-| `build.gradle.kts` | `shared-schema/build.gradle.kts` |
-| `order-placed.avsc` | `shared-schema/src/main/avro/order-placed.avsc` |
-| `build.gradle.kts` | `notification-service/build.gradle.kts` |
-| `Dockerfile` | `notification-service/Dockerfile` |
-| `NotificationServiceApplication.java` | `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/NotificationServiceApplication.java` |
-| `NotificationService.java` | `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/NotificationService.java` |
-| `application.properties` | `notification-service/src/main/resources/application.properties` |
-| `application-docker.properties` | `notification-service/src/main/resources/application-docker.properties` |
-
-### Updated Files:
-| File | Location |
-|------|----------|
-| `build.gradle.kts` | `order-service/build.gradle.kts` |
-| `OrderRequest.java` | `order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderRequest.java` |
-| `OrderServiceImpl.java` | `order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderServiceImpl.java` |
-| `application.properties` | `order-service/src/main/resources/application.properties` |
-| `application-docker.properties` | `order-service/src/main/resources/application-docker.properties` |
-| `docker-compose.yml` | `microservices-parent/docker-compose.yml` |
-
-### New Docker Services:
-| Service | Port | Image |
-|---------|------|-------|
-| `notification-service` | 8085 | notification-service |
-| `zookeeper` | 2181 | confluentinc/cp-zookeeper:7.9.2 |
-| `broker` | 9092, 29092 | confluentinc/cp-kafka:7.9.2 |
-| `schema-registry` | 8087 | confluentinc/cp-schema-registry:7.9.2 |
-| `kafka-ui` | 8086 | provectuslabs/kafka-ui:latest |
+| Step | Action |
+|------|--------|
+| 1 | Create `shared-schema` module, update build.gradle.kts, create avro schema, **sync Gradle** |
+| 2 | Create `notification-service` module via Spring Initializr |
+| 3 | Update `notification-service/build.gradle.kts` |
+| 4 | Create `service` package in notification-service |
+| 5 | Create notification-service files (Dockerfile, Application, Service, properties) |
+| 6 | Update order-service files (build.gradle.kts, OrderRequest, OrderServiceImpl, properties) |
+| 7 | Update docker-compose.yml |
