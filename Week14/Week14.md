@@ -1,6 +1,117 @@
 # Week 14 - Kafka Event-Driven Architecture & Schema Registry
 
-## settings.gradle.kts
+---
+
+## Step 1: Create notification-service Module
+
+### 1.1 Using Spring Initializr in IntelliJ
+
+1. **Right-click** on `microservices-parent`
+2. Select **New → Module**
+3. Choose **Spring Initializr**
+4. Click **Next**
+
+### 1.2 Project Configuration
+
+| Setting | Value |
+|---------|-------|
+| **Name** | `notification-service` |
+| **Group** | `ca.gbc.comp3095` |
+| **Artifact** | `notification-service` |
+| **Package name** | `ca.gbc.comp3095.notificationservice` |
+| **Type** | Gradle - Kotlin |
+| **Language** | Java |
+| **Java** | 21 |
+| **Packaging** | Jar |
+| **Spring Boot** | 3.5.6 |
+
+### 1.3 Select Dependencies
+
+#### **Developer Tools**
+- ✅ **Lombok**
+
+#### **Web**
+- ✅ **Spring Web**
+
+#### **Ops**
+- ✅ **Spring Boot Actuator**
+
+#### **Messaging**
+- ✅ **Spring for Apache Kafka**
+
+#### **I/O**
+- ✅ **Java Mail Sender**
+
+### 1.4 Complete Creation
+
+1. Click **Next**
+2. Click **Finish**
+3. Wait for Gradle sync
+
+---
+
+## Step 2: Create shared-schema Module (Non-Spring Boot)
+
+### 2.1 Create Module in IntelliJ
+
+1. **Right-click** on `microservices-parent`
+2. Select **New → Module**
+3. Choose **New Module** (NOT Spring Initializr)
+4. Select **Gradle** with **Kotlin DSL**
+5. Set **Name** to `shared-schema`
+6. Click **Create**
+
+### 2.2 Create Directory Structure
+
+After module creation, create the following directory structure:
+
+```
+shared-schema/
+├── build.gradle.kts
+└── src/
+    └── main/
+        └── avro/
+            └── order-placed.avsc
+```
+
+To create the `avro` directory:
+1. Right-click on `shared-schema/src/main`
+2. Select **New → Directory**
+3. Name: `avro`
+4. Click **OK**
+
+---
+
+## Step 3: Create events Package in order-service
+
+### 3.1 Create Package
+
+1. Right-click on `order-service/src/main/java/ca/gbc/comp3095/orderservice`
+2. Select **New → Package**
+3. Name: `events`
+4. Click **OK**
+
+Full path: `order-service/src/main/java/ca/gbc/comp3095/orderservice/events/`
+
+---
+
+## Step 4: Create service Package in notification-service
+
+### 4.1 Create Package
+
+1. Right-click on `notification-service/src/main/java/ca/gbc/comp3095/notificationservice`
+2. Select **New → Package**
+3. Name: `service`
+4. Click **OK**
+
+Full path: `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/`
+
+---
+
+## Step 5: Update settings.gradle.kts
+
+### File: microservices-parent/settings.gradle.kts
+
 ```kotlin
 rootProject.name = "microservices-parent"
 
@@ -10,14 +121,17 @@ include("shared-schema")
 
 ---
 
-## shared-schema/build.gradle.kts
+## shared-schema Module Files
+
+### File 1: shared-schema/build.gradle.kts
+
 ```kotlin
 plugins {
-    id("java-library") // Library plugin
-    id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1" // Add Avro Gradle Plugin
+    id("java-library")
+    id("com.github.davidmc24.gradle.plugin.avro") version "1.9.1"
 }
 
-group = "ca.gbc"
+group = "ca.gbc.comp3095"
 version = "1.0.0"
 
 repositories {
@@ -49,12 +163,13 @@ tasks.named<com.github.davidmc24.gradle.plugin.avro.GenerateAvroJavaTask>("gener
 
 ---
 
-## shared-schema/src/main/avro/order-placed.avsc
+### File 2: shared-schema/src/main/avro/order-placed.avsc
+
 ```json
 {
   "type": "record",
   "name": "OrderPlacedEvent",
-  "namespace": "ca.gbc.orderservice.event",
+  "namespace": "ca.gbc.comp3095.orderservice.event",
   "fields": [
     { "name": "orderNumber", "type": "string" },
     { "name": "email", "type": "string" },
@@ -66,16 +181,20 @@ tasks.named<com.github.davidmc24.gradle.plugin.avro.GenerateAvroJavaTask>("gener
 
 ---
 
-## notification-service/build.gradle.kts
+## notification-service Module Files
+
+### File 3: notification-service/build.gradle.kts
+
 ```kotlin
 plugins {
     java
-    id("org.springframework.boot") version "3.4.4"
+    id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
-group = "ca.gbc"
+group = "ca.gbc.comp3095"
 version = "0.0.1-SNAPSHOT"
+description = "notification-service"
 
 java {
     toolchain {
@@ -103,16 +222,13 @@ dependencies {
     implementation("org.springframework.kafka:spring-kafka")
     compileOnly("org.projectlombok:lombok")
 
-    //Week 10 - Day 1
+    // Week 14 - Schema Registry
     implementation("org.apache.avro:avro:1.12.0")
     implementation("io.confluent:kafka-schema-registry-client:8.0.0")
     implementation("io.confluent:kafka-avro-serializer:8.0.0")
 
-    //Week 10 - Day 1 - Shared Schema Project
+    // Week 14 - Shared Schema Project
     implementation(project(":shared-schema"))
-
-    //Week 10 - Day 1 - REMOVED FOR Week 10 - Day 1
-    //developmentOnly("org.springframework.boot:spring-boot-devtools")
 
     annotationProcessor("org.projectlombok:lombok")
     testImplementation("org.springframework.boot:spring-boot-starter-test")
@@ -130,59 +246,42 @@ tasks.withType<Test> {
 
 ---
 
-## notification-service/Dockerfile
+### File 4: notification-service/Dockerfile
+
 ```dockerfile
 # ------------------
 #  Build Stage
 # ------------------
 
-# Start from the Gradle 8 image with JDK 22. This image provides both Gradle and JDK 22.
-# We use this stage to build the application within the container.
 FROM gradle:8-jdk21 AS builder
 
-# Copy the application files from the host machine to the image filesystem.
-# We use the '--chown=gradle:gradle' flag to ensure proper file permissions for the Gradle user.
 COPY --chown=gradle:gradle . /home/gradle/src
 
-# Set the working directory inside the container to /home/gradle/src.
-# All future commands will be executed from this directory.
 WORKDIR /home/gradle/src
 
-# Run the Gradle build inside the container, skipping the tests (-x test).
-# This command compiles the code, resolves dependencies, and packages the application as a .jar file.
-# Note: The command applies to the image only, not to the host machine.
 RUN gradle build -x test
 
 # ------------------
 #  Package Stage
 # ------------------
 
-# Start from a lightweight OpenJDK 22 Alpine image. This will be our runtime image.
-# Alpine images are much smaller, which helps keep the final image size down.
 FROM openjdk:21-jdk
 
-# Create a directory inside the container where the application will be stored.
-# This directory is where we will place the packaged .jar file built in the previous stage.
 RUN mkdir /app
 
-# Copy the built .jar file from the build stage to the /app directory in the final image.
-# We use the '--from=builder' instruction to reference the "builder" stage.
 COPY --from=builder /home/gradle/src/build/libs/*.jar /app/notification-service.jar
 
-# Expose port 8084 to allow communication with the containerized application.
-# EXPOSE does not actually make the port accessible to the host machine; it's documentation for the image.
 EXPOSE 8085
 
-# The ENTRYPOINT instruction defines the command to run when the container starts.
-# In this case, we are telling Docker to run the Java command with the packaged JAR file.
 ENTRYPOINT ["java", "-jar", "/app/notification-service.jar"]
 ```
 
 ---
 
-## notification-service/src/main/java/ca/gbc/notificationservice/NotificationServiceApplication.java
+### File 5: notification-service/src/main/java/ca/gbc/comp3095/notificationservice/NotificationServiceApplication.java
+
 ```java
-package ca.gbc.notificationservice;
+package ca.gbc.comp3095.notificationservice;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -199,12 +298,13 @@ public class NotificationServiceApplication {
 
 ---
 
-## notification-service/src/main/java/ca/gbc/notificationservice/service/NotificationService.java
-```java
-package ca.gbc.notificationservice.service;
+### File 6: notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/NotificationService.java
 
-//Week 10 - Day 1
-import ca.gbc.orderservice.event.OrderPlacedEvent;
+```java
+package ca.gbc.comp3095.notificationservice.service;
+
+// Week 14 - Import from shared-schema generated class
+import ca.gbc.comp3095.orderservice.event.OrderPlacedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -232,7 +332,7 @@ public class NotificationService {
 
         MimeMessage message = mailSender.createMimeMessage();
         try {
-            MimeMessageHelper helper = new MimeMessageHelper(message, false); // Non-multipart
+            MimeMessageHelper helper = new MimeMessageHelper(message, false);
             helper.setFrom(fromEmail);
             helper.setTo(event.getEmail());
             helper.setSubject(String.format("Your Order (%s) was successfully placed", event.getOrderNumber()));
@@ -257,23 +357,20 @@ public class NotificationService {
 
 ---
 
-## notification-service/src/main/resources/application.properties
+### File 7: notification-service/src/main/resources/application.properties
+
 ```properties
 spring.application.name=notification-service
 
 server.port=8085
 
 # Kafka Consumer Properties
-# The address of the Kafka broker used to connect to the Kafka cluster.
 spring.kafka.bootstrap-servers=localhost:9092
-# The unique identifier for the consumer group to which this consumer belongs.
 spring.kafka.consumer.group-id=notificationService
-# The deserializer class used for deserializing the key of the messages from Kafka.
 spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer
-# Will ensure your consumer starts processing all unprocessed events from the beginning of the topic
 spring.kafka.consumer.auto-offset-reset=earliest
 
-# Week 10 - Day 2
+# Week 14 - Schema Registry Deserializer
 spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
 spring.kafka.consumer.properties.spring.deserializer.key.delegate.class=org.apache.kafka.common.serialization.StringDeserializer
 spring.kafka.consumer.properties.spring.deserializer.value.delegate.class=io.confluent.kafka.serializers.KafkaAvroDeserializer
@@ -283,12 +380,13 @@ spring.kafka.consumer.properties.specific.avro.reader=true
 management.endpoints.web.exposure.include=*
 management.endpoint.health.show-details=always
 logging.level.org.springframework.kafka=DEBUG
-logging.level.ca.gbc.notificationservice=DEBUG
+logging.level.ca.gbc.comp3095.notificationservice=DEBUG
 
+# Week 14 - MailTrap SMTP Configuration
 spring.mail.host=sandbox.smtp.mailtrap.io
 spring.mail.port=2525
-spring.mail.username=68347f4128ddcf
-spring.mail.password=75c591488d271c
+spring.mail.username=YOUR_MAILTRAP_USERNAME
+spring.mail.password=YOUR_MAILTRAP_PASSWORD
 spring.mail.from=noreply@comp3095.ca
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
@@ -296,38 +394,31 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 
 ---
 
-## notification-service/src/main/resources/application-docker.properties
+### File 8: notification-service/src/main/resources/application-docker.properties
+
 ```properties
 spring.application.name=notification-service
 
-# Week 9 - Day 2
 server.port=8085
 
-# Week 9 - Day 2
-# Kafka Consumer Properties
-# The address of the Kafka broker used to connect to the Kafka cluster.
+# Kafka Consumer Properties (Docker)
 spring.kafka.bootstrap-servers=broker:29092
-# The unique identifier for the consumer group to which this consumer belongs.
 spring.kafka.consumer.group-id=notificationService
-# The deserializer class used for deserializing the key of the messages from Kafka.
 spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer
-# The deserializer class used for deserializing the value of the messages from Kafka in JSON format.
 spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.JsonDeserializer
-# Maps a custom event type to a specific class for deserialization of incoming JSON messages.
-spring.kafka.consumer.properties.spring.json.type.mapping=event:ca.gbc.notificationservice.events.OrderPlacedEvent
-# Will ensure your consumer starts processing all unprocessed events from the beginning of the topic
+spring.kafka.consumer.properties.spring.json.type.mapping=event:ca.gbc.comp3095.notificationservice.events.OrderPlacedEvent
 spring.kafka.consumer.auto-offset-reset=earliest
 
 management.endpoints.web.exposure.include=*
 management.endpoint.health.show-details=always
 logging.level.org.springframework.kafka=DEBUG
-logging.level.ca.gbc.notificationservice=DEBUG
+logging.level.ca.gbc.comp3095.notificationservice=DEBUG
 
-# Week 9 - Day 2
+# Week 14 - MailTrap SMTP Configuration
 spring.mail.host=sandbox.smtp.mailtrap.io
 spring.mail.port=2525
-spring.mail.username=68347f4128ddcf
-spring.mail.password=75c591488d271c
+spring.mail.username=YOUR_MAILTRAP_USERNAME
+spring.mail.password=YOUR_MAILTRAP_PASSWORD
 spring.mail.from=noreply@comp3095.ca
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
@@ -335,16 +426,20 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 
 ---
 
-## order-service/build.gradle.kts
+## order-service Updates
+
+### File 9: order-service/build.gradle.kts
+
 ```kotlin
 plugins {
     java
-    id("org.springframework.boot") version "3.4.4"
+    id("org.springframework.boot") version "3.5.6"
     id("io.spring.dependency-management") version "1.1.7"
 }
 
-group = "ca.gbc"
+group = "ca.gbc.comp3095"
 version = "0.0.1-SNAPSHOT"
+description = "order-service"
 
 java {
     toolchain {
@@ -360,16 +455,15 @@ configurations {
 
 repositories {
     mavenCentral()
-    //Week 10 - Day 1
+    // Week 14 - Confluent Repository for Schema Registry
     maven {
         url = uri("https://packages.confluent.io/maven/")
     }
 }
 
-//Week 4 - Day 1
 dependencyManagement {
     imports {
-        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2024.0.1") // Replace with the latest or required version
+        mavenBom("org.springframework.cloud:spring-cloud-dependencies:2025.0.0")
     }
 }
 
@@ -379,35 +473,41 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.flywaydb:flyway-core")
     implementation("org.flywaydb:flyway-database-postgresql")
+    compileOnly("org.projectlombok:lombok")
+    developmentOnly("org.springframework.boot:spring-boot-devtools")
+    runtimeOnly("org.postgresql:postgresql")
+    annotationProcessor("org.projectlombok:lombok")
+    testImplementation("org.springframework.boot:spring-boot-starter-test")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+
+    // TestContainers Dependencies
+    testImplementation(platform("org.testcontainers:testcontainers-bom:1.21.3"))
+    testImplementation("org.springframework.boot:spring-boot-testcontainers")
+    testImplementation("org.testcontainers:postgresql")
+    testImplementation("org.testcontainers:junit-jupiter")
+    testImplementation("io.rest-assured:rest-assured")
+
+    // Week 12 - Swagger/OpenAPI Documentation
     implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.8")
     testImplementation("org.springdoc:springdoc-openapi-starter-webmvc-api:2.8.8")
+
+    // Week 13 - Spring Cloud for REST Client and WireMock testing
     implementation("org.springframework.cloud:spring-cloud-starter-contract-stub-runner")
     implementation("org.springframework.cloud:spring-cloud-starter-circuitbreaker-resilience4j:3.3.0")
+
+    // Week 14 - Kafka
     implementation("org.springframework.kafka:spring-kafka:3.3.7")
     testImplementation("org.springframework.kafka:spring-kafka-test:3.3.7")
     testImplementation("org.testcontainers:kafka:1.21.2")
 
-    //Week 10 - Day 1
+    // Week 14 - Schema Registry
     implementation("org.apache.avro:avro:1.12.0")
     implementation("io.confluent:kafka-schema-registry-client:8.0.0")
     implementation("io.confluent:kafka-avro-serializer:8.0.0")
     implementation("org.zalando:problem-spring-web:0.29.1")
 
-    //Week 10 - Day 1 - Shared Schema Project
+    // Week 14 - Shared Schema Project
     implementation(project(":shared-schema"))
-
-    compileOnly("org.projectlombok:lombok")
-
-    //Week 10 - Day 1 - REMOVED FOR Week 10 - Day 1
-    //developmentOnly("org.springframework.boot:spring-boot-devtools")
-
-    runtimeOnly("org.postgresql:postgresql")
-    annotationProcessor("org.projectlombok:lombok")
-    testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.boot:spring-boot-testcontainers")
-    testImplementation("org.testcontainers:postgresql")
-    testImplementation("io.rest-assured:rest-assured")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.withType<Test> {
@@ -417,9 +517,10 @@ tasks.withType<Test> {
 
 ---
 
-## order-service/src/main/java/ca/gbc/orderservice/dto/OrderRequest.java
+### File 10: order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderRequest.java
+
 ```java
-package ca.gbc.orderservice.dto;
+package ca.gbc.comp3095.orderservice.dto;
 
 import java.math.BigDecimal;
 
@@ -429,10 +530,10 @@ public record OrderRequest(
         String skuCode,
         BigDecimal price,
         Integer quantity,
-        //Week 9 - Day 2
+        // Week 14 - User details for email notification
         UserDetails userDetails) {
 
-    //Week 9 - Day 2
+    // Week 14 - Nested record for user information
     public record UserDetails(String email, String firstName, String lastName) {}
 
 }
@@ -440,15 +541,17 @@ public record OrderRequest(
 
 ---
 
-## order-service/src/main/java/ca/gbc/orderservice/service/OrderServiceImpl.java
-```java
-package ca.gbc.orderservice.service;
+### File 11: order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderServiceImpl.java
 
-import ca.gbc.orderservice.client.InventoryClient;
-import ca.gbc.orderservice.dto.OrderRequest;
-import ca.gbc.orderservice.event.OrderPlacedEvent;
-import ca.gbc.orderservice.model.Order;
-import ca.gbc.orderservice.repository.OrderRepository;
+```java
+package ca.gbc.comp3095.orderservice.service;
+
+import ca.gbc.comp3095.orderservice.client.InventoryClient;
+import ca.gbc.comp3095.orderservice.dto.OrderRequest;
+// Week 14 - Import from shared-schema generated class
+import ca.gbc.comp3095.orderservice.event.OrderPlacedEvent;
+import ca.gbc.comp3095.orderservice.model.Order;
+import ca.gbc.comp3095.orderservice.repository.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -463,11 +566,10 @@ import java.util.UUID;
 @Transactional
 public class OrderServiceImpl implements OrderService {
 
-    //We use the @RequiredArgsConstructor to resolve the dependency via constructor injection
     private final OrderRepository orderRepository;
     private final InventoryClient inventoryClient;
 
-    //Week 9 - Day 2
+    // Week 14 - KafkaTemplate for sending events
     private final KafkaTemplate<String, OrderPlacedEvent> kafkaTemplate;
 
     @Override
@@ -492,90 +594,73 @@ public class OrderServiceImpl implements OrderService {
             orderRepository.save(order);
             log.info("Order placed successfully: {}", order.getOrderNumber());
 
-            //Week 10 - Day 2 - end message to Kafka topic
-            //Schema Registry
+            // Week 14 - Create Avro event using Schema Registry
             OrderPlacedEvent orderPlacedEvent = new OrderPlacedEvent();
             orderPlacedEvent.setOrderNumber(order.getOrderNumber());
             orderPlacedEvent.setEmail(orderRequest.userDetails().email());
             orderPlacedEvent.setFirstName(orderRequest.userDetails().firstName());
             orderPlacedEvent.setLastName(orderRequest.userDetails().lastName());
 
-            //Week 9 - Day 2 - end message to Kafka topic
-            log.info("Start - Sending OrderPlacedEvent {} to Kakfa topic 'order-placed'", orderPlacedEvent);
+            // Week 14 - Send message to Kafka topic
+            log.info("Start - Sending OrderPlacedEvent {} to Kafka topic 'order-placed'", orderPlacedEvent);
             kafkaTemplate.send("order-placed", orderPlacedEvent);
-            log.info("End - OrderPlacedEvent {} sent to Kakfa topic 'order-placed'", orderPlacedEvent);
+            log.info("End - OrderPlacedEvent {} sent to Kafka topic 'order-placed'", orderPlacedEvent);
 
 
-        }catch(Exception ex){
+        } catch(Exception ex) {
             log.error("Failed to place order: {}", ex.getMessage());
             throw new RuntimeException("Order placement failed");
         }
     }
-
 
 }
 ```
 
 ---
 
-## order-service/src/main/resources/application.properties
+### File 12: order-service/src/main/resources/application.properties
+
 ```properties
+# ============================================
+# Order Service - Local Configuration
+# ============================================
+
 spring.application.name=order-service
-order-service.version=v1.0
 
 server.port=8082
 
-# default is 5432 for postgres
-# local-connections
-spring.datasource.url=jdbc:postgresql://localhost:5433/order_service
-
-# for container based connections
-#spring.datasource.url=jdbc:postgresql://host.docker.internal:5431/order-service
-
+# PostgreSQL Configuration
+spring.datasource.url=jdbc:postgresql://localhost:5432/order-service
 spring.datasource.username=admin
 spring.datasource.password=password
 spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
-# none, validate, update, create, create-drop
-# Options for controlling how Hibernate handles schema management
-# none: No schema generation or validation is performed.
-# none because we will be using flyaway
+# JPA/Hibernate Configuration
 spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.format_sql=true
 
-# validate: Hibernate will validate the schema against the database without making any changes.
-# This is useful to ensure that the database structure matches the entity mappings.
-# Validation failure will throw an error.
-#spring.jpa.hibernate.ddl-auto=validate
+# Logging Configuration
+logging.level.ca.gbc.comp3095=INFO
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 
-# update: Hibernate will modify the database schema to match the entity mappings.
-# Only adds missing columns and tables, but does not remove anything.
-# This is useful for iterative development but should be avoided in production.
-#spring.jpa.hibernate.ddl-auto=update
-
-# create: Hibernate will drop the existing schema and recreate it every time the application starts.
-# This is useful during development but should not be used in production environments as it will
-# erase all data on each startup.
-#spring.jpa.hibernate.ddl-auto=create
-
-# create-drop: Similar to "create", but in addition, it will drop the schema when the application stops.
-# It's useful for integration tests where the schema only needs to exist for the duration of the app run.
-#spring.jpa.hibernate.ddl-auto=create-drop
-
-inventory.service.url=http://localhost:8083
-
-# Swagger documentation location - ex. http://localhost:8082/swagger-ui
-springdoc.swagger-ui.path=/swagger-ui
-# Swagger documentation location - ex. http://localhost:8082/api-docs
-springdoc.api-docs.path=/api-docs
-
-management.health.circuitbreakers.enabled=true
+# Actuator Configuration
 management.endpoints.web.exposure.include=*
 management.endpoint.health.show-details=always
 
-# Opens if 50% of 20 calls fail after at least 10 calls.
-# Stays open for 10 seconds, then allows 5 calls in half-open state
+inventory.service.url=http://localhost:8083
+
+# Week 12 - API version for documentation
+order-service.version=v1.0
+
+# Week 12 - Swagger Documentation
+springdoc.swagger-ui.path=/swagger-ui
+springdoc.api-docs.path=/api-docs
+
+# Week 13 - Circuit Breaker
+management.health.circuitbreakers.enabled=true
 resilience4j.circuitbreaker.instances.inventory.registerHealthIndicator=true
 resilience4j.circuitbreaker.instances.inventory.event-consumer-buffer-size=10
 resilience4j.circuitbreaker.instances.inventory.slidingWindowType=COUNT_BASED
@@ -591,88 +676,67 @@ resilience4j.circuitbreaker.instances.inventory.minimum-number-of-calls=5
 resilience4j.retry.instances.inventory.max-attempts=3
 resilience4j.retry.instances.inventory.wait-duration=2s
 
-# Kafka Producer Properties - Week 9 - Day 2
-# The address of the Kafka broker used to connect to the Kafka cluster.
+# Week 14 - Kafka Producer Properties
 spring.kafka.bootstrap-servers=localhost:9092
-# The default topic where messages will be sent if not explicitly specified.
 spring.kafka.template.default-topic=order-placed
-# The serializer class used for serializing the key of the messages to Kafka.
 spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
 
-# The serializer class used for serializing the value of the messages to Kafka in JSON format.
-#spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer
-# Maps a custom event type to a specific class for deserialization of incoming JSON messages.
-#spring.kafka.producer.properties.spring.json.type.mapping=event:ca.gbc.orderservice.event.OrderPlacedEvent
-
-# Week 10 - Day 2
-# Update for Schema Registry
+# Week 14 - Schema Registry Serializer
 spring.kafka.producer.value-serializer=io.confluent.kafka.serializers.KafkaAvroSerializer
-# Schema Registry Container Port
 spring.kafka.producer.properties.schema.registry.url=http://127.0.0.1:8087
 ```
 
 ---
 
-## order-service/src/main/resources/application-docker.properties
+### File 13: order-service/src/main/resources/application-docker.properties
+
 ```properties
+# ============================================
+# Order Service - Docker Configuration
+# Activated when SPRING_PROFILES_ACTIVE=docker
+# ============================================
+
 spring.application.name=order-service
-#? Week 6 - Day 1
-order-service.version=v1.0
 
 server.port=8082
 
-# default is 5432 for postgres
-# docker network-connections
+# PostgreSQL Configuration (Docker)
 spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
-
-# for container based connections
-#spring.datasource.url=jdbc:postgresql://host.docker.internal:5431/order-service
-
 spring.datasource.username=admin
 spring.datasource.password=password
 spring.datasource.driver-class-name=org.postgresql.Driver
-spring.jpa.database-platform=org.hibernate.dialect.PostgreSQLDialect
-spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
 
-# none, validate, update, create, create-drop
-# Options for controlling how Hibernate handles schema management
-# none: No schema generation or validation is performed.
-# none because we will be using flyaway
+# JPA/Hibernate Configuration
 spring.jpa.hibernate.ddl-auto=none
+spring.jpa.show-sql=true
+spring.jpa.properties.hibernate.dialect=org.hibernate.dialect.PostgreSQLDialect
+spring.jpa.properties.hibernate.format_sql=true
 
-# validate: Hibernate will validate the schema against the database without making any changes.
-# This is useful to ensure that the database structure matches the entity mappings.
-# Validation failure will throw an error.
-#spring.jpa.hibernate.ddl-auto=validate
+# Logging Configuration
+logging.level.ca.gbc.comp3095=INFO
+logging.level.org.hibernate.SQL=DEBUG
+logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 
-# update: Hibernate will modify the database schema to match the entity mappings.
-# Only adds missing columns and tables, but does not remove anything.
-# This is useful for iterative development but should be avoided in production.
-#spring.jpa.hibernate.ddl-auto=update
-
-# create: Hibernate will drop the existing schema and recreate it every time the application starts.
-# This is useful during development but should not be used in production environments as it will
-# erase all data on each startup.
-#spring.jpa.hibernate.ddl-auto=create
-
-# create-drop: Similar to "create", but in addition, it will drop the schema when the application stops.
-# It's useful for integration tests where the schema only needs to exist for the duration of the app run.
-#spring.jpa.hibernate.ddl-auto=create-drop
-
-inventory.service.url=http://inventory-service:8083
-
-#? Week 6 - Day 1 - Swagger documentation location
-springdoc.swagger-ui.path=/swagger-ui
-springdoc.api-docs.path=/api-docs
-
-# Week 9 - Day 1
-management.health.circuitbreakers.enabled=true
+# Actuator Configuration
 management.endpoints.web.exposure.include=*
 management.endpoint.health.show-details=always
 
-# Week 9 - Day 1
-# Opens if 50% of 20 calls fail after at least 10 calls.
-# Stays open for 10 seconds, then allows 5 calls in half-open state
+inventory.service.url=http://inventory-service:8083
+
+# Week 12 - API version for documentation
+order-service.version=v1.0
+
+# Week 12 - Swagger Documentation
+springdoc.swagger-ui.path=/swagger-ui
+springdoc.api-docs.path=/api-docs
+
+# Week 13 - Flyway
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.enabled=true
+
+# Week 13 - Circuit Breaker Configuration
+management.health.circuitbreakers.enabled=true
 resilience4j.circuitbreaker.instances.inventory.registerHealthIndicator=true
 resilience4j.circuitbreaker.instances.inventory.event-consumer-buffer-size=10
 resilience4j.circuitbreaker.instances.inventory.slidingWindowType=COUNT_BASED
@@ -688,34 +752,29 @@ resilience4j.circuitbreaker.instances.inventory.minimum-number-of-calls=5
 resilience4j.retry.instances.inventory.max-attempts=3
 resilience4j.retry.instances.inventory.wait-duration=2s
 
-# Kafka Producer Properties - Week 9 - Day 2
-# The address of the Kafka broker used to connect to the Kafka cluster.
+# Week 14 - Kafka Producer Properties (Docker)
 spring.kafka.bootstrap-servers=broker:29092
-# The default topic where messages will be sent if not explicitly specified.
 spring.kafka.template.default-topic=order-placed
-# The serializer class used for serializing the key of the messages to Kafka.
 spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
-# The serializer class used for serializing the value of the messages to Kafka in JSON format.
 spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer
-# Maps a custom event type to a specific class for deserialization of incoming JSON messages.
-spring.kafka.producer.properties.spring.json.type.mapping=event:ca.gbc.orderservice.events.OrderPlacedEvent
+spring.kafka.producer.properties.spring.json.type.mapping=event:ca.gbc.comp3095.orderservice.events.OrderPlacedEvent
 ```
 
 ---
 
 ## docker-compose.yml
+
+### File 14: microservices-parent/docker-compose.yml
+
 ```yaml
 # -------------------------------------------
 # Commands to run this compose file:
 # - docker-compose -p microservices-comp3095 -f docker-compose.yml up -d
-#   This command will start the containers in detached mode (-d) without rebuilding the images (if they already exist).
-#
 # - docker-compose -f docker-compose.yml up -d --build
-#   This command forces the rebuild of images, even if they already exist, before starting the containers.
 # -------------------------------------------
 
-# Define services (containers) that will run as part of the microservices stack.
 services:
+  # Week 14 - Notification Service
   notification-service:
     image: notification-service
     ports:
@@ -772,7 +831,7 @@ services:
       dockerfile: ./Dockerfile
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      SPRING_APPLICATION_JSON: '{"logging":{"level":{"root":"INFO","ca.gbc.apigateway":"DEBUG"}}}'
+      SPRING_APPLICATION_JSON: '{"logging":{"level":{"root":"INFO","ca.gbc.comp3095.apigateway":"DEBUG"}}}'
     container_name: api-gateway
     depends_on:
       keycloak:
@@ -1017,6 +1076,7 @@ services:
     networks:
       - spring
 
+  # Week 14 - Zookeeper (Kafka dependency)
   zookeeper:
     container_name: zookeeper
     hostname: zookeeper
@@ -1037,6 +1097,7 @@ services:
     networks:
       - spring
 
+  # Week 14 - Kafka Broker
   broker:
     container_name: broker
     image: confluentinc/cp-kafka:7.9.2
@@ -1062,8 +1123,7 @@ services:
     networks:
       - spring
 
-  #Week 10 - Day 1
-  # Schema Registry service for managing Avro schemas used by Kafka producers and consumers.
+  # Week 14 - Schema Registry
   schema-registry:
     container_name: schema-registry
     hostname: schema-registry
@@ -1085,6 +1145,7 @@ services:
     networks:
       - spring
 
+  # Week 14 - Kafka UI
   kafka-ui:
     container_name: kafka-ui
     image: provectuslabs/kafka-ui:latest
@@ -1096,7 +1157,6 @@ services:
     environment:
       KAFKA_CLUSTERS_NAME: local
       KAFKA_CLUSTERS_BOOTSTRAPSERVERS: broker:29092
-      #Week 10 - Day 1
       KAFKA_CLUSTERS_SCHEMAREGISTRY: http://schema-registry:8087
       DYNAMIC_CONFIG_ENABLED: 'true'
     healthcheck:
@@ -1107,7 +1167,6 @@ services:
     networks:
       - spring
 
-# Optional volumes section for persisting data.
 volumes:
   mongo-db:
     driver: local
@@ -1123,13 +1182,58 @@ volumes:
     driver: local
   postgres_keycloak_data:
     driver: local
-  #Week 10 - Day 1
   schema_registry_data:
     driver: local
 
-# Define a custom network called 'spring' using the bridge driver.
-# Containers on this network can communicate with each other using their container names.
 networks:
   spring:
     driver: bridge
 ```
+
+---
+
+## Summary of Changes
+
+### New Modules Created:
+| Module | Location | Type |
+|--------|----------|------|
+| `notification-service` | `microservices-parent/notification-service/` | Spring Boot Module |
+| `shared-schema` | `microservices-parent/shared-schema/` | Java Library (Non-Spring) |
+
+### New Packages Created:
+| Package | Full Path |
+|---------|-----------|
+| `events` | `order-service/src/main/java/ca/gbc/comp3095/orderservice/events/` |
+| `service` | `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/` |
+
+### New Files Created:
+| File | Location |
+|------|----------|
+| `settings.gradle.kts` | `microservices-parent/settings.gradle.kts` |
+| `build.gradle.kts` | `shared-schema/build.gradle.kts` |
+| `order-placed.avsc` | `shared-schema/src/main/avro/order-placed.avsc` |
+| `build.gradle.kts` | `notification-service/build.gradle.kts` |
+| `Dockerfile` | `notification-service/Dockerfile` |
+| `NotificationServiceApplication.java` | `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/NotificationServiceApplication.java` |
+| `NotificationService.java` | `notification-service/src/main/java/ca/gbc/comp3095/notificationservice/service/NotificationService.java` |
+| `application.properties` | `notification-service/src/main/resources/application.properties` |
+| `application-docker.properties` | `notification-service/src/main/resources/application-docker.properties` |
+
+### Updated Files:
+| File | Location |
+|------|----------|
+| `build.gradle.kts` | `order-service/build.gradle.kts` |
+| `OrderRequest.java` | `order-service/src/main/java/ca/gbc/comp3095/orderservice/dto/OrderRequest.java` |
+| `OrderServiceImpl.java` | `order-service/src/main/java/ca/gbc/comp3095/orderservice/service/OrderServiceImpl.java` |
+| `application.properties` | `order-service/src/main/resources/application.properties` |
+| `application-docker.properties` | `order-service/src/main/resources/application-docker.properties` |
+| `docker-compose.yml` | `microservices-parent/docker-compose.yml` |
+
+### New Docker Services:
+| Service | Port | Image |
+|---------|------|-------|
+| `notification-service` | 8085 | notification-service |
+| `zookeeper` | 2181 | confluentinc/cp-zookeeper:7.9.2 |
+| `broker` | 9092, 29092 | confluentinc/cp-kafka:7.9.2 |
+| `schema-registry` | 8087 | confluentinc/cp-schema-registry:7.9.2 |
+| `kafka-ui` | 8086 | provectuslabs/kafka-ui:latest |
