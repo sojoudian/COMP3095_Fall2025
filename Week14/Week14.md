@@ -125,33 +125,6 @@ include("shared-schema")
 
 ### File 1: shared-schema/build.gradle.kts
 
-**IntelliJ generates this by default:**
-
-```kotlin
-plugins {
-    id("java")
-}
-
-group = "ca.gbc.comp3095"
-version = "1.0-SNAPSHOT"
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    testImplementation(platform("org.junit:junit-bom:5.10.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-}
-
-tasks.test {
-    useJUnitPlatform()
-}
-```
-
-**Replace the entire file with this:**
-
 ```kotlin
 plugins {
     id("java-library")
