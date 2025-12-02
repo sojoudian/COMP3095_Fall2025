@@ -2,6 +2,21 @@
 
 ---
 
+## Important Notes (Read Before Starting)
+
+1. **Open the correct folder in IntelliJ:** Always open `microservices-parent` folder, NOT the parent folder.
+
+2. **Delete settings.gradle.kts from submodules:** When creating modules via Spring Initializr, IntelliJ may create a `settings.gradle.kts` inside the new module. **Delete it.** Only `microservices-parent/settings.gradle.kts` should exist.
+
+3. **If Gradle elephant icon is missing:** Right-click on `settings.gradle.kts` in the project tree → **Link Gradle Project**
+
+4. **If you get "Project with path ':shared-schema' could not be found":**
+   - Check that only ONE `settings.gradle.kts` exists (in microservices-parent)
+   - Delete any `settings.gradle.kts` files inside submodules
+   - Delete `.idea` folder and re-import the project
+
+---
+
 ## Step 1: Create shared-schema Module (Non-Spring Boot)
 
 ### 1.1 Create Module in IntelliJ
@@ -13,7 +28,14 @@
 5. Set **Name** to `shared-schema`
 6. Click **Create**
 
-### 1.2 Update shared-schema/build.gradle.kts
+### 1.2 Delete settings.gradle.kts from shared-schema (if exists)
+
+If IntelliJ created a `settings.gradle.kts` inside `shared-schema/`, delete it:
+
+1. Check if `shared-schema/settings.gradle.kts` exists
+2. If yes, right-click → **Delete**
+
+### 1.3 Update shared-schema/build.gradle.kts
 
 ```kotlin
 plugins {
@@ -34,9 +56,9 @@ dependencies {
 }
 
 avro {
-    isCreateSetters = true
-    fieldVisibility = "PRIVATE"
-    isEnableDecimalLogicalType = true
+    isCreateSetters.set(true)
+    fieldVisibility.set("PRIVATE")
+    isEnableDecimalLogicalType.set(true)
 }
 
 sourceSets {
@@ -51,7 +73,7 @@ tasks.named<com.github.davidmc24.gradle.plugin.avro.GenerateAvroJavaTask>("gener
 }
 ```
 
-### 1.3 Create Directory Structure
+### 1.4 Create Directory Structure
 
 ```
 shared-schema/
@@ -68,7 +90,7 @@ To create the `avro` directory:
 3. Name: `avro`
 4. Click **OK**
 
-### 1.4 Create shared-schema/src/main/avro/order-placed.avsc
+### 1.5 Create shared-schema/src/main/avro/order-placed.avsc
 
 ```json
 {
@@ -84,7 +106,27 @@ To create the `avro` directory:
 }
 ```
 
-### 1.5 Sync Gradle
+### 1.6 Update microservices-parent/settings.gradle.kts
+
+Add `pluginManagement` block and `shared-schema` to settings:
+
+```kotlin
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
+rootProject.name = "microservices-parent"
+include("product-service")
+include("order-service")
+include("inventory-service")
+include("api-gateway")
+include("shared-schema")
+```
+
+### 1.7 Sync Gradle
 
 1. Click the **Gradle elephant icon** in the right sidebar
 2. Click the **Refresh** button at the top
@@ -138,11 +180,26 @@ To create the `avro` directory:
 2. Click **Finish**
 3. Wait for Gradle sync
 
-### 2.5 Update settings.gradle.kts
+### 2.5 Delete settings.gradle.kts from notification-service
 
-Add `notification-service` to `microservices-parent/settings.gradle.kts`:
+Spring Initializr creates a `settings.gradle.kts` inside `notification-service/`. **Delete it:**
+
+1. In project tree, find `notification-service/settings.gradle.kts`
+2. Right-click → **Delete**
+3. Confirm deletion
+
+### 2.6 Update microservices-parent/settings.gradle.kts
+
+Replace the content of `microservices-parent/settings.gradle.kts` with:
 
 ```kotlin
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        mavenCentral()
+    }
+}
+
 rootProject.name = "microservices-parent"
 include("product-service")
 include("order-service")
@@ -152,7 +209,7 @@ include("shared-schema")
 include("notification-service")
 ```
 
-### 2.6 Sync Gradle
+### 2.7 Sync Gradle
 
 1. Click the **Gradle elephant icon** in the right sidebar
 2. Click the **Refresh** button at the top
