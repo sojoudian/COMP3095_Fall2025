@@ -1010,6 +1010,7 @@ services:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
       - broker
+      - schema-registry
     networks:
       - spring
 
@@ -1269,10 +1270,11 @@ services:
       - "8086:8080"
     depends_on:
       - broker
+      - schema-registry
     environment:
-      KAFKA_CLUSTERS_NAME: local
-      KAFKA_CLUSTERS_BOOTSTRAPSERVERS: broker:29092
-      KAFKA_CLUSTERS_SCHEMAREGISTRY: http://schema-registry:8087
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8087
       DYNAMIC_CONFIG_ENABLED: 'true'
     networks:
       - spring
