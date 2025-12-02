@@ -17,6 +17,25 @@
 
 ---
 
+## Step 0: Delete settings.gradle.kts from Existing Submodules
+
+**IMPORTANT:** The cloned project may have `settings.gradle.kts` files inside existing submodules. These MUST be deleted first.
+
+Check and delete these files if they exist:
+- `api-gateway/settings.gradle.kts`
+- `inventory-service/settings.gradle.kts`
+- `order-service/settings.gradle.kts`
+- `product-service/settings.gradle.kts`
+
+**To delete:**
+1. In IntelliJ project tree, navigate to each submodule
+2. If `settings.gradle.kts` exists, right-click → **Delete**
+3. Confirm deletion
+
+**Only `microservices-parent/settings.gradle.kts` should exist.**
+
+---
+
 ## Step 1: Create shared-schema Module (Non-Spring Boot)
 
 ### 1.1 Create Module in IntelliJ
