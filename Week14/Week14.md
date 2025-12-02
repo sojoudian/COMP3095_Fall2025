@@ -34,6 +34,14 @@ Check and delete these files if they exist:
 
 **Only `microservices-parent/settings.gradle.kts` should exist.**
 
+**After deleting, reset IntelliJ's Gradle configuration:**
+1. Close IntelliJ
+2. Delete the `.idea` folder in `microservices-parent`
+3. Reopen IntelliJ and open the `microservices-parent` folder
+4. Link Gradle Project:
+   - Right-click on `settings.gradle.kts` → **Link Gradle Project**
+5. Sync Gradle (click the elephant icon → refresh)
+
 ---
 
 ## Step 1: Create shared-schema Module (Non-Spring Boot)
