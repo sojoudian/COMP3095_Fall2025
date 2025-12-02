@@ -159,6 +159,24 @@ include("shared-schema")
 2. Click the **Refresh** button at the top
 3. Wait for sync to complete
 
+### 1.8 Build shared-schema to Generate Avro Classes
+
+**IMPORTANT:** You must generate the Java classes from the Avro schema before they can be used in other modules.
+
+1. Open **Terminal** in IntelliJ (View → Tool Windows → Terminal)
+2. Run:
+   ```bash
+   ./gradlew :shared-schema:build
+   ```
+3. **Or** in the Gradle panel: `shared-schema` → `Tasks` → `build` → `build`
+
+This generates `OrderPlacedEvent.java` in:
+```
+shared-schema/build/generated-main-avro-java/ca/gbc/comp3095/orderservice/event/OrderPlacedEvent.java
+```
+
+**If you get "Cannot resolve symbol 'OrderPlacedEvent'"** in order-service or notification-service, run this build command again.
+
 ---
 
 ## Step 2: Create notification-service Module
