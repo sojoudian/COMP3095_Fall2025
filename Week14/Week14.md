@@ -493,16 +493,23 @@ spring.mail.properties.mail.smtp.starttls.enable=true
 ```properties
 spring.application.name=notification-service
 
+# Week 14
 server.port=8085
 
-# Kafka Consumer Properties (Docker)
+# Week 14 - Kafka Consumer Properties (Docker)
 spring.kafka.bootstrap-servers=broker:29092
 spring.kafka.consumer.group-id=notificationService
 spring.kafka.consumer.key-deserializer=org.apache.kafka.common.serialization.StringDeserializer
-spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.JsonDeserializer
-spring.kafka.consumer.properties.spring.json.type.mapping=event:ca.gbc.comp3095.notificationservice.events.OrderPlacedEvent
 spring.kafka.consumer.auto-offset-reset=earliest
 
+# Week 14 - Avro Deserializer with Error Handling (Docker)
+spring.kafka.consumer.value-deserializer=org.springframework.kafka.support.serializer.ErrorHandlingDeserializer
+spring.kafka.consumer.properties.spring.deserializer.key.delegate.class=org.apache.kafka.common.serialization.StringDeserializer
+spring.kafka.consumer.properties.spring.deserializer.value.delegate.class=io.confluent.kafka.serializers.KafkaAvroDeserializer
+spring.kafka.consumer.properties.schema.registry.url=http://schema-registry:8087
+spring.kafka.consumer.properties.specific.avro.reader=true
+
+# Week 14 - Actuator & Logging
 management.endpoints.web.exposure.include=*
 management.endpoint.health.show-details=always
 logging.level.org.springframework.kafka=DEBUG
@@ -816,9 +823,7 @@ spring.application.name=order-service
 server.port=8082
 
 # PostgreSQL Configuration for DOCKER environment
-# IMPORTANT: Use service name "postgres" instead of "localhost"
 spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
-
 spring.datasource.username=admin
 spring.datasource.password=password
 spring.datasource.driver-class-name=org.postgresql.Driver
@@ -852,10 +857,10 @@ spring.flyway.baseline-on-migrate=true
 spring.flyway.locations=classpath:db/migration
 spring.flyway.enabled=true
 
-# Week 9 - Day 1 - Circuit Breaker Configuration
+# Week 9 - Circuit Breaker Configuration
 management.health.circuitbreakers.enabled=true
 
-# Week 9 - Day 1 - Resilience4j Circuit Breaker Configuration
+# Week 9 - Resilience4j Circuit Breaker Configuration
 resilience4j.circuitbreaker.instances.inventory.registerHealthIndicator=true
 resilience4j.circuitbreaker.instances.inventory.event-consumer-buffer-size=10
 resilience4j.circuitbreaker.instances.inventory.slidingWindowType=COUNT_BASED
@@ -875,8 +880,10 @@ resilience4j.retry.instances.inventory.wait-duration=2s
 spring.kafka.bootstrap-servers=broker:29092
 spring.kafka.template.default-topic=order-placed
 spring.kafka.producer.key-serializer=org.apache.kafka.common.serialization.StringSerializer
-spring.kafka.producer.value-serializer=org.springframework.kafka.support.serializer.JsonSerializer
-spring.kafka.producer.properties.spring.json.type.mapping=event:ca.gbc.comp3095.orderservice.events.OrderPlacedEvent
+
+# Week 14 - Avro Serializer with Schema Registry (Docker)
+spring.kafka.producer.value-serializer=io.confluent.kafka.serializers.KafkaAvroSerializer
+spring.kafka.producer.properties.schema.registry.url=http://schema-registry:8087
 ```
 
 ---
