@@ -138,6 +138,26 @@ To create the `avro` directory:
 2. Click **Finish**
 3. Wait for Gradle sync
 
+### 2.5 Update settings.gradle.kts
+
+Add `notification-service` to `microservices-parent/settings.gradle.kts`:
+
+```kotlin
+rootProject.name = "microservices-parent"
+include("product-service")
+include("order-service")
+include("inventory-service")
+include("api-gateway")
+include("shared-schema")
+include("notification-service")
+```
+
+### 2.6 Sync Gradle
+
+1. Click the **Gradle elephant icon** in the right sidebar
+2. Click the **Refresh** button at the top
+3. Wait for sync to complete
+
 ---
 
 ## Step 3: Update notification-service/build.gradle.kts
