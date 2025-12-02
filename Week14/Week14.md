@@ -701,14 +701,17 @@ public class OrderServiceImpl implements OrderService {
 ```properties
 # ============================================
 # Order Service - Local Configuration
+# Use this when running from IntelliJ IDE
 # ============================================
 
+# Application Configuration
 spring.application.name=order-service
 
+# Server Configuration
 server.port=8082
 
-# PostgreSQL Configuration
-spring.datasource.url=jdbc:postgresql://localhost:5432/order-service
+# PostgreSQL Configuration for LOCAL development
+spring.datasource.url=jdbc:postgresql://localhost:5432/order_service
 spring.datasource.username=admin
 spring.datasource.password=password
 spring.datasource.driver-class-name=org.postgresql.Driver
@@ -725,7 +728,7 @@ logging.level.org.hibernate.SQL=DEBUG
 logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 
 # Actuator Configuration
-management.endpoints.web.exposure.include=*
+management.endpoints.web.exposure.include=health,info,metrics
 management.endpoint.health.show-details=always
 
 inventory.service.url=http://localhost:8083
@@ -734,11 +737,24 @@ inventory.service.url=http://localhost:8083
 order-service.version=v1.0
 
 # Week 12 - Swagger Documentation
+# Swagger UI accessible at: http://localhost:8082/swagger-ui
 springdoc.swagger-ui.path=/swagger-ui
+# OpenAPI JSON accessible at: http://localhost:8082/api-docs
 springdoc.api-docs.path=/api-docs
 
-# Week 13 - Circuit Breaker
+# Week 13
+spring.flyway.baseline-on-migrate=true
+spring.flyway.locations=classpath:db/migration
+spring.flyway.enabled=true
+
+# Week 9 - Day 1 - Circuit Breaker Configuration
 management.health.circuitbreakers.enabled=true
+management.endpoints.web.exposure.include=*
+management.endpoint.health.show-details=always
+
+# Week 9 - Day 1 - Resilience4j Circuit Breaker Configuration
+# Opens if 50% of 20 calls fail after at least 10 calls.
+# Stays open for 10 seconds, then allows 5 calls in half-open state
 resilience4j.circuitbreaker.instances.inventory.registerHealthIndicator=true
 resilience4j.circuitbreaker.instances.inventory.event-consumer-buffer-size=10
 resilience4j.circuitbreaker.instances.inventory.slidingWindowType=COUNT_BASED
@@ -774,12 +790,16 @@ spring.kafka.producer.properties.schema.registry.url=http://127.0.0.1:8087
 # Activated when SPRING_PROFILES_ACTIVE=docker
 # ============================================
 
+# Application Configuration
 spring.application.name=order-service
 
+# Server Configuration
 server.port=8082
 
-# PostgreSQL Configuration (Docker)
+# PostgreSQL Configuration for DOCKER environment
+# IMPORTANT: Use service name "postgres" instead of "localhost"
 spring.datasource.url=jdbc:postgresql://postgres-order:5432/order_service
+
 spring.datasource.username=admin
 spring.datasource.password=password
 spring.datasource.driver-class-name=org.postgresql.Driver
@@ -796,7 +816,7 @@ logging.level.org.hibernate.SQL=DEBUG
 logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 
 # Actuator Configuration
-management.endpoints.web.exposure.include=*
+management.endpoints.web.exposure.include=health,info,metrics
 management.endpoint.health.show-details=always
 
 inventory.service.url=http://inventory-service:8083
@@ -808,13 +828,17 @@ order-service.version=v1.0
 springdoc.swagger-ui.path=/swagger-ui
 springdoc.api-docs.path=/api-docs
 
-# Week 13 - Flyway
+# Week 13
 spring.flyway.baseline-on-migrate=true
 spring.flyway.locations=classpath:db/migration
 spring.flyway.enabled=true
 
-# Week 13 - Circuit Breaker Configuration
+# Week 9 - Day 1 - Circuit Breaker Configuration
 management.health.circuitbreakers.enabled=true
+management.endpoints.web.exposure.include=*
+management.endpoint.health.show-details=always
+
+# Week 9 - Day 1 - Resilience4j Circuit Breaker Configuration
 resilience4j.circuitbreaker.instances.inventory.registerHealthIndicator=true
 resilience4j.circuitbreaker.instances.inventory.event-consumer-buffer-size=10
 resilience4j.circuitbreaker.instances.inventory.slidingWindowType=COUNT_BASED
