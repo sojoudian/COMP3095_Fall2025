@@ -355,13 +355,15 @@ WORKDIR /app
 COPY notification-service/gradlew .
 COPY notification-service/gradle gradle
 COPY notification-service/build.gradle.kts .
-COPY settings.gradle.kts .
 
 # Copy shared-schema module
 COPY shared-schema shared-schema
 
 # Copy source code
 COPY notification-service/src src
+
+# Create minimal settings.gradle.kts for Docker build
+RUN echo 'rootProject.name = "notification-service"\ninclude("shared-schema")' > settings.gradle.kts
 
 # Make gradlew executable
 RUN chmod +x gradlew
@@ -577,13 +579,15 @@ WORKDIR /app
 COPY order-service/gradlew .
 COPY order-service/gradle gradle
 COPY order-service/build.gradle.kts .
-COPY settings.gradle.kts .
 
 # Copy shared-schema module
 COPY shared-schema shared-schema
 
 # Copy source code
 COPY order-service/src src
+
+# Create minimal settings.gradle.kts for Docker build
+RUN echo 'rootProject.name = "order-service"\ninclude("shared-schema")' > settings.gradle.kts
 
 # Make gradlew executable
 RUN chmod +x gradlew
