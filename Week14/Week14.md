@@ -865,13 +865,8 @@ spring.kafka.producer.properties.spring.json.type.mapping=event:ca.gbc.comp3095.
 ### File 11: microservices-parent/docker-compose.yml
 
 ```yaml
-# -------------------------------------------
-# Commands to run this compose file:
-# - docker-compose -p microservices-comp3095 -f docker-compose.yml up -d
-# - docker-compose -f docker-compose.yml up -d --build
-# -------------------------------------------
-
 services:
+
   # Week 14 - Notification Service
   notification-service:
     image: notification-service
@@ -884,13 +879,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      broker:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8085/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - broker
     networks:
       - spring
 
@@ -909,14 +898,8 @@ services:
     volumes:
       - ./docker/integrated/keycloak/realms/:/opt/keycloak/data/import/
     depends_on:
-      postgres-keycloak:
-        condition: service_healthy
+      - postgres-keycloak
     container_name: keycloak
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health/ready"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
@@ -931,20 +914,6 @@ services:
       SPRING_PROFILES_ACTIVE: docker
       SPRING_APPLICATION_JSON: '{"logging":{"level":{"root":"INFO","ca.gbc.comp3095.apigateway":"DEBUG"}}}'
     container_name: api-gateway
-    depends_on:
-      keycloak:
-        condition: service_healthy
-      order-service:
-        condition: service_healthy
-      inventory-service:
-        condition: service_healthy
-      product-service:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
@@ -953,15 +922,9 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - ./docker/integrated/redis/data:/data
       - ./docker/integrated/redis/init/redis.conf:/usr/local/etc/redis/redis.conf
     command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
     container_name: redis
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
@@ -971,13 +934,7 @@ services:
       - "8001:8001"
     container_name: redis-insight
     depends_on:
-      redis:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8001"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - redis
     networks:
       - spring
 
@@ -990,19 +947,13 @@ services:
       dockerfile: ./Dockerfile
     container_name: inventory-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-inventory:5432/inventory-service
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: none
-      SPRING_PROFILES_ACTIVE: docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-inventory/inventory_service
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
-      postgres-inventory:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - postgres-inventory
     networks:
       - spring
 
@@ -1015,23 +966,14 @@ services:
       dockerfile: ./Dockerfile
     container_name: order-service
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-order:5432/order-service
-      SPRING_DATASOURCE_USERNAME: admin
-      SPRING_DATASOURCE_PASSWORD: password
-      SPRING_JPA_HIBERNATE_DDL_AUTO: none
-      SPRING_PROFILES_ACTIVE: docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order/order_service
+      - SPRING_DATASOURCE_USERNAME=admin
+      - SPRING_DATASOURCE_PASSWORD=password
+      - SPRING_JPA_HIBERNATE_DDL_AUTO=none
+      - SPRING_PROFILES_ACTIVE=docker
     depends_on:
-      postgres-order:
-        condition: service_healthy
-      broker:
-        condition: service_healthy
-      inventory-service:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - postgres-order
+      - broker
     networks:
       - spring
 
@@ -1046,13 +988,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: docker
     depends_on:
-      mongodb:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - mongodb
     networks:
       - spring
 
@@ -1061,18 +997,13 @@ services:
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=password
     volumes:
       - ./docker/integrated/mongo/data/mongo/products:/data/db
       - ./docker/integrated/mongo/init/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js
     container_name: mongodb
     command: mongod --auth
-    healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
@@ -1081,26 +1012,20 @@ services:
     ports:
       - "8081:8081"
     environment:
-      ME_CONFIG_MONGODB_ADMINUSERNAME: admin
-      ME_CONFIG_MONGODB_ADMINPASSWORD: password
-      ME_CONFIG_MONGODB_SERVER: mongodb
-      ME_CONFIG_MONGODB_AUTH_DATABASE: admin
+      - ME_CONFIG_MONGODB_ADMINUSERNAME=admin
+      - ME_CONFIG_MONGODB_ADMINPASSWORD=password
+      - ME_CONFIG_MONGODB_SERVER=mongodb
+      - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
     container_name: mongo-express
     depends_on:
-      mongodb:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - mongodb
     networks:
       - spring
 
   postgres-keycloak:
     image: postgres:15
     volumes:
-      - ./docker/integrated/keycloak/postgres/db-data:/var/lib/postgresql/data
+      - ./docker/integrated/keycloak/db-data:/var/lib/postgresql/data
     ports:
       - "5434:5432"
     environment:
@@ -1108,19 +1033,14 @@ services:
       POSTGRES_USER: keycloak
       POSTGRES_PASSWORD: password
     container_name: postgres-keycloak
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
   postgres-inventory:
     container_name: postgres-inventory
-    image: postgres:16
+    image: postgres
     environment:
-      POSTGRES_DB: inventory-service
+      POSTGRES_DB: inventory_service
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       PGDATA: /data/postgres
@@ -1129,19 +1049,14 @@ services:
       - ./docker/integrated/postgres/inventory-service/init/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5433:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d inventory-service"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
   postgres-order:
     container_name: postgres-order
-    image: postgres:16
+    image: postgres
     environment:
-      POSTGRES_DB: order-service
+      POSTGRES_DB: order_service
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: password
       PGDATA: /data/postgres
@@ -1150,11 +1065,6 @@ services:
       - ./docker/integrated/postgres/order-service/init/init.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U admin -d order-service"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
@@ -1163,14 +1073,9 @@ services:
     ports:
       - "8888:80"
     environment:
-      PGADMIN_DEFAULT_EMAIL: user@domain.ca
-      PGADMIN_DEFAULT_PASSWORD: password
+      - PGADMIN_DEFAULT_EMAIL=user@domain.ca
+      - PGADMIN_DEFAULT_PASSWORD=password
     container_name: pgadmin
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:80"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
@@ -1187,11 +1092,6 @@ services:
     volumes:
       - ./docker/integrated/kafka/zookeeper_data:/var/lib/zookeeper/data
       - ./docker/integrated/kafka/zookeeper_log:/var/lib/zookeeper/log
-    healthcheck:
-      test: ["CMD", "zookeeper-shell", "zookeeper:2181", "ls", "/"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
@@ -1209,15 +1109,9 @@ services:
       KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://broker:29092,PLAINTEXT_HOST://localhost:9092
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
     depends_on:
-      zookeeper:
-        condition: service_healthy
+      - zookeeper
     volumes:
       - ./docker/integrated/kafka/kafka_data:/var/lib/kafka/data
-    healthcheck:
-      test: ["CMD", "kafka-broker-api-versions.sh", "--bootstrap-server", "localhost:9092"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
@@ -1233,13 +1127,7 @@ services:
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://broker:29092
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8087
     depends_on:
-      broker:
-        condition: service_healthy
-    healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8087" ]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+      - broker
     networks:
       - spring
 
@@ -1250,37 +1138,17 @@ services:
     ports:
       - "8086:8080"
     depends_on:
-      broker:
-        condition: service_healthy
+      - broker
     environment:
       KAFKA_CLUSTERS_NAME: local
       KAFKA_CLUSTERS_BOOTSTRAPSERVERS: broker:29092
       KAFKA_CLUSTERS_SCHEMAREGISTRY: http://schema-registry:8087
       DYNAMIC_CONFIG_ENABLED: 'true'
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - spring
 
 volumes:
   mongo-db:
-    driver: local
-  zookeeper_data:
-    driver: local
-  zookeeper_log:
-    driver: local
-  kafka_data:
-    driver: local
-  postgres_order_data:
-    driver: local
-  postgres_inventory_data:
-    driver: local
-  postgres_keycloak_data:
-    driver: local
-  schema_registry_data:
     driver: local
 
 networks:
