@@ -352,12 +352,16 @@ FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
 
 # Copy Gradle wrapper and build files
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle.kts .
+COPY notification-service/gradlew .
+COPY notification-service/gradle gradle
+COPY notification-service/build.gradle.kts .
+COPY settings.gradle.kts .
+
+# Copy shared-schema module
+COPY shared-schema shared-schema
 
 # Copy source code
-COPY src src
+COPY notification-service/src src
 
 # Make gradlew executable
 RUN chmod +x gradlew
@@ -570,12 +574,16 @@ FROM eclipse-temurin:21-jdk AS builder
 WORKDIR /app
 
 # Copy Gradle wrapper and build files
-COPY gradlew .
-COPY gradle gradle
-COPY build.gradle.kts .
+COPY order-service/gradlew .
+COPY order-service/gradle gradle
+COPY order-service/build.gradle.kts .
+COPY settings.gradle.kts .
+
+# Copy shared-schema module
+COPY shared-schema shared-schema
 
 # Copy source code
-COPY src src
+COPY order-service/src src
 
 # Make gradlew executable
 RUN chmod +x gradlew
@@ -991,8 +999,8 @@ services:
     ports:
       - "8085:8085"
     build:
-      context: ./notification-service
-      dockerfile: ./Dockerfile
+      context: .
+      dockerfile: ./notification-service/Dockerfile
     container_name: notification-service
     environment:
       SPRING_PROFILES_ACTIVE: docker
@@ -1080,8 +1088,8 @@ services:
     ports:
       - "8082:8082"
     build:
-      context: ./order-service
-      dockerfile: ./Dockerfile
+      context: .
+      dockerfile: ./order-service/Dockerfile
     container_name: order-service
     environment:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-order/order_service
