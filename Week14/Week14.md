@@ -168,7 +168,10 @@ include("shared-schema")
    ```bash
    ./gradlew :shared-schema:build
    ```
-3. **Or** in the Gradle panel: `shared-schema` → `Tasks` → `build` → `build`
+3. **Or** using the Gradle panel in IntelliJ:
+   1. Open the **Gradle** panel (right sidebar, elephant icon)
+   2. Navigate to: `microservices-parent` → `shared-schema` → `Tasks` → `build` → `build`
+   3. **Double-click** `build`
 
 This generates `OrderPlacedEvent.java` in:
 ```
