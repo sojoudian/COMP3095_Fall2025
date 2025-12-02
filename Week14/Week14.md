@@ -343,31 +343,60 @@ Full path: `notification-service/src/main/java/ca/gbc/comp3095/notificationservi
 ### File 1: notification-service/Dockerfile
 
 ```dockerfile
-# ------------------
-#  Build Stage
-# ------------------
+# ============================================
+# Stage 1: Build Stage
+# ============================================
+FROM eclipse-temurin:21-jdk AS builder
 
-FROM gradle:8-jdk21 AS builder
+# Set working directory
+WORKDIR /app
 
-COPY --chown=gradle:gradle . /home/gradle/src
+# Copy Gradle wrapper and build files
+COPY gradlew .
+COPY gradle gradle
+COPY build.gradle.kts .
 
-WORKDIR /home/gradle/src
+# Copy source code
+COPY src src
 
-RUN gradle build -x test
+# Make gradlew executable
+RUN chmod +x gradlew
 
-# ------------------
-#  Package Stage
-# ------------------
+# Build the application (skip tests for faster builds)
+RUN ./gradlew clean build -x test
 
-FROM openjdk:21-jdk
+# ============================================
+# Stage 2: Runtime Stage
+# ============================================
+FROM eclipse-temurin:21-jre
 
-RUN mkdir /app
+# Set working directory
+WORKDIR /app
 
-COPY --from=builder /home/gradle/src/build/libs/*.jar /app/notification-service.jar
+# Copy JAR from build stage
+COPY --from=builder /app/build/libs/*.jar app.jar
 
+# Create non-root user for security
+RUN addgroup --system spring && adduser --system --group spring
+
+# Change ownership of app directory
+RUN chown -R spring:spring /app
+
+# Switch to non-root user
+USER spring:spring
+
+# Expose port
 EXPOSE 8085
 
-ENTRYPOINT ["java", "-jar", "/app/notification-service.jar"]
+# Set environment variables
+ENV SPRING_PROFILES_ACTIVE=docker
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=30s --retries=3 \
+    CMD wget --no-verbose --tries=1 --spider http://localhost:8085/actuator/health || exit 1
+
+# Run the application
+ENTRYPOINT ["java", "-jar", "app.jar"]
 ```
 
 ---
