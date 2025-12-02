@@ -728,7 +728,7 @@ logging.level.org.hibernate.SQL=DEBUG
 logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 
 # Actuator Configuration
-management.endpoints.web.exposure.include=health,info,metrics
+management.endpoints.web.exposure.include=*
 management.endpoint.health.show-details=always
 
 inventory.service.url=http://localhost:8083
@@ -749,8 +749,6 @@ spring.flyway.enabled=true
 
 # Week 9 - Day 1 - Circuit Breaker Configuration
 management.health.circuitbreakers.enabled=true
-management.endpoints.web.exposure.include=*
-management.endpoint.health.show-details=always
 
 # Week 9 - Day 1 - Resilience4j Circuit Breaker Configuration
 # Opens if 50% of 20 calls fail after at least 10 calls.
@@ -816,7 +814,7 @@ logging.level.org.hibernate.SQL=DEBUG
 logging.level.org.hibernate.type.descriptor.sql.BasicBinder=TRACE
 
 # Actuator Configuration
-management.endpoints.web.exposure.include=health,info,metrics
+management.endpoints.web.exposure.include=*
 management.endpoint.health.show-details=always
 
 inventory.service.url=http://inventory-service:8083
@@ -835,8 +833,6 @@ spring.flyway.enabled=true
 
 # Week 9 - Day 1 - Circuit Breaker Configuration
 management.health.circuitbreakers.enabled=true
-management.endpoints.web.exposure.include=*
-management.endpoint.health.show-details=always
 
 # Week 9 - Day 1 - Resilience4j Circuit Breaker Configuration
 resilience4j.circuitbreaker.instances.inventory.registerHealthIndicator=true
