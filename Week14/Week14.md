@@ -1270,10 +1270,11 @@ services:
     depends_on:
       - broker
     environment:
-      KAFKA_CLUSTERS_NAME: local
-      KAFKA_CLUSTERS_BOOTSTRAPSERVERS: broker:29092
-      KAFKA_CLUSTERS_SCHEMAREGISTRY: http://schema-registry:8087
-      DYNAMIC_CONFIG_ENABLED: 'true'
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: broker:29092
+      KAFKA_CLUSTERS_0_SCHEMAREGISTRY: http://schema-registry:8087
+      DYNAMIC_CONFIG_ENABLED: 'true'  
+    
     networks:
       - spring
 
