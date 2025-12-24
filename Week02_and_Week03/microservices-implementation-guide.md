@@ -61,7 +61,7 @@ git remote add origin [your-repository-url]
 git push -u origin main
 ```
 
-![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/01_Create_and_Setup_Git_Repository.png)
+![Alt text](img/01_Create_and_Setup_Git_Repository.png)
 
 ### Step 2: Create Parent Project in IntelliJ
 
@@ -81,7 +81,7 @@ git push -u origin main
 3. **IMPORTANT**: Uncheck "Add sample code"
 4. Click **Create**
 
-![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/02_Create_Parent_Project_in_IntelliJ.png)
+![Alt text](img/02_Create_Parent_Project_in_IntelliJ.png)
 
 
 ### Step 3: Configure IntelliJ for Lombok
@@ -93,8 +93,8 @@ git push -u origin main
    - Install Delombok plugin
    - Install MapStruct Support plugin
 
-![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/03_1_Plugins.png)
-![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/3_2_enableAnnotation.png)
+![Alt text](img/03_1_Plugins.png)
+![Alt text](img/3_2_enableAnnotation.png)
 
 ---
 
@@ -121,7 +121,7 @@ git push -u origin main
    - Spring Boot Actuator (Ops)
 6. Click **Create**
 
-![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/04_CreateModule.png)
+![Alt text](img/04_CreateModule.png)
 
 ### Step 4.1: Fix Source Folder Recognition (IMPORTANT)
 
@@ -166,7 +166,7 @@ spring.data.mongodb.uri=mongodb://localhost:27017/product-service
 # Create Docker network (optional, for mongo-express)
 docker network create mynetwork
 ```
-![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/09_CreateDockerNetwork.png)
+![Alt text](img/09_CreateDockerNetwork.png)
 
 
 ```bash
@@ -178,7 +178,7 @@ docker run -d \
   --restart unless-stopped \
   mongo:latest
 ```
-![Alt text](https://raw.githubusercontent.com/sojoudian/COMP3095_Fall2025/refs/heads/master/Week02/img/10_Docker_Run_MongoDB.png)
+![Alt text](img/10_Docker_Run_MongoDB.png)
 
 
 ```bash
